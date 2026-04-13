@@ -213,6 +213,8 @@ Useful hooks:
 - `useActiveEmoji()`
 - `useSkinTone()`
 
+The bundled `EmojiPicker` now acts as the reference preset built from the same public primitives.
+
 ## Controlled State
 
 Search, skin tone, and active category can be controlled from the outside:
@@ -361,6 +363,24 @@ MojiX still exports the current UI building blocks too:
 - `EmojiSprite`
 
 These work well when you want to keep the built-in layout but replace only one area.
+
+## Migration Notes
+
+The easiest migration path is:
+
+1. Keep using `EmojiPicker` if the default layout still fits.
+2. Move styling to `unstyled`, `classNames`, and `styles` if you only need a custom skin.
+3. Move to `MojiX.Root` plus primitives when you want a different layout.
+
+Common prop mapping:
+
+- `searchQuery` and `onSearchQueryChange` map directly to `MojiX.Search` through `MojiX.Root`
+- `skinTone` and `onSkinToneChange` map directly to `MojiX.SkinTone` or `MojiX.SkinToneButton`
+- `renderEmoji` maps to `MojiX.List`
+- `renderPreview` maps to `MojiX.ActiveEmoji`
+- `showPreview` becomes whether you render `MojiX.ActiveEmoji`
+- `showSkinTones` becomes whether you render `MojiX.SkinToneButton`
+- `showRecents`, `locale`, `fallbackLocale`, `assetSource`, `spriteSheet`, and `recentStore` stay on `MojiX.Root`
 
 ## Roadmap
 

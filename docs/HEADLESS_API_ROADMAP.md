@@ -40,7 +40,7 @@ Today MojiX already supports:
 
 Current limitations:
 
-- the default `EmojiPicker` still uses a mostly bundled layout
+- `EmojiPicker` is now composed from public primitives, but preset variations are still thin
 - list row/header/body replacement is still coarse-grained
 - search tokenizer/normalizer/ranker is not public yet
 - preset packages and migration docs still need polish
