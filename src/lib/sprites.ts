@@ -1,0 +1,282 @@
+import type { CSSProperties } from 'react';
+import {
+  DEFAULT_SPRITE_BASE_PATH,
+  DEFAULT_SPRITE_CACHE_MODE,
+  EMOJI_DATASET_VERSION,
+  EMOJI_SHEET_GRID_SIZE,
+  EMOJI_SHEET_PADDING,
+} from './constants';
+import type {
+  EmojiSpriteSheetCacheConfig,
+  EmojiSpriteSheetConfig,
+  EmojiSpriteSheetContext,
+  EmojiSpriteSheetVariant,
+  EmojiVendor,
+} from './types';
+
+const VENDOR_PACKAGES: Partial<Record<EmojiVendor, string>> = {
+  apple: 'emoji-datasource-apple',
+  google: 'emoji-datasource-google',
+  twitter: 'emoji-datasource-twitter',
+  facebook: 'emoji-datasource-facebook',
+};
+
+export interface ResolvedEmojiSpriteSheetConfig
+  extends Omit<
+    Required<
+      Omit<
+        EmojiSpriteSheetConfig,
+        'cache' | 'url'
+      >
+    >,
+    never
+  > {
+  url: string | ((context: EmojiSpriteSheetContext) => string);
+  cache: Omit<Required<EmojiSpriteSheetCacheConfig>, 'adapter'> &
+    Pick<EmojiSpriteSheetCacheConfig, 'adapter'>;
+}
+
+function getSpritesheetFolder(variant: EmojiSpriteSheetVariant) {
+  switch (variant) {
+    case 'indexed-128':
+      return 'sheets-128';
+    case 'indexed-256':
+      return 'sheets-256';
+    case 'clean':
+      return 'sheets-clean';
+    default:
+      return 'sheets';
+  }
+}
+
+export function resolveVendorPackageName(vendor: EmojiVendor) {
+  return VENDOR_PACKAGES[vendor] ?? 'emoji-datasource';
+}
+
+export function createEmojiCdnUrl(
+  options: Partial<EmojiSpriteSheetContext> = {},
+) {
+  const vendor = options.vendor ?? 'twitter';
+  const sheetSize = options.sheetSize ?? 64;
+  const variant = options.variant ?? 'indexed-256';
+  const version = options.version ?? EMOJI_DATASET_VERSION;
+  const packageName = options.packageName ?? resolveVendorPackageName(vendor);
+  const folder = getSpritesheetFolder(variant);
+
+  return `https://cdn.jsdelivr.net/npm/${packageName}@${version}/img/${vendor}/${folder}/${sheetSize}.png`;
+}
+
+export function createEmojiLocalUrl(
+  options: Partial<EmojiSpriteSheetContext> = {},
+) {
+  const vendor = options.vendor ?? 'twitter';
+  const sheetSize = options.sheetSize ?? 64;
+  const variant = options.variant ?? 'indexed-256';
+  const basePath = options.basePath ?? DEFAULT_SPRITE_BASE_PATH;
+  const folder = getSpritesheetFolder(variant);
+
+  return `${basePath.replace(/\/$/, '')}/${vendor}/${folder}/${sheetSize}.png`;
+}
+
+export function createEmojiSpriteSheet(
+  options: EmojiSpriteSheetConfig = {},
+): EmojiSpriteSheetConfig {
+  const source = options.source ?? (options.url ? 'custom' : 'cdn');
+  const vendor = options.vendor ?? 'twitter';
+  const sheetSize = options.sheetSize ?? 64;
+  const variant = options.variant ?? 'indexed-256';
+  const version = options.version ?? EMOJI_DATASET_VERSION;
+  const packageName = options.packageName ?? resolveVendorPackageName(vendor);
+  const basePath = options.basePath ?? DEFAULT_SPRITE_BASE_PATH;
+
+  let url = options.url;
+
+  if (!url) {
+    if (source === 'local') {
+      url = createEmojiLocalUrl({
+        vendor,
+        sheetSize,
+        variant,
+        basePath,
+      });
+    } else if (source === 'cdn') {
+      url = createEmojiCdnUrl({
+        vendor,
+        sheetSize,
+        variant,
+        version,
+        packageName,
+      });
+    }
+  }
+
+  return {
+    vendor,
+    sheetSize,
+    padding: options.padding ?? EMOJI_SHEET_PADDING,
+    gridSize: options.gridSize ?? EMOJI_SHEET_GRID_SIZE,
+    variant,
+    fallbackNative: options.fallbackNative ?? true,
+    source,
+    version,
+    packageName,
+    basePath,
+    cache: options.cache,
+    url,
+  };
+}
+
+export function createEmojiCdnSpriteSheet(
+  options: EmojiSpriteSheetConfig = {},
+) {
+  return createEmojiSpriteSheet({
+    ...options,
+    source: 'cdn',
+  });
+}
+
+export function createEmojiLocalSpriteSheet(
+  urlOrBasePath: string,
+  options: Omit<EmojiSpriteSheetConfig, 'url'> = {},
+) {
+  const isDirectUrl = /\.png($|\?)/i.test(urlOrBasePath);
+
+  return createEmojiSpriteSheet({
+    ...options,
+    source: 'local',
+    ...(isDirectUrl
+      ? { url: urlOrBasePath }
+      : { basePath: urlOrBasePath }),
+  });
+}
+
+export const defaultSpriteSheet = createEmojiCdnSpriteSheet();
+
+export function resolveSpriteSheetConfig(
+  config?: EmojiSpriteSheetConfig,
+): ResolvedEmojiSpriteSheetConfig {
+  const base = createEmojiSpriteSheet(config);
+  const cache = {
+    enabled: base.cache?.enabled ?? false,
+    mode: base.cache?.mode ?? DEFAULT_SPRITE_CACHE_MODE,
+    preload: base.cache?.preload ?? 'mount',
+    key: base.cache?.key ?? '',
+    adapter: base.cache?.adapter,
+  };
+
+  return {
+    vendor: base.vendor ?? defaultSpriteSheet.vendor ?? 'twitter',
+    sheetSize: base.sheetSize ?? defaultSpriteSheet.sheetSize ?? 64,
+    padding: base.padding ?? defaultSpriteSheet.padding ?? EMOJI_SHEET_PADDING,
+    gridSize: base.gridSize ?? defaultSpriteSheet.gridSize ?? EMOJI_SHEET_GRID_SIZE,
+    variant: base.variant ?? defaultSpriteSheet.variant ?? 'indexed-256',
+    fallbackNative: base.fallbackNative ?? defaultSpriteSheet.fallbackNative ?? true,
+    source: base.source ?? defaultSpriteSheet.source ?? 'cdn',
+    version: base.version ?? defaultSpriteSheet.version ?? EMOJI_DATASET_VERSION,
+    packageName:
+      base.packageName ??
+      defaultSpriteSheet.packageName ??
+      resolveVendorPackageName(base.vendor ?? 'twitter'),
+    basePath: base.basePath ?? defaultSpriteSheet.basePath ?? DEFAULT_SPRITE_BASE_PATH,
+    url: base.url ?? defaultSpriteSheet.url ?? createEmojiCdnUrl(),
+    cache,
+  };
+}
+
+export function resolveSpriteSheetUrl(
+  config?: EmojiSpriteSheetConfig,
+  overrideUrl?: string,
+) {
+  if (overrideUrl) {
+    return overrideUrl;
+  }
+
+  const resolved = resolveSpriteSheetConfig(config);
+
+  if (typeof resolved.url === 'function') {
+    return resolved.url({
+      vendor: resolved.vendor,
+      sheetSize: resolved.sheetSize,
+      variant: resolved.variant,
+      source: resolved.source,
+      version: resolved.version,
+      packageName: resolved.packageName,
+      basePath: resolved.basePath,
+    });
+  }
+
+  return resolved.url;
+}
+
+export function createSpriteSheetCacheKey(config?: EmojiSpriteSheetConfig) {
+  const resolved = resolveSpriteSheetConfig(config);
+  const resolvedUrl = resolveSpriteSheetUrl(resolved);
+
+  return (
+    resolved.cache.key ||
+    [
+      'mojix',
+      resolved.source,
+      resolved.packageName,
+      resolved.version,
+      resolved.vendor,
+      resolved.variant,
+      resolved.sheetSize,
+      resolvedUrl,
+    ].join(':')
+  );
+}
+
+export function getSpriteStyle(options: {
+  sheetX: number;
+  sheetY: number;
+  renderSize: number;
+  spriteSheet?: EmojiSpriteSheetConfig;
+  overrideUrl?: string;
+  overrideSheetSize?: number;
+  overridePadding?: number;
+  overrideGridSize?: number;
+}): CSSProperties {
+  const resolved = resolveSpriteSheetConfig(options.spriteSheet);
+  const sheetSize = options.overrideSheetSize ?? resolved.sheetSize;
+  const padding = options.overridePadding ?? resolved.padding;
+  const gridSize = options.overrideGridSize ?? resolved.gridSize;
+  const scale = options.renderSize / sheetSize;
+  const tileSize = (sheetSize + padding * 2) * scale;
+  const offset = padding * scale;
+  const sheetUrl = resolveSpriteSheetUrl(resolved, options.overrideUrl);
+
+  return {
+    width: `${options.renderSize}px`,
+    height: `${options.renderSize}px`,
+    backgroundImage: `url("${sheetUrl}")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: `${gridSize * tileSize}px ${gridSize * tileSize}px`,
+    backgroundPosition: `${-(options.sheetX * tileSize + offset)}px ${-(options.sheetY * tileSize + offset)}px`,
+    borderRadius: `${Math.max(4, options.renderSize * 0.22)}px`,
+    flexShrink: 0,
+  };
+}
+
+export function vendorCanRenderEmoji(
+  vendor: EmojiVendor,
+  availability: {
+    apple: boolean;
+    google: boolean;
+    twitter: boolean;
+    facebook: boolean;
+  },
+) {
+  switch (vendor) {
+    case 'apple':
+      return availability.apple;
+    case 'google':
+      return availability.google;
+    case 'twitter':
+      return availability.twitter;
+    case 'facebook':
+      return availability.facebook;
+    default:
+      return true;
+  }
+}
