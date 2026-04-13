@@ -1,0 +1,55 @@
+{
+  "name": "mojix",
+  "version": "0.1.0",
+  "description": "Universal React emoji picker with spritesheet support, CDN/local sources, and a minimal modern UI.",
+  "type": "module",
+  "main": "./dist/lib/index.cjs",
+  "module": "./dist/lib/index.js",
+  "types": "./dist/lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/lib/index.d.ts",
+      "import": "./dist/lib/index.js",
+      "require": "./dist/lib/index.cjs"
+    },
+    "./style.css": "./dist/lib/style.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "emoji:data": "node ./scripts/build-emoji-data.mjs",
+    "build:demo": "vite build",
+    "build:lib": "vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json",
+    "build": "npm run emoji:data && npm run build:demo && npm run build:lib",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.lib.json --noEmit",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "emoji",
+    "emoji-picker",
+    "react",
+    "spritesheet",
+    "unicode"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "cldr-annotations-full": "^48.2.0",
+    "emoji-datasource": "^16.0.0",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.8"
+  }
+}
