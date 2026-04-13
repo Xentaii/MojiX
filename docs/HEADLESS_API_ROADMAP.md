@@ -27,20 +27,23 @@ The goal is to make the picker usable in three ways:
 
 Today MojiX already supports:
 
-- configurable sprite delivery
+- configurable sprite delivery and asset providers
 - localized UI and emoji names
+- locale fallback chains
 - custom emoji
 - custom preview and emoji cell rendering
 - runtime cache warming for remote sheets
+- `unstyled`, slot-level `classNames`, and `styles`
+- controlled search, skin tone, and active category
+- headless primitives and hooks through `MojiX.*`
+- recent store injection for host-managed persistence
 
 Current limitations:
 
-- the overall layout is still mostly fixed
-- toolbar, sidebar, search, category header, and footer are not public primitives
-- there is no `unstyled` mode
-- there are no slot-level `classNames` or `styles`
-- most internal state is not externally controllable
-- asset rendering is configurable, but not yet modeled as a first-class provider system
+- the default `EmojiPicker` still uses a mostly bundled layout
+- list row/header/body replacement is still coarse-grained
+- search tokenizer/normalizer/ranker is not public yet
+- preset packages and migration docs still need polish
 
 ## Target Public API
 
@@ -304,19 +307,20 @@ Focus: formalize the asset system.
 
 ### v0.4
 
-Focus: complete composition and localization.
+Focus: composition baseline and localization plumbing.
 
 - add `Root/Search/Viewport/List/Empty/Loading/Footer`
 - add `CategoryNav`, `ActiveEmoji`, `SkinTone`, `SkinToneButton`
 - add locale fallback chains
-- add pluggable search tokenizer/normalizer/ranker
 - expose recent emoji store interface
+- expose shared picker state hooks for custom layouts
 
 ### v0.5
 
 Focus: polish and migration.
 
 - reimplement `EmojiPicker` using public headless primitives
+- add pluggable search tokenizer/normalizer/ranker
 - publish one or two official preset UIs
 - add migration guide from monolithic picker props to composable API
 - stabilize accessibility and keyboard contracts

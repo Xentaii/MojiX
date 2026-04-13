@@ -208,6 +208,14 @@ export interface EmojiLocaleDefinition {
   emoji: Record<string, EmojiLocaleEmojiTranslation>;
 }
 
+export interface EmojiRecentStore {
+  read: () => RecentEmojiRecord[];
+  push: (
+    entry: Pick<RecentEmojiRecord, 'id' | 'custom' | 'skinTone'>,
+    limit: number,
+  ) => RecentEmojiRecord[];
+}
+
 export interface EmojiRenderState {
   active: boolean;
   selected: boolean;
@@ -298,6 +306,7 @@ export type EmojiAssetSource =
 export type EmojiPickerSlot =
   | 'root'
   | 'panel'
+  | 'viewport'
   | 'toolbar'
   | 'search'
   | 'searchIcon'
@@ -320,9 +329,11 @@ export type EmojiPickerSlot =
   | 'previewHeading'
   | 'previewSubline'
   | 'previewMeta'
+  | 'footer'
   | 'chip'
   | 'chipMuted'
   | 'empty'
+  | 'loading'
   | 'sidebar'
   | 'navButton';
 
@@ -340,15 +351,21 @@ export interface EmojiPickerProps
   searchQuery?: string;
   defaultSearchQuery?: string;
   onSearchQueryChange?: (query: string) => void;
+  activeCategory?: EmojiCategoryId;
+  defaultActiveCategory?: EmojiCategoryId;
+  onActiveCategoryChange?: (categoryId: EmojiCategoryId) => void;
   emojiSize?: number;
   columns?: number;
+  loading?: boolean;
   showPreview?: boolean;
   showRecents?: boolean;
   showSkinTones?: boolean;
   recentLimit?: number;
   recentStorageKey?: string;
+  recentStore?: EmojiRecentStore;
   skinToneStorageKey?: string;
   locale?: EmojiLocaleCode;
+  fallbackLocale?: EmojiLocaleCode | EmojiLocaleCode[];
   locales?: Partial<Record<string, Partial<EmojiLocaleDefinition>>>;
   skinTone?: EmojiSkinTone;
   defaultSkinTone?: EmojiSkinTone;

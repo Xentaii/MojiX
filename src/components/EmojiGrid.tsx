@@ -51,6 +51,7 @@ export interface EmojiGridProps {
   onActiveCategoryChange: (id: EmojiCategoryId) => void;
   hoveredEmojiId: string | null;
   emptyState?: ReactNode;
+  hideEmptyState?: boolean;
   labels: EmojiPickerLabels;
   unstyled?: boolean;
   classNames?: EmojiPickerClassNames;
@@ -76,6 +77,7 @@ export function EmojiGrid({
   onActiveCategoryChange,
   hoveredEmojiId,
   emptyState,
+  hideEmptyState,
   labels,
   unstyled,
   classNames,
@@ -323,7 +325,7 @@ export function EmojiGrid({
       onKeyDown={handleKeyDown}
       data-mx-slot="content"
     >
-      {sections.length === 0 && (
+      {sections.length === 0 && !hideEmptyState && (
         <div
           className={getSlotClassName('empty', slotOptions)}
           style={getSlotStyle('empty', slotOptions)}

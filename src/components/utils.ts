@@ -8,6 +8,7 @@ import type {
 const SLOT_CLASS_NAMES: Record<EmojiPickerSlot, string[]> = {
   root: ['mx-picker'],
   panel: ['mx-picker__panel'],
+  viewport: ['mx-picker__viewport'],
   toolbar: ['mx-picker__toolbar'],
   search: ['mx-picker__search'],
   searchIcon: ['mx-picker__search-icon'],
@@ -30,9 +31,11 @@ const SLOT_CLASS_NAMES: Record<EmojiPickerSlot, string[]> = {
   previewHeading: ['mx-picker__preview-heading'],
   previewSubline: ['mx-picker__preview-subline'],
   previewMeta: ['mx-picker__preview-meta'],
+  footer: ['mx-picker__footer'],
   chip: ['mx-picker__chip'],
   chipMuted: ['mx-picker__chip', 'mx-picker__chip--muted'],
   empty: ['mx-picker__empty'],
+  loading: ['mx-picker__loading'],
   sidebar: ['mx-picker__sidebar'],
   navButton: ['mx-picker__nav-button'],
 };

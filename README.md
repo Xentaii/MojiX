@@ -10,10 +10,12 @@ Universal React emoji picker with:
 - built-in i18n for picker UI and emoji names
 - English-first search with selected-locale support
 - asset providers for `native`, `spritesheet`, `image`, `svg`, and `mixed`
+- headless primitives and hooks via `MojiX.Root`, `MojiX.Search`, `MojiX.List`, and friends
 - `unstyled`, `classNames`, and slot-level `styles`
 - exported structural primitives: `EmojiToolbar`, `EmojiGrid`, `EmojiPreview`, `EmojiSidebar`
+- locale fallback chains and pluggable recent stores
 - recents with `localStorage` persistence
-- controlled or uncontrolled search and skin tone
+- controlled or uncontrolled search, skin tone, and active category
 - custom emoji support
 
 ## Development
@@ -42,6 +44,8 @@ This produces:
 - `src/lib/sprites.ts`: sprite presets, URL builders, and background-position math
 - `src/lib/sprite-cache.ts`: runtime cache helpers for remote sheets
 - `src/lib/storage.ts`: recents and skin tone persistence
+- `src/components/MojiX.tsx`: headless/composable primitives and hooks
+- `src/components/useEmojiPickerState.ts`: shared picker state engine
 - `src/components/EmojiPicker.tsx`: picker orchestration and public component API
 - `src/components/EmojiToolbar.tsx`: search and skin tone controls
 - `src/components/EmojiGrid.tsx`: virtualized emoji grid and keyboard navigation
@@ -161,21 +165,73 @@ Example CSS target:
 }
 ```
 
-## Controlled State
+## Headless API
 
-Search and skin tone can be controlled from the outside:
+MojiX now ships a composable layer on top of the same engine that powers `EmojiPicker`.
 
 ```tsx
-import type { EmojiSkinTone } from 'mojix';
+import { MojiX } from 'mojix';
+
+<MojiX.Root locale="ru" fallbackLocale={['en']} columns={9}>
+  <MojiX.Search />
+
+  <MojiX.Viewport>
+    <MojiX.Loading />
+    <MojiX.Empty />
+    <MojiX.List />
+  </MojiX.Viewport>
+
+  <MojiX.Footer>
+    <MojiX.SkinToneButton />
+    <MojiX.ActiveEmoji />
+  </MojiX.Footer>
+
+  <MojiX.CategoryNav />
+</MojiX.Root>;
+```
+
+Available primitives:
+
+- `MojiX.Root`
+- `MojiX.Search`
+- `MojiX.Viewport`
+- `MojiX.List`
+- `MojiX.Empty`
+- `MojiX.Loading`
+- `MojiX.Footer`
+- `MojiX.CategoryNav`
+- `MojiX.ActiveEmoji`
+- `MojiX.SkinTone`
+- `MojiX.SkinToneButton`
+
+Useful hooks:
+
+- `useMojiX()`
+- `useEmojiSearch()`
+- `useEmojiCategories()`
+- `useEmojiSelection()`
+- `useActiveEmoji()`
+- `useSkinTone()`
+
+## Controlled State
+
+Search, skin tone, and active category can be controlled from the outside:
+
+```tsx
+import type { EmojiCategoryId, EmojiSkinTone } from 'mojix';
 
 const [searchQuery, setSearchQuery] = useState('');
 const [skinTone, setSkinTone] = useState<EmojiSkinTone>('medium');
+const [activeCategory, setActiveCategory] =
+  useState<EmojiCategoryId>('people');
 
 <EmojiPicker
   searchQuery={searchQuery}
   onSearchQueryChange={setSearchQuery}
   skinTone={skinTone}
   onSkinToneChange={setSkinTone}
+  activeCategory={activeCategory}
+  onActiveCategoryChange={setActiveCategory}
 />;
 ```
 
@@ -260,6 +316,7 @@ You can also point directly at a specific local file:
 ```tsx
 <EmojiPicker
   locale="ru"
+  fallbackLocale={['en']}
   locales={{
     ru: {
       labels: {
@@ -272,17 +329,38 @@ You can also point directly at a specific local file:
 
 Search keeps English as the primary ranking language, while also indexing emoji names and keywords from the active locale.
 
-## Structural Primitives
+`fallbackLocale` accepts either one locale code or an ordered array, so host apps can keep custom region-specific packs small and still fall back cleanly.
 
-MojiX also exports the current structural components:
+## Recent Store
+
+By default, recents use `localStorage`, but you can swap the store:
+
+```tsx
+import {
+  EmojiPicker,
+  createLocalStorageRecentStore,
+} from 'mojix';
+
+const recentStore = createLocalStorageRecentStore('my-app:emoji-recents');
+
+<EmojiPicker recentStore={recentStore} />;
+```
+
+This is useful when the host app wants its own persistence boundary or plans to wrap the store with desktop or cloud sync behavior.
+
+## Structural Components
+
+MojiX still exports the current UI building blocks too:
 
 - `EmojiToolbar`
 - `EmojiGrid`
 - `EmojiPreview`
 - `EmojiSidebar`
+- `EmojiSearchField`
+- `EmojiSkinToneButton`
 - `EmojiSprite`
 
-These are not the final headless API yet, but they already allow advanced integrations to reuse parts of the built-in picker instead of forking it.
+These work well when you want to keep the built-in layout but replace only one area.
 
 ## Roadmap
 

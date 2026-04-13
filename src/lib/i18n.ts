@@ -97,28 +97,71 @@ const builtinLocales: Record<string, EmojiLocaleDefinition> = {
 
 const fallbackLocaleDefinition = builtinLocales.en as EmojiLocaleDefinition;
 
+function createLocaleCandidates(locale?: EmojiLocaleCode) {
+  if (!locale) {
+    return [] as string[];
+  }
+
+  const lowerLocale = locale.toLowerCase();
+  const baseLocale = lowerLocale.split('-')[0];
+
+  return Array.from(
+    new Set(
+      [lowerLocale, baseLocale].filter(
+        (value): value is string => Boolean(value),
+      ),
+    ),
+  );
+}
+
+function localeExists(
+  locale: string,
+  locales?: Partial<Record<string, Partial<EmojiLocaleDefinition>>>,
+) {
+  return Boolean(locales?.[locale] || builtinLocales[locale]);
+}
+
+function normalizeFallbackLocales(
+  fallbackLocale?: EmojiLocaleCode | EmojiLocaleCode[],
+) {
+  const localeList = Array.isArray(fallbackLocale)
+    ? fallbackLocale
+    : fallbackLocale
+      ? [fallbackLocale]
+      : [];
+
+  return localeList.flatMap((locale) => createLocaleCandidates(locale));
+}
+
 function resolveRequestedLocale(
   requestedLocale?: EmojiLocaleCode,
   locales?: Partial<Record<string, Partial<EmojiLocaleDefinition>>>,
+  fallbackLocale?: EmojiLocaleCode | EmojiLocaleCode[],
 ) {
-  const fallback = 'en';
-
-  if (!requestedLocale) {
-    return fallback;
+  for (const locale of [
+    ...createLocaleCandidates(requestedLocale),
+    ...normalizeFallbackLocales(fallbackLocale),
+  ]) {
+    if (localeExists(locale, locales)) {
+      return locale;
+    }
   }
 
-  const lowerLocale = requestedLocale.toLowerCase();
-  const baseLocale = lowerLocale.split('-')[0];
+  return 'en';
+}
 
-  if (locales?.[lowerLocale] || builtinLocales[lowerLocale]) {
-    return lowerLocale;
-  }
-
-  if (baseLocale && (locales?.[baseLocale] || builtinLocales[baseLocale])) {
-    return baseLocale;
-  }
-
-  return fallback;
+function resolveLocaleChain(
+  resolvedLocale: string,
+  locales?: Partial<Record<string, Partial<EmojiLocaleDefinition>>>,
+  fallbackLocale?: EmojiLocaleCode | EmojiLocaleCode[],
+) {
+  return Array.from(
+    new Set([
+      ...createLocaleCandidates(resolvedLocale),
+      ...normalizeFallbackLocales(fallbackLocale),
+      'en',
+    ]),
+  ).filter((locale) => locale === 'en' || localeExists(locale, locales));
 }
 
 function mergeLabels(
@@ -164,20 +207,68 @@ function mergeEmojiTranslations(
 export function resolveLocaleDefinition(
   locale?: EmojiLocaleCode,
   locales?: Partial<Record<string, Partial<EmojiLocaleDefinition>>>,
+  fallbackLocale?: EmojiLocaleCode | EmojiLocaleCode[],
 ) {
-  const resolvedLocale = resolveRequestedLocale(locale, locales);
-  const baseLocale =
-    (builtinLocales[resolvedLocale] as EmojiLocaleDefinition | undefined) ??
-    fallbackLocaleDefinition;
-  const override = locales?.[resolvedLocale];
-
-  return {
+  const resolvedLocale = resolveRequestedLocale(
+    locale,
+    locales,
+    fallbackLocale,
+  );
+  const localeChain = resolveLocaleChain(
+    resolvedLocale,
+    locales,
+    fallbackLocale,
+  );
+  const nextDefinition = {
+    ...fallbackLocaleDefinition,
     code: resolvedLocale,
-    labels: mergeLabels(baseLocale.labels, override?.labels),
-    categories: mergeCategories(baseLocale.categories, override?.categories),
-    skinTones: mergeSkinTones(baseLocale.skinTones, override?.skinTones),
-    emoji: mergeEmojiTranslations(baseLocale.emoji, override?.emoji),
+    labels: { ...fallbackLocaleDefinition.labels },
+    categories: { ...fallbackLocaleDefinition.categories },
+    skinTones: { ...fallbackLocaleDefinition.skinTones },
+    emoji: { ...fallbackLocaleDefinition.emoji },
   } satisfies EmojiLocaleDefinition;
+
+  for (const localeCode of [...localeChain].reverse()) {
+    const baseLocale =
+      (builtinLocales[localeCode] as EmojiLocaleDefinition | undefined) ??
+      fallbackLocaleDefinition;
+    const override = locales?.[localeCode];
+
+    nextDefinition.labels = mergeLabels(nextDefinition.labels, baseLocale.labels);
+    nextDefinition.categories = mergeCategories(
+      nextDefinition.categories,
+      baseLocale.categories,
+    );
+    nextDefinition.skinTones = mergeSkinTones(
+      nextDefinition.skinTones,
+      baseLocale.skinTones,
+    );
+    nextDefinition.emoji = mergeEmojiTranslations(
+      nextDefinition.emoji,
+      baseLocale.emoji,
+    );
+
+    if (override) {
+      nextDefinition.labels = mergeLabels(
+        nextDefinition.labels,
+        override.labels,
+      );
+      nextDefinition.categories = mergeCategories(
+        nextDefinition.categories,
+        override.categories,
+      );
+      nextDefinition.skinTones = mergeSkinTones(
+        nextDefinition.skinTones,
+        override.skinTones,
+      );
+      nextDefinition.emoji = mergeEmojiTranslations(
+        nextDefinition.emoji,
+        override.emoji,
+      );
+    }
+  }
+
+  return nextDefinition;
 }
 
 export function getLocalizedEmojiTranslation(

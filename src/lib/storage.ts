@@ -1,4 +1,8 @@
-import type { EmojiSkinTone, RecentEmojiRecord } from './types';
+import type {
+  EmojiRecentStore,
+  EmojiSkinTone,
+  RecentEmojiRecord,
+} from './types';
 
 function canUseStorage() {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
@@ -79,6 +83,19 @@ export function pushRecentEmoji(
 
   writeRecentEmoji(storageKey, deduped);
   return deduped;
+}
+
+export function createLocalStorageRecentStore(
+  storageKey: string,
+): EmojiRecentStore {
+  return {
+    read() {
+      return readRecentEmoji(storageKey);
+    },
+    push(entry, limit) {
+      return pushRecentEmoji(storageKey, entry, limit);
+    },
+  };
 }
 
 export function readStoredSkinTone(
