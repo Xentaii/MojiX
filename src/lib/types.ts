@@ -246,6 +246,13 @@ export interface EmojiPickerProps
   style?: CSSProperties;
 }
 
+export interface EmojiSection {
+  id: EmojiCategoryId;
+  label: string;
+  icon: string;
+  emojis: EmojiRenderable[];
+}
+
 export interface EmojiCategoryMeta {
   id: EmojiCategoryId;
   label: string;

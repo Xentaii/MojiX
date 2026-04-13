@@ -217,6 +217,12 @@
 
 .mx-picker__section {
   padding: 8px 6px 0;
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 500px;
+}
+
+.mx-picker__grid-placeholder {
+  min-height: 1px;
 }
 
 .mx-picker__section-header {
