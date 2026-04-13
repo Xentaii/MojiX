@@ -1,0 +1,13 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" rx="32" fill="url(#orbit-bg)"/>
+  <circle cx="64" cy="64" r="22" fill="#FFF8F2"/>
+  <path d="M28 76C39.3333 49.3333 71.2 24.8 104 39" stroke="#FFF4E4" stroke-width="8" stroke-linecap="round"/>
+  <path d="M24 55C43.3333 83.6667 81.6 96.4 106 80" stroke="#FFC66F" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="99" cy="42" r="8" fill="#FFF8F2"/>
+  <defs>
+    <linearGradient id="orbit-bg" x1="15" y1="17" x2="112" y2="115" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F47C57"/>
+      <stop offset="1" stop-color="#F0B75B"/>
+    </linearGradient>
+  </defs>
+</svg>

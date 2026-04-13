@@ -1,0 +1,11 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" rx="32" fill="url(#spark-bg)"/>
+  <path d="M64 22L74 49L104 54L82 72L87 103L64 87L41 103L46 72L24 54L54 49L64 22Z" fill="#FFF8F2"/>
+  <circle cx="98" cy="28" r="7" fill="#FFE49F"/>
+  <defs>
+    <linearGradient id="spark-bg" x1="18" y1="14" x2="109" y2="117" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF9C5B"/>
+      <stop offset="1" stop-color="#FF5F4A"/>
+    </linearGradient>
+  </defs>
+</svg>
