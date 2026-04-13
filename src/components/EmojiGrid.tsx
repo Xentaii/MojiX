@@ -183,8 +183,133 @@ export function EmojiGrid({
     [columns],
   );
 
+  // Keyboard navigation with roving tabindex
+  function handleKeyDown(event: React.KeyboardEvent) {
+    const target = event.target as HTMLElement;
+    if (!target.classList.contains('mx-picker__emoji')) return;
+
+    const sectionIdx = Number(target.dataset.section);
+    const emojiIdx = Number(target.dataset.index);
+    if (isNaN(sectionIdx) || isNaN(emojiIdx)) return;
+
+    const currentSection = sections[sectionIdx];
+    if (!currentSection) return;
+
+    let nextSection = sectionIdx;
+    let nextIndex = emojiIdx;
+
+    switch (event.key) {
+      case 'ArrowRight':
+        nextIndex = emojiIdx + 1;
+        if (nextIndex >= currentSection.emojis.length) {
+          nextSection = sectionIdx + 1;
+          nextIndex = 0;
+        }
+        break;
+      case 'ArrowLeft':
+        nextIndex = emojiIdx - 1;
+        if (nextIndex < 0) {
+          nextSection = sectionIdx - 1;
+          if (nextSection >= 0) {
+            nextIndex =
+              (sections[nextSection]?.emojis.length ?? 1) - 1;
+          }
+        }
+        break;
+      case 'ArrowDown':
+        nextIndex = emojiIdx + columns;
+        if (nextIndex >= currentSection.emojis.length) {
+          nextSection = sectionIdx + 1;
+          const nextSec = sections[nextSection];
+          if (nextSec) {
+            nextIndex = Math.min(
+              emojiIdx % columns,
+              nextSec.emojis.length - 1,
+            );
+          }
+        }
+        break;
+      case 'ArrowUp':
+        nextIndex = emojiIdx - columns;
+        if (nextIndex < 0) {
+          nextSection = sectionIdx - 1;
+          const prevSec = sections[nextSection];
+          if (prevSec) {
+            const prevLength = prevSec.emojis.length;
+            const lastRowStart =
+              Math.floor((prevLength - 1) / columns) * columns;
+            nextIndex = Math.min(
+              lastRowStart + (emojiIdx % columns),
+              prevLength - 1,
+            );
+          }
+        }
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = currentSection.emojis.length - 1;
+        break;
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        target.click();
+        return;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+
+    const targetSection = sections[nextSection];
+    if (!targetSection) return;
+    if (nextSection < 0 || nextSection >= sections.length) return;
+    if (nextIndex < 0 || nextIndex >= targetSection.emojis.length)
+      return;
+
+    const container = scrollRef.current;
+    if (!container) return;
+
+    // Update roving tabindex
+    const prev = container.querySelector(
+      '.mx-picker__emoji[tabindex="0"]',
+    );
+    if (prev) prev.setAttribute('tabindex', '-1');
+
+    const next = container.querySelector(
+      `.mx-picker__emoji[data-section="${nextSection}"][data-index="${nextIndex}"]`,
+    ) as HTMLButtonElement | null;
+
+    if (next) {
+      next.setAttribute('tabindex', '0');
+      next.focus();
+    }
+  }
+
+  function handleEmojiFocus(
+    event: React.FocusEvent,
+    emoji: EmojiRenderable,
+  ) {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const prev = container.querySelector(
+      '.mx-picker__emoji[tabindex="0"]',
+    );
+    if (prev && prev !== event.currentTarget) {
+      prev.setAttribute('tabindex', '-1');
+    }
+    event.currentTarget.setAttribute('tabindex', '0');
+    onEmojiHover(emoji);
+  }
+
   return (
-    <div className="mx-picker__content" ref={scrollRef}>
+    <div
+      className="mx-picker__content"
+      ref={scrollRef}
+      onKeyDown={handleKeyDown}
+    >
       {sections.length === 0 && (
         <div className="mx-picker__empty">
           {emptyState ?? (
@@ -222,7 +347,7 @@ export function EmojiGrid({
             {visible ? (
               <div
                 className="mx-picker__grid"
-                role="list"
+                role="grid"
                 aria-label={section.label}
                 ref={(node) => {
                   if (node) {
@@ -230,22 +355,27 @@ export function EmojiGrid({
                   }
                 }}
               >
-                {section.emojis.map((emoji) => {
+                {section.emojis.map((emoji, emojiIndex) => {
                   const selected = value === emoji.id;
+                  const isFirstEmoji =
+                    sectionIndex === 0 && emojiIndex === 0;
 
                   return (
                     <button
                       key={`${section.id}:${emoji.id}`}
                       type="button"
-                      role="listitem"
+                      role="gridcell"
                       className={createClassName(
                         'mx-picker__emoji',
                         selected && 'is-selected',
                       )}
+                      data-section={sectionIndex}
+                      data-index={emojiIndex}
+                      tabIndex={isFirstEmoji ? 0 : -1}
                       onClick={() => onEmojiSelect(emoji)}
                       onMouseEnter={() => onEmojiHover(emoji)}
                       onMouseLeave={() => onEmojiHover(null)}
-                      onFocus={() => onEmojiHover(emoji)}
+                      onFocus={(e) => handleEmojiFocus(e, emoji)}
                       onBlur={() => onEmojiHover(null)}
                       title={formatEmojiName(
                         getLocalizedEmojiName(
