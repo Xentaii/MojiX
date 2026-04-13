@@ -9,6 +9,7 @@ Universal React emoji picker with:
 - optional runtime sprite caching
 - built-in i18n for picker UI and emoji names
 - English-first search with selected-locale support
+- asset providers for `native`, `spritesheet`, `image`, `svg`, and `mixed`
 - `unstyled`, `classNames`, and slot-level `styles`
 - exported structural primitives: `EmojiToolbar`, `EmojiGrid`, `EmojiPreview`, `EmojiSidebar`
 - recents with `localStorage` persistence
@@ -75,6 +76,45 @@ Default CDN preset:
 https://cdn.jsdelivr.net/npm/emoji-datasource-twitter@16.0.0/img/twitter/sheets-256/64.png
 ```
 
+## Asset Sources
+
+`spriteSheet` still works, but MojiX now also supports `assetSource`, `gridAssetSource`, and `previewAssetSource`.
+
+```tsx
+import {
+  EmojiPicker,
+  createEmojiSpriteSheet,
+  createSpriteSheetAssetSource,
+  createSvgAssetSource,
+} from 'mojix';
+
+const gridAssets = createSpriteSheetAssetSource();
+const previewAssets = createSvgAssetSource({
+  resolveUrl: ({ emoji }) => `/emoji/svg/${emoji.id}.svg`,
+});
+
+<EmojiPicker
+  spriteSheet={createEmojiSpriteSheet({
+    source: 'cdn',
+    vendor: 'twitter',
+    sheetSize: 64,
+    variant: 'indexed-256',
+  })}
+  gridAssetSource={gridAssets}
+  previewAssetSource={previewAssets}
+/>;
+```
+
+Built-in providers:
+
+- `createNativeAssetSource()`
+- `createSpriteSheetAssetSource()`
+- `createImageAssetSource()`
+- `createSvgAssetSource()`
+- `createMixedAssetSource()`
+
+If no asset source is provided, the picker falls back to the current `spriteSheet` behavior.
+
 ## Customization
 
 `EmojiPicker` supports three levels of UI customization:
@@ -140,6 +180,26 @@ const [skinTone, setSkinTone] = useState<EmojiSkinTone>('medium');
 ```
 
 If those props are omitted, MojiX keeps the current uncontrolled behavior.
+
+## Mixed Asset Example
+
+```tsx
+import {
+  EmojiPicker,
+  createMixedAssetSource,
+  createSpriteSheetAssetSource,
+  createSvgAssetSource,
+} from 'mojix';
+
+const assetSource = createMixedAssetSource({
+  unicode: createSpriteSheetAssetSource(),
+  custom: createSvgAssetSource({
+    resolveUrl: ({ emoji }) => `/custom-emoji/${emoji.id}.svg`,
+  }),
+});
+
+<EmojiPicker assetSource={assetSource} />;
+```
 
 ## Cache Warmup
 

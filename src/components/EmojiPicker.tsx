@@ -86,6 +86,9 @@ export function EmojiPicker({
   onSkinToneChange,
   labels,
   spriteSheet = defaultSpriteSheet,
+  assetSource,
+  gridAssetSource,
+  previewAssetSource,
   customEmojis = [],
   emptyState,
   unstyled = false,
@@ -210,6 +213,9 @@ export function EmojiPicker({
         : resolvedSpriteSheet,
     [resolvedSpriteSheet, runtimeSpriteUrl],
   );
+  const resolvedGridAssetSource = gridAssetSource ?? assetSource;
+  const resolvedPreviewAssetSource =
+    previewAssetSource ?? assetSource ?? resolvedGridAssetSource;
 
   const recentSectionEmojis = useMemo(() => {
     if (!showRecents) return [] as EmojiRenderable[];
@@ -410,6 +416,7 @@ export function EmojiPicker({
           skinTone={skinTone}
           value={value}
           spriteSheet={activeSpriteSheet}
+          assetSource={resolvedGridAssetSource}
           localeDefinition={localeDefinition}
           renderEmoji={renderEmoji}
           onEmojiSelect={handleSelectEmoji}
@@ -428,6 +435,7 @@ export function EmojiPicker({
             emoji={previewEmoji}
             selection={previewSelection}
             spriteSheet={activeSpriteSheet}
+            assetSource={resolvedPreviewAssetSource}
             renderPreview={renderPreview}
             unstyled={unstyled}
             classNames={classNames}

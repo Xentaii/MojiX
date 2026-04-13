@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { getLocalizedEmojiName } from '../lib/i18n';
 import type {
+  EmojiAssetSource,
   EmojiCategoryId,
   EmojiLocaleDefinition,
   EmojiPickerClassNames,
@@ -39,6 +40,7 @@ export interface EmojiGridProps {
   skinTone: EmojiSkinTone;
   value?: string;
   spriteSheet: EmojiSpriteSheetConfig;
+  assetSource?: EmojiAssetSource;
   localeDefinition: EmojiLocaleDefinition;
   renderEmoji?: (
     emoji: EmojiRenderable,
@@ -66,6 +68,7 @@ export function EmojiGrid({
   skinTone,
   value,
   spriteSheet,
+  assetSource,
   localeDefinition,
   renderEmoji,
   onEmojiSelect,
@@ -427,6 +430,8 @@ export function EmojiGrid({
                           size={emojiSize}
                           skinTone={skinTone}
                           spriteSheet={spriteSheet}
+                          assetSource={assetSource}
+                          assetContext="grid"
                         />
                       )}
                     </button>

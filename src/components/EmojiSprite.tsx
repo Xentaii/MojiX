@@ -1,11 +1,9 @@
 import type { CSSProperties } from 'react';
-import { resolveUnicodeEmojiVariant } from '../lib/data';
-import {
-  getSpriteStyle,
-  resolveSpriteSheetConfig,
-  vendorCanRenderEmoji,
-} from '../lib/sprites';
+import { resolveEmojiAsset } from '../lib/assets';
+import { getSpriteStyle, resolveSpriteSheetConfig } from '../lib/sprites';
 import type {
+  EmojiAssetRenderContext,
+  EmojiAssetSource,
   EmojiRenderable,
   EmojiSkinTone,
   EmojiSpriteSheetConfig,
@@ -15,6 +13,8 @@ import { createClassName } from './utils';
 export interface EmojiSpriteProps {
   emoji: EmojiRenderable;
   spriteSheet?: EmojiSpriteSheetConfig;
+  assetSource?: EmojiAssetSource;
+  assetContext?: EmojiAssetRenderContext;
   skinTone?: EmojiSkinTone;
   size?: number;
   className?: string;
@@ -24,19 +24,33 @@ export interface EmojiSpriteProps {
 export function EmojiSprite({
   emoji,
   spriteSheet,
+  assetSource,
+  assetContext = 'grid',
   skinTone = 'default',
   size = 24,
   className,
   title,
 }: EmojiSpriteProps) {
-  if (emoji.kind === 'custom') {
-    if (emoji.imageUrl) {
+  const resolvedConfig = resolveSpriteSheetConfig(spriteSheet);
+  const asset = resolveEmojiAsset({
+    emoji,
+    skinTone,
+    context: assetContext,
+    spriteSheet: resolvedConfig,
+    assetSource,
+  });
+
+  if (!asset) {
+    return null;
+  }
+
+  if (asset.kind === 'image' || asset.kind === 'svg') {
       return (
         <img
           className={createClassName('mx-emoji-sprite', className)}
-          src={emoji.imageUrl}
-          alt={emoji.name}
-          title={title ?? emoji.name}
+          src={asset.src}
+          alt={asset.alt ?? emoji.name}
+          title={title ?? asset.alt ?? emoji.name}
           width={size}
           height={size}
           loading="lazy"
@@ -49,29 +63,9 @@ export function EmojiSprite({
           }
         />
       );
-    }
+  }
 
-    if (emoji.sprite) {
-      return (
-        <span
-          role="img"
-          aria-label={emoji.name}
-          title={title ?? emoji.name}
-          className={createClassName('mx-emoji-sprite', className)}
-          style={getSpriteStyle({
-            sheetX: emoji.sprite.sheetX,
-            sheetY: emoji.sprite.sheetY,
-            renderSize: size,
-            spriteSheet,
-            overrideUrl: emoji.sprite.sheetUrl,
-            overrideSheetSize: emoji.sprite.sheetSize,
-            overridePadding: emoji.sprite.padding,
-            overrideGridSize: emoji.sprite.gridSize,
-          })}
-        />
-      );
-    }
-
+  if (asset.kind === 'native') {
     return (
       <span
         role="img"
@@ -80,30 +74,12 @@ export function EmojiSprite({
         className={createClassName('mx-emoji-native', className)}
         style={{ fontSize: `${size}px`, lineHeight: 1 }}
       >
-        {emoji.native ?? '\u2728'}
+        {asset.native}
       </span>
     );
   }
 
-  const resolvedConfig = resolveSpriteSheetConfig(spriteSheet);
-  const variant = resolveUnicodeEmojiVariant(emoji, skinTone);
-  const shouldUseSprite =
-    vendorCanRenderEmoji(resolvedConfig.vendor, emoji.availability) ||
-    !resolvedConfig.fallbackNative;
-
-  if (!shouldUseSprite) {
-    return (
-      <span
-        role="img"
-        aria-label={emoji.name}
-        title={title ?? emoji.name}
-        className={createClassName('mx-emoji-native', className)}
-        style={{ fontSize: `${size}px`, lineHeight: 1 }}
-      >
-        {variant.native}
-      </span>
-    );
-  }
+  const effectiveSpriteSheet = asset.spriteSheet ?? resolvedConfig;
 
   return (
     <span
@@ -112,10 +88,14 @@ export function EmojiSprite({
       title={title ?? emoji.name}
       className={createClassName('mx-emoji-sprite', className)}
       style={getSpriteStyle({
-        sheetX: variant.sheetX,
-        sheetY: variant.sheetY,
+        sheetX: asset.sheetX,
+        sheetY: asset.sheetY,
         renderSize: size,
-        spriteSheet: resolvedConfig,
+        spriteSheet: effectiveSpriteSheet,
+        overrideUrl: asset.sheetUrl,
+        overrideSheetSize: asset.sheetSize,
+        overridePadding: asset.padding,
+        overrideGridSize: asset.gridSize,
       })}
     />
   );

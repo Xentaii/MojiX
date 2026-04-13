@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type {
+  EmojiAssetSource,
   EmojiPickerClassNames,
   EmojiPickerStyles,
   EmojiRenderable,
@@ -17,6 +18,7 @@ export interface EmojiPreviewProps {
   emoji: EmojiRenderable | null;
   selection: EmojiSelection | null;
   spriteSheet: EmojiSpriteSheetConfig;
+  assetSource?: EmojiAssetSource;
   renderPreview?: (
     emoji: EmojiRenderable,
     selection: EmojiSelection,
@@ -30,6 +32,7 @@ export function EmojiPreview({
   emoji,
   selection,
   spriteSheet,
+  assetSource,
   renderPreview,
   unstyled,
   classNames,
@@ -74,6 +77,8 @@ export function EmojiPreview({
           skinTone={selection.skinTone}
           size={30}
           spriteSheet={spriteSheet}
+          assetSource={assetSource}
+          assetContext="preview"
         />
         <div
           className={getSlotClassName('previewCopy', slotOptions)}

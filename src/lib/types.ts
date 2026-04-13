@@ -215,6 +215,86 @@ export interface EmojiRenderState {
   size: number;
 }
 
+export type EmojiAssetRenderContext = 'grid' | 'preview';
+
+export interface EmojiAssetRequest {
+  emoji: EmojiRenderable;
+  skinTone: EmojiSkinTone;
+  context: EmojiAssetRenderContext;
+  spriteSheet?: EmojiSpriteSheetConfig;
+}
+
+export interface EmojiNativeAsset {
+  kind: 'native';
+  native: string;
+}
+
+export interface EmojiSpriteAsset {
+  kind: 'sprite';
+  sheetX: number;
+  sheetY: number;
+  spriteSheet?: EmojiSpriteSheetConfig;
+  sheetUrl?: string;
+  sheetSize?: number;
+  padding?: number;
+  gridSize?: number;
+}
+
+export interface EmojiImageAsset {
+  kind: 'image';
+  src: string;
+  alt?: string;
+}
+
+export interface EmojiSvgAsset {
+  kind: 'svg';
+  src: string;
+  alt?: string;
+}
+
+export type EmojiResolvedAsset =
+  | EmojiNativeAsset
+  | EmojiSpriteAsset
+  | EmojiImageAsset
+  | EmojiSvgAsset;
+
+export interface EmojiImageAssetSource {
+  type: 'image';
+  resolveUrl: (
+    request: EmojiAssetRequest,
+  ) => string | null | undefined;
+}
+
+export interface EmojiSvgAssetSource {
+  type: 'svg';
+  resolveUrl: (
+    request: EmojiAssetRequest,
+  ) => string | null | undefined;
+}
+
+export interface EmojiNativeAssetSource {
+  type: 'native';
+}
+
+export interface EmojiSpriteSheetAssetSource {
+  type: 'spriteSheet';
+  spriteSheet?: EmojiSpriteSheetConfig;
+}
+
+export interface EmojiMixedAssetSource {
+  type: 'mixed';
+  unicode?: EmojiAssetSource;
+  custom?: EmojiAssetSource;
+  fallback?: EmojiAssetSource;
+}
+
+export type EmojiAssetSource =
+  | EmojiImageAssetSource
+  | EmojiSvgAssetSource
+  | EmojiNativeAssetSource
+  | EmojiSpriteSheetAssetSource
+  | EmojiMixedAssetSource;
+
 export type EmojiPickerSlot =
   | 'root'
   | 'panel'
@@ -275,6 +355,9 @@ export interface EmojiPickerProps
   onSkinToneChange?: (tone: EmojiSkinTone) => void;
   labels?: Partial<EmojiPickerLabels>;
   spriteSheet?: EmojiSpriteSheetConfig;
+  assetSource?: EmojiAssetSource;
+  gridAssetSource?: EmojiAssetSource;
+  previewAssetSource?: EmojiAssetSource;
   customEmojis?: CustomEmoji[];
   emptyState?: ReactNode;
   unstyled?: boolean;

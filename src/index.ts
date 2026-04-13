@@ -7,6 +7,14 @@ export { EmojiSidebar } from './components/EmojiSidebar';
 export { EmojiSprite } from './components/EmojiSprite';
 export { EmojiToolbar } from './components/EmojiToolbar';
 export {
+  createImageAssetSource,
+  createMixedAssetSource,
+  createNativeAssetSource,
+  createSpriteSheetAssetSource,
+  createSvgAssetSource,
+  resolveEmojiAsset,
+} from './lib/assets';
+export {
   createEmojiSpriteSheet,
   createEmojiCdnSpriteSheet,
   createEmojiCdnUrl,
@@ -30,18 +38,29 @@ export {
 export { getUnicodeEmojiData } from './lib/data';
 export type {
   CustomEmoji,
+  EmojiAssetRenderContext,
+  EmojiAssetRequest,
+  EmojiAssetSource,
+  EmojiImageAsset,
+  EmojiImageAssetSource,
   EmojiCategoryId,
   EmojiLocaleCode,
   EmojiLocaleDefinition,
   EmojiLocaleEmojiTranslation,
+  EmojiMixedAssetSource,
+  EmojiNativeAsset,
+  EmojiNativeAssetSource,
   EmojiPickerProps,
   EmojiPickerClassNames,
   EmojiPickerSlot,
   EmojiPickerStyles,
+  EmojiResolvedAsset,
   EmojiRenderState,
   EmojiRenderable,
   EmojiSelection,
   EmojiSkinTone,
+  EmojiSpriteAsset,
+  EmojiSpriteSheetAssetSource,
   EmojiSpriteSheetCacheAdapter,
   EmojiSpriteSheetCacheConfig,
   EmojiSpriteSheetCacheMode,
@@ -52,5 +71,7 @@ export type {
   EmojiSpriteSheetSource,
   EmojiSpriteSheetVariant,
   EmojiVendor,
+  EmojiSvgAsset,
+  EmojiSvgAssetSource,
   UnicodeEmoji,
 } from './lib/types';
