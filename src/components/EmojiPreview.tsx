@@ -1,11 +1,17 @@
 import type { ReactNode } from 'react';
 import type {
+  EmojiPickerClassNames,
+  EmojiPickerStyles,
   EmojiRenderable,
   EmojiSelection,
   EmojiSpriteSheetConfig,
 } from '../lib/types';
 import { EmojiSprite } from './EmojiSprite';
-import { formatEmojiName } from './utils';
+import {
+  formatEmojiName,
+  getSlotClassName,
+  getSlotStyle,
+} from './utils';
 
 export interface EmojiPreviewProps {
   emoji: EmojiRenderable | null;
@@ -15,6 +21,9 @@ export interface EmojiPreviewProps {
     emoji: EmojiRenderable,
     selection: EmojiSelection,
   ) => ReactNode;
+  unstyled?: boolean;
+  classNames?: EmojiPickerClassNames;
+  styles?: EmojiPickerStyles;
 }
 
 export function EmojiPreview({
@@ -22,12 +31,21 @@ export function EmojiPreview({
   selection,
   spriteSheet,
   renderPreview,
+  unstyled,
+  classNames,
+  styles,
 }: EmojiPreviewProps) {
   if (!emoji || !selection) return null;
 
+  const slotOptions = { unstyled, classNames, styles };
+
   if (renderPreview) {
     return (
-      <footer className="mx-picker__preview">
+      <footer
+        className={getSlotClassName('preview', slotOptions)}
+        style={getSlotStyle('preview', slotOptions)}
+        data-mx-slot="preview"
+      >
         {renderPreview(emoji, selection)}
       </footer>
     );
@@ -41,32 +59,68 @@ export function EmojiPreview({
   const secondaryAliases = aliases.slice(1, 3);
 
   return (
-    <footer className="mx-picker__preview">
-      <div className="mx-picker__preview-card">
+    <footer
+      className={getSlotClassName('preview', slotOptions)}
+      style={getSlotStyle('preview', slotOptions)}
+      data-mx-slot="preview"
+    >
+      <div
+        className={getSlotClassName('previewCard', slotOptions)}
+        style={getSlotStyle('previewCard', slotOptions)}
+        data-mx-slot="previewCard"
+      >
         <EmojiSprite
           emoji={emoji}
           skinTone={selection.skinTone}
           size={30}
           spriteSheet={spriteSheet}
         />
-        <div className="mx-picker__preview-copy">
-          <div className="mx-picker__preview-heading">
+        <div
+          className={getSlotClassName('previewCopy', slotOptions)}
+          style={getSlotStyle('previewCopy', slotOptions)}
+          data-mx-slot="previewCopy"
+        >
+          <div
+            className={getSlotClassName('previewHeading', slotOptions)}
+            style={getSlotStyle('previewHeading', slotOptions)}
+            data-mx-slot="previewHeading"
+          >
             <strong>{displayName}</strong>
             {primaryAlias && (
-              <span className="mx-picker__chip">{primaryAlias}</span>
+              <span
+                className={getSlotClassName('chip', slotOptions)}
+                style={getSlotStyle('chip', slotOptions)}
+                data-mx-slot="chip"
+              >
+                {primaryAlias}
+              </span>
             )}
           </div>
-          <div className="mx-picker__preview-subline">
+          <div
+            className={getSlotClassName('previewSubline', slotOptions)}
+            style={getSlotStyle('previewSubline', slotOptions)}
+            data-mx-slot="previewSubline"
+          >
             <span>{selection.native ?? primaryAlias ?? displayName}</span>
             <span>{selection.categoryLabel}</span>
           </div>
           {(secondaryAliases.length > 0 ||
             selection.emoticons.length > 0) && (
-            <div className="mx-picker__preview-meta">
+            <div
+              className={getSlotClassName('previewMeta', slotOptions)}
+              style={getSlotStyle('previewMeta', slotOptions)}
+              data-mx-slot="previewMeta"
+            >
               {secondaryAliases.map((alias) => (
                 <span
                   key={alias}
-                  className="mx-picker__chip mx-picker__chip--muted"
+                  className={getSlotClassName('chipMuted', slotOptions)}
+                  style={getSlotStyle(
+                    'chipMuted',
+                    slotOptions,
+                    getSlotStyle('chip', slotOptions),
+                  )}
+                  data-mx-slot="chipMuted"
                 >
                   {alias}
                 </span>
@@ -74,7 +128,13 @@ export function EmojiPreview({
               {selection.emoticons.slice(0, 2).map((emoticon) => (
                 <span
                   key={emoticon}
-                  className="mx-picker__chip mx-picker__chip--muted"
+                  className={getSlotClassName('chipMuted', slotOptions)}
+                  style={getSlotStyle(
+                    'chipMuted',
+                    slotOptions,
+                    getSlotStyle('chip', slotOptions),
+                  )}
+                  data-mx-slot="chipMuted"
                 >
                   {emoticon}
                 </span>

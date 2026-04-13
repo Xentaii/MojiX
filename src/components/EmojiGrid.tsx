@@ -11,7 +11,9 @@ import { getLocalizedEmojiName } from '../lib/i18n';
 import type {
   EmojiCategoryId,
   EmojiLocaleDefinition,
+  EmojiPickerClassNames,
   EmojiPickerLabels,
+  EmojiPickerStyles,
   EmojiRenderable,
   EmojiRenderState,
   EmojiSection,
@@ -19,7 +21,11 @@ import type {
   EmojiSpriteSheetConfig,
 } from '../lib/types';
 import { EmojiSprite } from './EmojiSprite';
-import { createClassName, formatEmojiName } from './utils';
+import {
+  formatEmojiName,
+  getSlotClassName,
+  getSlotStyle,
+} from './utils';
 
 export interface EmojiGridHandle {
   scrollToCategory: (id: EmojiCategoryId) => void;
@@ -44,6 +50,9 @@ export interface EmojiGridProps {
   hoveredEmojiId: string | null;
   emptyState?: ReactNode;
   labels: EmojiPickerLabels;
+  unstyled?: boolean;
+  classNames?: EmojiPickerClassNames;
+  styles?: EmojiPickerStyles;
 }
 
 const OBSERVER_ROOT_MARGIN = '400px 0px';
@@ -65,6 +74,9 @@ export function EmojiGrid({
   hoveredEmojiId,
   emptyState,
   labels,
+  unstyled,
+  classNames,
+  styles,
 }: EmojiGridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -72,12 +84,11 @@ export function EmojiGrid({
   const [visibleSections, setVisibleSections] = useState<Set<string> | null>(
     null,
   );
+  const slotOptions = { unstyled, classNames, styles };
 
-  // Stable callback refs to avoid effect re-runs
   const onActiveCategoryChangeRef = useRef(onActiveCategoryChange);
   onActiveCategoryChangeRef.current = onActiveCategoryChange;
 
-  // Reset virtualization when sections change (search, filter)
   const prevSectionsRef = useRef(sections);
   if (sections !== prevSectionsRef.current) {
     prevSectionsRef.current = sections;
@@ -86,7 +97,6 @@ export function EmojiGrid({
     }
   }
 
-  // Expose scrollToCategory to parent
   useImperativeHandle(ref, () => ({
     scrollToCategory(id: EmojiCategoryId) {
       const container = scrollRef.current;
@@ -99,15 +109,17 @@ export function EmojiGrid({
     },
   }));
 
-  // Track active category via scroll position
   useEffect(() => {
     const container = scrollRef.current;
     const firstSection = sections[0];
     if (!container || !firstSection) return;
 
+    const activeContainer = container;
+    const initialSection = firstSection;
+
     function updateActiveCategory() {
-      const threshold = container!.scrollTop + 72;
-      let nextCategory = firstSection!.id;
+      const threshold = activeContainer.scrollTop + 72;
+      let nextCategory = initialSection.id;
 
       for (const section of sections) {
         const element = sectionRefs.current[section.id];
@@ -120,24 +132,22 @@ export function EmojiGrid({
     }
 
     updateActiveCategory();
-    container.addEventListener('scroll', updateActiveCategory, {
+    activeContainer.addEventListener('scroll', updateActiveCategory, {
       passive: true,
     });
     return () =>
-      container.removeEventListener('scroll', updateActiveCategory);
+      activeContainer.removeEventListener('scroll', updateActiveCategory);
   }, [sections]);
 
-  // Section virtualization via IntersectionObserver
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
 
-    // Measure currently rendered grids before virtualizing
     for (const section of sections) {
       const el = sectionRefs.current[section.id];
       if (el) {
-        const grid = el.querySelector('.mx-picker__grid');
-        if (grid) {
+        const grid = el.querySelector('[data-mx-slot="grid"]');
+        if (grid instanceof HTMLElement) {
           gridHeights.current[section.id] = grid.clientHeight;
         }
       }
@@ -146,7 +156,7 @@ export function EmojiGrid({
     const observer = new IntersectionObserver(
       (entries) => {
         setVisibleSections((prev) => {
-          const next = new Set(prev ?? sections.map((s) => s.id));
+          const next = new Set(prev ?? sections.map((section) => section.id));
           for (const entry of entries) {
             const id = (entry.target as HTMLElement).dataset.sectionId;
             if (!id) continue;
@@ -183,10 +193,9 @@ export function EmojiGrid({
     [columns],
   );
 
-  // Keyboard navigation with roving tabindex
   function handleKeyDown(event: React.KeyboardEvent) {
     const target = event.target as HTMLElement;
-    if (!target.classList.contains('mx-picker__emoji')) return;
+    if (target.dataset.mxSlot !== 'emoji') return;
 
     const sectionIdx = Number(target.dataset.section);
     const emojiIdx = Number(target.dataset.index);
@@ -211,8 +220,7 @@ export function EmojiGrid({
         if (nextIndex < 0) {
           nextSection = sectionIdx - 1;
           if (nextSection >= 0) {
-            nextIndex =
-              (sections[nextSection]?.emojis.length ?? 1) - 1;
+            nextIndex = (sections[nextSection]?.emojis.length ?? 1) - 1;
           }
         }
         break;
@@ -265,20 +273,20 @@ export function EmojiGrid({
     const targetSection = sections[nextSection];
     if (!targetSection) return;
     if (nextSection < 0 || nextSection >= sections.length) return;
-    if (nextIndex < 0 || nextIndex >= targetSection.emojis.length)
-      return;
+    if (nextIndex < 0 || nextIndex >= targetSection.emojis.length) return;
 
     const container = scrollRef.current;
     if (!container) return;
 
-    // Update roving tabindex
     const prev = container.querySelector(
-      '.mx-picker__emoji[tabindex="0"]',
+      '[data-mx-slot="emoji"][tabindex="0"]',
     );
-    if (prev) prev.setAttribute('tabindex', '-1');
+    if (prev instanceof HTMLElement) {
+      prev.setAttribute('tabindex', '-1');
+    }
 
     const next = container.querySelector(
-      `.mx-picker__emoji[data-section="${nextSection}"][data-index="${nextIndex}"]`,
+      `[data-mx-slot="emoji"][data-section="${nextSection}"][data-index="${nextIndex}"]`,
     ) as HTMLButtonElement | null;
 
     if (next) {
@@ -288,16 +296,16 @@ export function EmojiGrid({
   }
 
   function handleEmojiFocus(
-    event: React.FocusEvent,
+    event: React.FocusEvent<HTMLButtonElement>,
     emoji: EmojiRenderable,
   ) {
     const container = scrollRef.current;
     if (!container) return;
 
     const prev = container.querySelector(
-      '.mx-picker__emoji[tabindex="0"]',
+      '[data-mx-slot="emoji"][tabindex="0"]',
     );
-    if (prev && prev !== event.currentTarget) {
+    if (prev instanceof HTMLElement && prev !== event.currentTarget) {
       prev.setAttribute('tabindex', '-1');
     }
     event.currentTarget.setAttribute('tabindex', '0');
@@ -306,12 +314,18 @@ export function EmojiGrid({
 
   return (
     <div
-      className="mx-picker__content"
+      className={getSlotClassName('content', slotOptions)}
+      style={getSlotStyle('content', slotOptions)}
       ref={scrollRef}
       onKeyDown={handleKeyDown}
+      data-mx-slot="content"
     >
       {sections.length === 0 && (
-        <div className="mx-picker__empty">
+        <div
+          className={getSlotClassName('empty', slotOptions)}
+          style={getSlotStyle('empty', slotOptions)}
+          data-mx-slot="empty"
+        >
           {emptyState ?? (
             <>
               <strong>{labels.noResultsTitle}</strong>
@@ -327,16 +341,25 @@ export function EmojiGrid({
         return (
           <section
             key={section.id}
-            className="mx-picker__section"
+            className={getSlotClassName('section', slotOptions)}
+            style={getSlotStyle('section', slotOptions)}
             data-section-id={section.id}
+            data-category-id={section.id}
+            data-mx-slot="section"
             ref={(node) => {
               sectionRefs.current[section.id] = node;
             }}
           >
-            <header className="mx-picker__section-header">
+            <header
+              className={getSlotClassName('sectionHeader', slotOptions)}
+              style={getSlotStyle('sectionHeader', slotOptions)}
+              data-mx-slot="sectionHeader"
+            >
               <span
-                className="mx-picker__section-icon"
+                className={getSlotClassName('sectionIcon', slotOptions)}
+                style={getSlotStyle('sectionIcon', slotOptions)}
                 aria-hidden="true"
+                data-mx-slot="sectionIcon"
               >
                 {section.icon}
               </span>
@@ -346,9 +369,11 @@ export function EmojiGrid({
 
             {visible ? (
               <div
-                className="mx-picker__grid"
+                className={getSlotClassName('grid', slotOptions)}
+                style={getSlotStyle('grid', slotOptions)}
                 role="grid"
                 aria-label={section.label}
+                data-mx-slot="grid"
                 ref={(node) => {
                   if (node) {
                     gridHeights.current[section.id] = node.clientHeight;
@@ -359,39 +384,40 @@ export function EmojiGrid({
                   const selected = value === emoji.id;
                   const isFirstEmoji =
                     sectionIndex === 0 && emojiIndex === 0;
+                  const active = hoveredEmojiId === emoji.id;
 
                   return (
                     <button
                       key={`${section.id}:${emoji.id}`}
                       type="button"
                       role="gridcell"
-                      className={createClassName(
-                        'mx-picker__emoji',
-                        selected && 'is-selected',
+                      className={getSlotClassName(
+                        'emoji',
+                        slotOptions,
+                        !unstyled && selected && 'is-selected',
                       )}
+                      style={getSlotStyle('emoji', slotOptions)}
                       data-section={sectionIndex}
                       data-index={emojiIndex}
+                      data-category-id={section.id}
+                      data-mx-slot="emoji"
+                      data-active={active ? 'true' : undefined}
+                      data-selected={selected ? 'true' : undefined}
                       tabIndex={isFirstEmoji ? 0 : -1}
                       onClick={() => onEmojiSelect(emoji)}
                       onMouseEnter={() => onEmojiHover(emoji)}
                       onMouseLeave={() => onEmojiHover(null)}
-                      onFocus={(e) => handleEmojiFocus(e, emoji)}
+                      onFocus={(event) => handleEmojiFocus(event, emoji)}
                       onBlur={() => onEmojiHover(null)}
                       title={formatEmojiName(
-                        getLocalizedEmojiName(
-                          emoji,
-                          localeDefinition,
-                        ),
+                        getLocalizedEmojiName(emoji, localeDefinition),
                       )}
                       aria-label={formatEmojiName(
-                        getLocalizedEmojiName(
-                          emoji,
-                          localeDefinition,
-                        ),
+                        getLocalizedEmojiName(emoji, localeDefinition),
                       )}
                     >
                       {renderEmoji?.(emoji, {
-                        active: hoveredEmojiId === emoji.id,
+                        active,
                         selected,
                         skinTone,
                         size: emojiSize,
@@ -409,10 +435,18 @@ export function EmojiGrid({
               </div>
             ) : (
               <div
-                className="mx-picker__grid-placeholder"
-                style={{
-                  height: `${estimateGridHeight(section.id, section.emojis.length)}px`,
-                }}
+                className={getSlotClassName('gridPlaceholder', slotOptions)}
+                style={getSlotStyle(
+                  'gridPlaceholder',
+                  slotOptions,
+                  {
+                    height: `${estimateGridHeight(
+                      section.id,
+                      section.emojis.length,
+                    )}px`,
+                  },
+                )}
+                data-mx-slot="gridPlaceholder"
               />
             )}
           </section>

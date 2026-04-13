@@ -10,6 +10,7 @@ import type {
   EmojiSkinTone,
   EmojiSpriteSheetConfig,
 } from '../lib/types';
+import { createClassName } from './utils';
 
 export interface EmojiSpriteProps {
   emoji: EmojiRenderable;
@@ -18,10 +19,6 @@ export interface EmojiSpriteProps {
   size?: number;
   className?: string;
   title?: string;
-}
-
-function createClassName(...values: Array<string | undefined>) {
-  return values.filter(Boolean).join(' ');
 }
 
 export function EmojiSprite({
@@ -83,7 +80,7 @@ export function EmojiSprite({
         className={createClassName('mx-emoji-native', className)}
         style={{ fontSize: `${size}px`, lineHeight: 1 }}
       >
-        {emoji.native ?? '✨'}
+        {emoji.native ?? '\u2728'}
       </span>
     );
   }

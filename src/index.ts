@@ -1,7 +1,11 @@
 import './components/EmojiPicker.css';
 
 export { EmojiPicker } from './components/EmojiPicker';
+export { EmojiGrid } from './components/EmojiGrid';
+export { EmojiPreview } from './components/EmojiPreview';
+export { EmojiSidebar } from './components/EmojiSidebar';
 export { EmojiSprite } from './components/EmojiSprite';
+export { EmojiToolbar } from './components/EmojiToolbar';
 export {
   createEmojiSpriteSheet,
   createEmojiCdnSpriteSheet,
@@ -31,6 +35,9 @@ export type {
   EmojiLocaleDefinition,
   EmojiLocaleEmojiTranslation,
   EmojiPickerProps,
+  EmojiPickerClassNames,
+  EmojiPickerSlot,
+  EmojiPickerStyles,
   EmojiRenderState,
   EmojiRenderable,
   EmojiSelection,

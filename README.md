@@ -9,8 +9,10 @@ Universal React emoji picker with:
 - optional runtime sprite caching
 - built-in i18n for picker UI and emoji names
 - English-first search with selected-locale support
+- `unstyled`, `classNames`, and slot-level `styles`
+- exported structural primitives: `EmojiToolbar`, `EmojiGrid`, `EmojiPreview`, `EmojiSidebar`
 - recents with `localStorage` persistence
-- skin tone switching
+- controlled or uncontrolled search and skin tone
 - custom emoji support
 
 ## Development
@@ -39,16 +41,16 @@ This produces:
 - `src/lib/sprites.ts`: sprite presets, URL builders, and background-position math
 - `src/lib/sprite-cache.ts`: runtime cache helpers for remote sheets
 - `src/lib/storage.ts`: recents and skin tone persistence
-- `src/components/EmojiPicker.tsx`: picker UI and interaction state
-- `src/components/EmojiSprite.tsx`: Unicode/custom emoji rendering surface
+- `src/components/EmojiPicker.tsx`: picker orchestration and public component API
+- `src/components/EmojiToolbar.tsx`: search and skin tone controls
+- `src/components/EmojiGrid.tsx`: virtualized emoji grid and keyboard navigation
+- `src/components/EmojiPreview.tsx`: preview surface
+- `src/components/EmojiSidebar.tsx`: category navigation
 
 ## CDN-First Example
 
 ```tsx
-import {
-  EmojiPicker,
-  createEmojiSpriteSheet,
-} from 'mojix';
+import { EmojiPicker, createEmojiSpriteSheet } from 'mojix';
 import 'mojix/style.css';
 
 export function ComposerEmojiPicker() {
@@ -72,6 +74,72 @@ Default CDN preset:
 ```txt
 https://cdn.jsdelivr.net/npm/emoji-datasource-twitter@16.0.0/img/twitter/sheets-256/64.png
 ```
+
+## Customization
+
+`EmojiPicker` supports three levels of UI customization:
+
+- theme the default UI with CSS variables and root `className`
+- override individual slots with `classNames` and `styles`
+- remove built-in classes with `unstyled` and style through your own selectors or `[data-mx-slot]`
+
+```tsx
+<EmojiPicker
+  unstyled
+  classNames={{
+    root: 'my-picker',
+    toolbar: 'my-toolbar',
+    searchInput: 'my-search-input',
+    emoji: 'my-emoji-button',
+    sidebar: 'my-sidebar',
+    navButton: 'my-nav-button',
+  }}
+  styles={{
+    root: { width: 360 },
+    preview: { borderTop: '1px solid var(--border)' },
+  }}
+/>
+```
+
+Stable slot attributes are present on structural parts such as:
+
+- `root`
+- `panel`
+- `toolbar`
+- `content`
+- `section`
+- `grid`
+- `emoji`
+- `preview`
+- `sidebar`
+
+Example CSS target:
+
+```css
+[data-mx-slot='emoji'][data-active='true'] {
+  transform: translateY(-1px);
+}
+```
+
+## Controlled State
+
+Search and skin tone can be controlled from the outside:
+
+```tsx
+import type { EmojiSkinTone } from 'mojix';
+
+const [searchQuery, setSearchQuery] = useState('');
+const [skinTone, setSkinTone] = useState<EmojiSkinTone>('medium');
+
+<EmojiPicker
+  searchQuery={searchQuery}
+  onSearchQueryChange={setSearchQuery}
+  skinTone={skinTone}
+  onSkinToneChange={setSkinTone}
+/>;
+```
+
+If those props are omitted, MojiX keeps the current uncontrolled behavior.
 
 ## Cache Warmup
 
@@ -143,3 +211,26 @@ You can also point directly at a specific local file:
 ```
 
 Search keeps English as the primary ranking language, while also indexing emoji names and keywords from the active locale.
+
+## Structural Primitives
+
+MojiX also exports the current structural components:
+
+- `EmojiToolbar`
+- `EmojiGrid`
+- `EmojiPreview`
+- `EmojiSidebar`
+- `EmojiSprite`
+
+These are not the final headless API yet, but they already allow advanced integrations to reuse parts of the built-in picker instead of forking it.
+
+## Roadmap
+
+The long-term direction is to evolve MojiX into a layered system with a headless/composable API plus the current default UI on top.
+
+See [docs/HEADLESS_API_ROADMAP.md](./docs/HEADLESS_API_ROADMAP.md) for:
+
+- target public API
+- asset provider direction
+- localization goals
+- version-by-version roadmap toward `v1.0`

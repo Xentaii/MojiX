@@ -53,7 +53,7 @@ import { EmojiGrid, type EmojiGridHandle } from './EmojiGrid';
 import { EmojiPreview } from './EmojiPreview';
 import { EmojiSidebar } from './EmojiSidebar';
 import { EmojiToolbar } from './EmojiToolbar';
-import { createClassName } from './utils';
+import { getSlotClassName, getSlotStyle } from './utils';
 
 function resolveRecentEmoji(
   recent: RecentEmojiRecord,
@@ -68,7 +68,9 @@ function resolveRecentEmoji(
 
 export function EmojiPicker({
   value,
+  searchQuery: controlledSearchQuery,
   defaultSearchQuery = '',
+  onSearchQueryChange,
   emojiSize = DEFAULT_EMOJI_SIZE,
   columns = DEFAULT_COLUMNS,
   showPreview = true,
@@ -79,11 +81,16 @@ export function EmojiPicker({
   skinToneStorageKey = DEFAULT_SKIN_TONE_STORAGE_KEY,
   locale = 'en',
   locales,
+  skinTone: controlledSkinTone,
   defaultSkinTone = 'default',
+  onSkinToneChange,
   labels,
   spriteSheet = defaultSpriteSheet,
   customEmojis = [],
   emptyState,
+  unstyled = false,
+  classNames,
+  styles,
   renderEmoji,
   renderPreview,
   onEmojiSelect,
@@ -91,6 +98,10 @@ export function EmojiPicker({
   style,
   ...rest
 }: EmojiPickerProps) {
+  const slotOptions = { unstyled, classNames, styles };
+  const isSearchControlled = controlledSearchQuery !== undefined;
+  const isSkinToneControlled = controlledSkinTone !== undefined;
+
   const resolvedSpriteSheet = useMemo(
     () => resolveSpriteSheetConfig(spriteSheet),
     [spriteSheet],
@@ -109,10 +120,13 @@ export function EmojiPicker({
     [preparedCustomEmojis],
   );
 
-  const [searchQuery, setSearchQuery] = useState(defaultSearchQuery);
-  const deferredSearchQuery = useDeferredValue(searchQuery);
+  const [uncontrolledSearchQuery, setUncontrolledSearchQuery] =
+    useState(defaultSearchQuery);
   const [recentEmoji, setRecentEmoji] = useState<RecentEmojiRecord[]>([]);
-  const [skinTone, setSkinTone] = useState<EmojiSkinTone>(defaultSkinTone);
+  const [uncontrolledSkinTone, setUncontrolledSkinTone] =
+    useState<EmojiSkinTone>(() =>
+      readStoredSkinTone(skinToneStorageKey, defaultSkinTone),
+    );
   const [activeCategory, setActiveCategory] =
     useState<EmojiCategoryId>('smileys');
   const [hoveredEmoji, setHoveredEmoji] = useState<EmojiRenderable | null>(
@@ -122,19 +136,38 @@ export function EmojiPicker({
     null,
   );
 
+  const searchQuery = isSearchControlled
+    ? controlledSearchQuery
+    : uncontrolledSearchQuery;
+  const skinTone = isSkinToneControlled
+    ? controlledSkinTone
+    : uncontrolledSkinTone;
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const searchId = useId();
   const gridRef = useRef<EmojiGridHandle>(null);
 
-  // Load persisted state
   useEffect(() => {
     setRecentEmoji(readRecentEmoji(recentStorageKey));
   }, [recentStorageKey]);
 
   useEffect(() => {
-    setSkinTone(readStoredSkinTone(skinToneStorageKey, defaultSkinTone));
-  }, [defaultSkinTone, skinToneStorageKey]);
+    if (!isSearchControlled) {
+      setUncontrolledSearchQuery(defaultSearchQuery);
+    }
+  }, [defaultSearchQuery, isSearchControlled]);
 
-  // Sprite sheet cache warming
+  useEffect(() => {
+    if (!isSkinToneControlled) {
+      setUncontrolledSkinTone(
+        readStoredSkinTone(skinToneStorageKey, defaultSkinTone),
+      );
+    }
+  }, [
+    defaultSkinTone,
+    isSkinToneControlled,
+    skinToneStorageKey,
+  ]);
+
   useEffect(() => {
     let released = false;
     let releaseCachedAsset: (() => void) | undefined;
@@ -178,7 +211,6 @@ export function EmojiPicker({
     [resolvedSpriteSheet, runtimeSpriteUrl],
   );
 
-  // Build sections
   const recentSectionEmojis = useMemo(() => {
     if (!showRecents) return [] as EmojiRenderable[];
 
@@ -246,7 +278,6 @@ export function EmojiPicker({
     showRecents,
   ]);
 
-  // Sync active category when sections change
   useEffect(() => {
     if (sections.length === 0) return;
 
@@ -259,7 +290,16 @@ export function EmojiPicker({
     }
   }, [activeCategory, sections]);
 
-  // Handlers
+  const handleSearchQueryChange = useCallback(
+    (nextSearchQuery: string) => {
+      if (!isSearchControlled) {
+        setUncontrolledSearchQuery(nextSearchQuery);
+      }
+      onSearchQueryChange?.(nextSearchQuery);
+    },
+    [isSearchControlled, onSearchQueryChange],
+  );
+
   const handleActiveCategoryChange = useCallback(
     (id: EmojiCategoryId) => {
       setActiveCategory((current) => (current === id ? current : id));
@@ -272,6 +312,17 @@ export function EmojiPicker({
       setHoveredEmoji(emoji);
     },
     [],
+  );
+
+  const handleSkinToneChange = useCallback(
+    (nextSkinTone: EmojiSkinTone) => {
+      if (!isSkinToneControlled) {
+        setUncontrolledSkinTone(nextSkinTone);
+        writeStoredSkinTone(skinToneStorageKey, nextSkinTone);
+      }
+      onSkinToneChange?.(nextSkinTone);
+    },
+    [isSkinToneControlled, onSkinToneChange, skinToneStorageKey],
   );
 
   function handleSelectEmoji(emoji: EmojiRenderable) {
@@ -299,17 +350,11 @@ export function EmojiPicker({
     }
   }
 
-  function handleSkinToneChange(nextSkinTone: EmojiSkinTone) {
-    setSkinTone(nextSkinTone);
-    writeStoredSkinTone(skinToneStorageKey, nextSkinTone);
-  }
-
   function handleCategoryClick(categoryId: EmojiCategoryId) {
     setActiveCategory(categoryId);
     gridRef.current?.scrollToCategory(categoryId);
   }
 
-  // Preview
   const previewEmoji =
     hoveredEmoji ??
     sections.find((section) => section.id === activeCategory)?.emojis[0] ??
@@ -323,25 +368,38 @@ export function EmojiPicker({
   return (
     <div
       {...rest}
-      className={createClassName('mx-picker', className)}
+      className={getSlotClassName('root', slotOptions, className)}
       style={
-        {
-          ...style,
-          ['--mx-emoji-size' as string]: `${emojiSize}px`,
-          ['--mx-columns' as string]: `${columns}`,
-        } as CSSProperties
+        getSlotStyle(
+          'root',
+          slotOptions,
+          {
+            ['--mx-emoji-size' as string]: `${emojiSize}px`,
+            ['--mx-columns' as string]: `${columns}`,
+          } as CSSProperties,
+          style,
+        ) as CSSProperties
       }
+      data-mx-slot="root"
+      data-mx-unstyled={unstyled ? 'true' : undefined}
     >
-      <div className="mx-picker__panel">
+      <div
+        className={getSlotClassName('panel', slotOptions)}
+        style={getSlotStyle('panel', slotOptions)}
+        data-mx-slot="panel"
+      >
         <EmojiToolbar
           searchId={searchId}
           searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
+          onSearchChange={handleSearchQueryChange}
           skinTone={skinTone}
           onSkinToneChange={handleSkinToneChange}
           showSkinTones={showSkinTones}
           labels={labelSet}
           localeDefinition={localeDefinition}
+          unstyled={unstyled}
+          classNames={classNames}
+          styles={styles}
         />
 
         <EmojiGrid
@@ -360,6 +418,9 @@ export function EmojiPicker({
           hoveredEmojiId={hoveredEmoji?.id ?? null}
           emptyState={emptyState}
           labels={labelSet}
+          unstyled={unstyled}
+          classNames={classNames}
+          styles={styles}
         />
 
         {showPreview && (
@@ -368,6 +429,9 @@ export function EmojiPicker({
             selection={previewSelection}
             spriteSheet={activeSpriteSheet}
             renderPreview={renderPreview}
+            unstyled={unstyled}
+            classNames={classNames}
+            styles={styles}
           />
         )}
       </div>
@@ -376,6 +440,9 @@ export function EmojiPicker({
         sections={sections}
         activeCategory={activeCategory}
         onCategoryClick={handleCategoryClick}
+        unstyled={unstyled}
+        classNames={classNames}
+        styles={styles}
       />
     </div>
   );

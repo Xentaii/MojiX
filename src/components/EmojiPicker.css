@@ -99,7 +99,8 @@
   transform: translateY(-1px);
 }
 
-.mx-picker__nav-button.is-active {
+.mx-picker__nav-button.is-active,
+.mx-picker__nav-button[data-active='true'] {
   background: linear-gradient(180deg, rgba(238, 120, 72, 0.18), rgba(238, 120, 72, 0.1));
   color: var(--mx-accent);
 }
@@ -175,7 +176,8 @@
   background: rgba(255, 255, 255, 0.82);
 }
 
-.mx-picker__tone-button.is-open {
+.mx-picker__tone-button.is-open,
+.mx-picker__tone-button[data-open='true'] {
   background: var(--mx-accent-soft);
 }
 
@@ -204,7 +206,8 @@
   font-size: 18px;
 }
 
-.mx-picker__tone-option.is-active {
+.mx-picker__tone-option.is-active,
+.mx-picker__tone-option[data-active='true'] {
   background: var(--mx-accent-soft);
 }
 
@@ -268,7 +271,8 @@
     box-shadow 160ms ease;
 }
 
-.mx-picker__emoji.is-selected {
+.mx-picker__emoji.is-selected,
+.mx-picker__emoji[data-selected='true'] {
   background: linear-gradient(180deg, rgba(238, 120, 72, 0.18), rgba(238, 120, 72, 0.1));
   box-shadow: inset 0 0 0 1px rgba(238, 120, 72, 0.2);
 }

@@ -215,10 +215,51 @@ export interface EmojiRenderState {
   size: number;
 }
 
+export type EmojiPickerSlot =
+  | 'root'
+  | 'panel'
+  | 'toolbar'
+  | 'search'
+  | 'searchIcon'
+  | 'searchInput'
+  | 'searchClear'
+  | 'tonePicker'
+  | 'toneButton'
+  | 'toneMenu'
+  | 'toneOption'
+  | 'content'
+  | 'section'
+  | 'sectionHeader'
+  | 'sectionIcon'
+  | 'grid'
+  | 'gridPlaceholder'
+  | 'emoji'
+  | 'preview'
+  | 'previewCard'
+  | 'previewCopy'
+  | 'previewHeading'
+  | 'previewSubline'
+  | 'previewMeta'
+  | 'chip'
+  | 'chipMuted'
+  | 'empty'
+  | 'sidebar'
+  | 'navButton';
+
+export type EmojiPickerClassNames = Partial<
+  Record<EmojiPickerSlot, string>
+>;
+
+export type EmojiPickerStyles = Partial<
+  Record<EmojiPickerSlot, CSSProperties>
+>;
+
 export interface EmojiPickerProps
   extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> {
   value?: string;
+  searchQuery?: string;
   defaultSearchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
   emojiSize?: number;
   columns?: number;
   showPreview?: boolean;
@@ -229,11 +270,16 @@ export interface EmojiPickerProps
   skinToneStorageKey?: string;
   locale?: EmojiLocaleCode;
   locales?: Partial<Record<string, Partial<EmojiLocaleDefinition>>>;
+  skinTone?: EmojiSkinTone;
   defaultSkinTone?: EmojiSkinTone;
+  onSkinToneChange?: (tone: EmojiSkinTone) => void;
   labels?: Partial<EmojiPickerLabels>;
   spriteSheet?: EmojiSpriteSheetConfig;
   customEmojis?: CustomEmoji[];
   emptyState?: ReactNode;
+  unstyled?: boolean;
+  classNames?: EmojiPickerClassNames;
+  styles?: EmojiPickerStyles;
   renderEmoji?: (
     emoji: EmojiRenderable,
     state: EmojiRenderState,
