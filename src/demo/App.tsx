@@ -1,28 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   EmojiPicker,
-  createEmojiLocalSpriteSheet,
+  createNativeAssetSource,
   createEmojiSpriteSheet,
   warmEmojiSpriteSheet,
 } from '../index';
-import type {
-  CustomEmoji,
-  EmojiLocaleCode,
-  EmojiSelection,
-  EmojiSpriteSheetVariant,
-  EmojiVendor,
-} from '../index';
+import type { CustomEmoji, EmojiSelection } from '../index';
 import orbitEmoji from './assets/mojix-orbit.svg';
 import sparkEmoji from './assets/mojix-spark.svg';
 import waveEmoji from './assets/mojix-wave.svg';
 
-type DemoVendor = Extract<EmojiVendor, 'twitter' | 'google'>;
-type DemoVariant = Extract<
-  EmojiSpriteSheetVariant,
-  'default' | 'indexed-256' | 'clean'
->;
-
-const customEmojis: CustomEmoji[] = [
+const CUSTOM_EMOJIS: CustomEmoji[] = [
   {
     id: 'mojix:orbit',
     name: 'MojiX Orbit',
@@ -46,329 +34,259 @@ const customEmojis: CustomEmoji[] = [
   },
 ];
 
-const LOCAL_SHEETS: Record<DemoVendor, Record<DemoVariant, string>> = {
-  twitter: {
-    default: '/sprites/twitter/sheets/64.png',
-    'indexed-256': '/sprites/twitter/sheets-256/64.png',
-    clean: '/sprites/twitter/sheets-clean/64.png',
-  },
-  google: {
-    default: '/sprites/google/sheets/64.png',
-    'indexed-256': '/sprites/google/sheets-256/64.png',
-    clean: '/sprites/google/sheets-clean/64.png',
-  },
-};
+const NATIVE_FALLBACK_SOURCE = createNativeAssetSource();
 
-const VARIANT_LABELS: Record<DemoVariant, string> = {
-  default: 'Full',
-  'indexed-256': 'Indexed 256',
-  clean: 'Clean',
-};
+// ── Code snippets shown in the API showcase section ──────────────────────────
 
-const CACHE_STATUS_LABELS = {
-  idle: 'Off',
-  warming: 'Downloading',
-  ready: 'Cached',
-  error: 'Failed',
-} as const;
+const SNIPPET_DROPIN = `import { EmojiPicker } from 'mojix';
+import 'mojix/style.css';
+
+<EmojiPicker
+  onEmojiSelect={(emoji) => {
+    console.log(emoji.native); // 😄
+  }}
+/>`;
+
+const SNIPPET_THEMED = `.my-picker {
+  --mx-accent: #7c3aed;
+  --mx-bg:     rgba(17, 12, 46, 0.94);
+  --mx-text:   #e2e8f0;
+  --mx-muted:  #94a3b8;
+  --mx-border: rgba(255,255,255,0.08);
+  --mx-radius: 16px;
+}
+
+<EmojiPicker
+  className="my-picker"
+  onEmojiSelect={handler}
+/>`;
+
+const SNIPPET_HEADLESS = `import { MojiX } from 'mojix';
+
+function MyPicker({ onSelect }) {
+  return (
+    <MojiX.Root unstyled onEmojiSelect={onSelect}>
+      <MojiX.Search>
+        {({ searchQuery, setSearchQuery }) => (
+          <input
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search…"
+            className="my-search"
+          />
+        )}
+      </MojiX.Search>
+      <MojiX.Viewport className="my-viewport">
+        <MojiX.Empty>Nothing found.</MojiX.Empty>
+        <MojiX.List />
+      </MojiX.Viewport>
+      <MojiX.ActiveEmoji>
+        {({ emoji }) =>
+          emoji && <footer className="my-preview">{emoji.name}</footer>
+        }
+      </MojiX.ActiveEmoji>
+    </MojiX.Root>
+  );
+}`;
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function App() {
-  const [pickerOpen, setPickerOpen] = useState(true);
-  const [spriteSource, setSpriteSource] = useState<'cdn' | 'local'>('cdn');
-  const [vendor, setVendor] = useState<DemoVendor>('twitter');
-  const [variant, setVariant] = useState<DemoVariant>('indexed-256');
-  const [locale, setLocale] = useState<EmojiLocaleCode>('en');
-  const [cacheEnabled, setCacheEnabled] = useState(true);
-  const [cacheStatus, setCacheStatus] = useState<
-    keyof typeof CACHE_STATUS_LABELS
-  >('idle');
-  const [message, setMessage] = useState(
-    'CDN first. Warm the sprite sheet once and keep the picker compact.',
-  );
-  const [selectedEmoji, setSelectedEmoji] = useState<EmojiSelection | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [message, setMessage] = useState('');
+  const [lastEmoji, setLastEmoji] = useState<EmojiSelection | null>(null);
+  const [spriteWarmed, setSpriteWarmed] = useState(false);
+  const composerRef = useRef<HTMLDivElement>(null);
 
-  const spriteSheet = useMemo(() => {
-    if (spriteSource === 'local') {
-      return createEmojiLocalSpriteSheet(LOCAL_SHEETS[vendor][variant], {
-        vendor,
+  const spriteSheet = useMemo(
+    () =>
+      createEmojiSpriteSheet({
+        source: 'cdn',
+        vendor: 'twitter',
         sheetSize: 64,
-        variant,
-      });
-    }
-
-    return createEmojiSpriteSheet({
-      source: 'cdn',
-      vendor,
-      sheetSize: 64,
-      variant,
-      cache:
-        cacheEnabled
-          ? {
-              enabled: true,
-              preload: 'mount',
-            }
-          : {
-              enabled: false,
-            },
-    });
-  }, [cacheEnabled, spriteSource, vendor, variant]);
+        variant: 'indexed-256',
+        cache: { enabled: true, preload: 'mount' },
+      }),
+    [],
+  );
 
   useEffect(() => {
     let cancelled = false;
 
-    if (spriteSource !== 'cdn' || !cacheEnabled) {
-      setCacheStatus('idle');
-      return;
-    }
-
-    setCacheStatus('warming');
-
     warmEmojiSpriteSheet(spriteSheet)
-      .then((asset) => {
-        asset.release?.();
-
+      .then(() => {
         if (!cancelled) {
-          setCacheStatus(asset.cached ? 'ready' : 'error');
+          setSpriteWarmed(true);
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setCacheStatus('error');
+          setSpriteWarmed(false);
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [cacheEnabled, spriteSheet, spriteSource]);
+  }, [spriteSheet]);
+
+  // Close picker on outside click or Escape
+  useEffect(() => {
+    if (!pickerOpen) return;
+
+    function handleDown(e: PointerEvent) {
+      if (!composerRef.current?.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setPickerOpen(false);
+    }
+
+    document.addEventListener('pointerdown', handleDown);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('pointerdown', handleDown);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [pickerOpen]);
 
   function handleEmojiSelect(emoji: EmojiSelection) {
-    const shortcode = emoji.shortcodes[0]?.trim();
-    const token = emoji.native ?? (shortcode ? `:${shortcode}:` : emoji.name);
-
-    setSelectedEmoji(emoji);
-    setMessage((current) => `${current}${current.endsWith(' ') ? '' : ' '}${token}`);
+    const token = emoji.native ?? `:${emoji.shortcodes[0]}:`;
+    setLastEmoji(emoji);
+    setMessage((m) => `${m}${m === '' || m.endsWith(' ') ? '' : ' '}${token} `);
+    setPickerOpen(false);
   }
 
   return (
-    <main className="demo-shell">
-      <section className="demo-intro">
-        <span className="demo-badge">MojiX / CDN-first</span>
-        <h1>Compact emoji popover with vendor presets and optional sprite caching.</h1>
-        <p>
-          The picker now defaults to jsDelivr and can optionally warm the active
-          sheet into managed browser storage. Local files still work, but they are
-          just one delivery mode rather than the whole strategy.
-        </p>
-      </section>
+    <div className="page">
 
-      <section className="demo-stage">
-        <div className="demo-chat">
-          <header className="demo-chat__header">
-            <div>
-              <strong>Project Composer</strong>
-              <span>CDN first, compact modal, localized search, optional cache warmup</span>
-            </div>
-            <button
-              type="button"
-              className="demo-ghost-button"
-              onClick={() => setPickerOpen((open) => !open)}
-            >
-              {pickerOpen ? 'Hide picker' : 'Open picker'}
-            </button>
-          </header>
+      {/* ── Hero ──────────────────────────────────────────────────────────── */}
+      <header className="hero">
+        <div className="hero__inner">
+          <span className="badge">MojiX</span>
+          <h1 className="hero__title">
+            Emoji picker<br />for serious apps.
+          </h1>
+          <p className="hero__sub">
+            Drop-in ready like emoji-mart.{' '}
+            Fully composable like Radix UI.
+          </p>
+          <code className="install-cmd">npm install mojix</code>
+        </div>
+      </header>
 
-          <div className="demo-chat__messages">
-            <article className="demo-message">
+      {/* ── Live demo ─────────────────────────────────────────────────────── */}
+      <section className="demo-section">
+        <div className="chat-window">
+
+          {/* Header */}
+          <div className="chat-header">
+            <div className="chat-avatar" aria-hidden="true">N</div>
+            <div className="chat-header-info">
               <strong>Nora</strong>
-              <p>Let&apos;s keep delivery flexible: CDN by default, cache when we want control.</p>
-            </article>
-            <article className="demo-message demo-message--accent">
-              <strong>You</strong>
-              <p>{message}</p>
-            </article>
+              <span className="chat-status">
+                <span className="chat-status__dot" aria-hidden="true" />
+                online
+              </span>
+            </div>
           </div>
 
-          <div className="demo-composer">
-            {pickerOpen && (
-              <div className="demo-picker-popover">
-                <EmojiPicker
-                  value={selectedEmoji?.id}
-                  customEmojis={customEmojis}
-                  locale={locale}
-                  spriteSheet={spriteSheet}
-                  emojiSize={22}
-                  onEmojiSelect={handleEmojiSelect}
-                />
+          {/* Messages */}
+          <div className="chat-messages" role="log" aria-label="Chat messages">
+            <div className="chat-msg chat-msg--in">
+              <p>Hey! Give the new picker a spin. 👀</p>
+            </div>
+            <div className="chat-msg chat-msg--in">
+              <p>Custom emoji, localized search, vendor sprites — all opt-in.</p>
+            </div>
+            {message && (
+              <div className="chat-msg chat-msg--out">
+                <p>{message.trim()}</p>
               </div>
             )}
+          </div>
 
-            <textarea
-              className="demo-composer__input"
-              value={message}
-              onChange={(event) => setMessage(event.currentTarget.value)}
-              rows={4}
-            />
+          {/* Composer */}
+          <div className="chat-composer" ref={composerRef}>
+            <div className="chat-composer__row">
+              <div className="chat-picker-anchor">
+                {pickerOpen && (
+                  <div className="chat-picker-popover" id="demo-emoji-picker">
+                    <EmojiPicker
+                      customEmojis={CUSTOM_EMOJIS}
+                      spriteSheet={spriteSheet}
+                      assetSource={
+                        spriteWarmed ? undefined : NATIVE_FALLBACK_SOURCE
+                      }
+                      emojiSize={22}
+                      onEmojiSelect={handleEmojiSelect}
+                    />
+                  </div>
+                )}
 
-            <div className="demo-composer__actions">
-              <button
-                type="button"
-                className="demo-primary-button"
-                onClick={() => setPickerOpen((open) => !open)}
-              >
-                Pick emoji
-              </button>
-              <span className="demo-composer__meta">
-                {selectedEmoji
-                  ? `Selected: ${selectedEmoji.native ?? `:${selectedEmoji.shortcodes[0]}:`}`
-                  : 'Pick an emoji to append it into the message'}
-              </span>
-              <button type="button" className="demo-send-button">
+                <button
+                  type="button"
+                  className={`chat-emoji-btn${pickerOpen ? ' is-open' : ''}`}
+                  onClick={() => setPickerOpen((o) => !o)}
+                  aria-label={pickerOpen ? 'Close emoji picker' : 'Open emoji picker'}
+                  aria-expanded={pickerOpen}
+                  aria-controls="demo-emoji-picker"
+                  aria-haspopup="dialog"
+                >
+                  {lastEmoji?.native ?? '😊'}
+                </button>
+              </div>
+
+              <textarea
+                className="chat-input"
+                value={message}
+                onChange={(e) => setMessage(e.currentTarget.value)}
+                placeholder="Type a message…"
+                rows={1}
+                aria-label="Message input"
+              />
+
+              <button type="button" className="chat-send-btn">
                 Send
               </button>
             </div>
           </div>
+
+        </div>
+      </section>
+
+      {/* ── API showcase ──────────────────────────────────────────────────── */}
+      <section className="api-section">
+        <div className="api-intro">
+          <h2>One library, three strategies</h2>
+          <p>Start simple and opt into complexity only when you need it.</p>
         </div>
 
-        <aside className="demo-sidebar">
-          <div className="demo-card">
-            <span className="demo-card__label">Locale</span>
-            <div className="demo-segmented">
-              <button
-                type="button"
-                className={locale === 'en' ? 'is-active' : undefined}
-                onClick={() => setLocale('en')}
-              >
-                EN
-              </button>
-              <button
-                type="button"
-                className={locale === 'ru' ? 'is-active' : undefined}
-                onClick={() => setLocale('ru')}
-              >
-                RU
-              </button>
-            </div>
-            <small>
-              English stays primary for ranking, while the active locale also feeds
-              names and keywords into search.
-            </small>
+        <div className="api-grid">
+          <div className="api-card">
+            <span className="api-label api-label--green">Drop-in</span>
+            <h3>Zero config</h3>
+            <p>One import, one component. Works immediately with native OS emoji.</p>
+            <pre className="code-block">{SNIPPET_DROPIN}</pre>
           </div>
 
-          <div className="demo-card">
-            <span className="demo-card__label">Delivery</span>
-            <div className="demo-segmented">
-              <button
-                type="button"
-                className={spriteSource === 'cdn' ? 'is-active' : undefined}
-                onClick={() => setSpriteSource('cdn')}
-              >
-                CDN
-              </button>
-              <button
-                type="button"
-                className={spriteSource === 'local' ? 'is-active' : undefined}
-                onClick={() => setSpriteSource('local')}
-              >
-                Local
-              </button>
-            </div>
-            <small>
-              CDN mode is the default path. Local mode uses downloaded demo presets
-              from <code>/public/sprites</code>.
-            </small>
+          <div className="api-card">
+            <span className="api-label api-label--violet">Themed</span>
+            <h3>CSS variables</h3>
+            <p>Every visual token is a CSS variable. Dark mode in five lines.</p>
+            <pre className="code-block">{SNIPPET_THEMED}</pre>
           </div>
 
-          <div className="demo-card">
-            <span className="demo-card__label">Vendor</span>
-            <div className="demo-segmented">
-              <button
-                type="button"
-                className={vendor === 'twitter' ? 'is-active' : undefined}
-                onClick={() => setVendor('twitter')}
-              >
-                Twitter
-              </button>
-              <button
-                type="button"
-                className={vendor === 'google' ? 'is-active' : undefined}
-                onClick={() => setVendor('google')}
-              >
-                Google
-              </button>
-            </div>
-            <small>Each preset resolves the matching package family automatically.</small>
+          <div className="api-card">
+            <span className="api-label api-label--orange">Headless</span>
+            <h3>Full control</h3>
+            <p>Compose from primitives. Bring your own styles, layout, and markup.</p>
+            <pre className="code-block">{SNIPPET_HEADLESS}</pre>
           </div>
-
-          <div className="demo-card">
-            <span className="demo-card__label">Variant</span>
-            <div className="demo-segmented">
-              {(['default', 'indexed-256', 'clean'] as DemoVariant[]).map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  className={variant === item ? 'is-active' : undefined}
-                  onClick={() => setVariant(item)}
-                >
-                  {VARIANT_LABELS[item]}
-                </button>
-              ))}
-            </div>
-            <small>
-              Full fidelity, quantized grid delivery, or clean sheets without
-              fallback imagery.
-            </small>
-          </div>
-
-          <div className="demo-card">
-            <span className="demo-card__label">Cache</span>
-            <div className="demo-segmented">
-              <button
-                type="button"
-                className={!cacheEnabled ? 'is-active' : undefined}
-                onClick={() => setCacheEnabled(false)}
-                disabled={spriteSource === 'local'}
-              >
-                Off
-              </button>
-              <button
-                type="button"
-                className={cacheEnabled ? 'is-active' : undefined}
-                onClick={() => setCacheEnabled(true)}
-                disabled={spriteSource === 'local'}
-              >
-                Browser
-              </button>
-            </div>
-            <small>
-              {spriteSource === 'local'
-                ? 'Caching is only meaningful for remote CDN sheets.'
-                : `Current status: ${CACHE_STATUS_LABELS[cacheStatus]}.`}
-            </small>
-          </div>
-
-          <div className="demo-card">
-            <span className="demo-card__label">Current setup</span>
-            <pre>{`const spriteSheet = ${
-              spriteSource === 'cdn'
-                ? `createEmojiSpriteSheet({
-  source: "cdn",
-  vendor: "${vendor}",
-  sheetSize: 64,
-  variant: "${variant}",
-  cache: { enabled: ${cacheEnabled} }
-})`
-                : `createEmojiLocalSpriteSheet("${LOCAL_SHEETS[vendor][variant]}", {
-  vendor: "${vendor}",
-  sheetSize: 64,
-  variant: "${variant}"
-})`
-            };
-
-<EmojiPicker locale="${locale}" spriteSheet={spriteSheet} />`}</pre>
-          </div>
-        </aside>
+        </div>
       </section>
-    </main>
+
+    </div>
   );
 }
