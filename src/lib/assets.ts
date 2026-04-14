@@ -80,16 +80,16 @@ function resolveFromSource(
 ): EmojiResolvedAsset | null {
   switch (source.type) {
     case 'native': {
-      const fallback = resolveDefaultEmojiAsset(request);
-      if (fallback?.kind === 'native') {
-        return fallback;
+      if (request.emoji.kind === 'unicode') {
+        const variant = resolveUnicodeEmojiVariant(
+          request.emoji,
+          request.skinTone,
+        );
+        return { kind: 'native', native: variant.native };
       }
 
       if (request.emoji.kind === 'custom' && request.emoji.native) {
-        return {
-          kind: 'native',
-          native: request.emoji.native,
-        };
+        return { kind: 'native', native: request.emoji.native };
       }
 
       return null;

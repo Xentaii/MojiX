@@ -11,6 +11,15 @@ import type {
   EmojiSpriteSheetConfig,
 } from './types';
 
+const sharedSpriteSheetAssets = new Map<
+  string,
+  Pick<EmojiSpriteSheetCachedAsset, 'url'>
+>();
+const pendingSpriteSheetWarmups = new Map<
+  string,
+  Promise<EmojiSpriteSheetCachedAsset>
+>();
+
 function canUseBrowserSpriteCache() {
   return (
     typeof window !== 'undefined' &&
@@ -40,6 +49,47 @@ async function createCachedAssetFromResponse(
 
 function isRemoteUrl(url: string) {
   return /^https?:\/\//i.test(url);
+}
+
+function getSharedSpriteSheetAsset(key: string) {
+  const asset = sharedSpriteSheetAssets.get(key);
+
+  if (!asset) {
+    return null;
+  }
+
+  return {
+    url: asset.url,
+    cached: true,
+  } satisfies EmojiSpriteSheetCachedAsset;
+}
+
+function storeSharedSpriteSheetAsset(
+  key: string,
+  asset: EmojiSpriteSheetCachedAsset,
+) {
+  if (!asset.cached) {
+    return asset;
+  }
+
+  const existingAsset = getSharedSpriteSheetAsset(key);
+
+  if (existingAsset) {
+    if (existingAsset.url !== asset.url) {
+      asset.release?.();
+    }
+
+    return existingAsset;
+  }
+
+  sharedSpriteSheetAssets.set(key, {
+    url: asset.url,
+  });
+
+  return {
+    url: asset.url,
+    cached: true,
+  } satisfies EmojiSpriteSheetCachedAsset;
 }
 
 export function createBrowserSpriteSheetCacheAdapter(options: {
@@ -114,12 +164,25 @@ function getSpriteSheetCacheAdapter(spriteSheet?: EmojiSpriteSheetConfig) {
   return null;
 }
 
+export function peekWarmedEmojiSpriteSheetUrl(
+  spriteSheet?: EmojiSpriteSheetConfig,
+) {
+  const request = createSpriteSheetCacheRequest(spriteSheet);
+
+  return sharedSpriteSheetAssets.get(request.key)?.url ?? null;
+}
+
 export async function warmEmojiSpriteSheet(
   spriteSheet?: EmojiSpriteSheetConfig,
 ): Promise<EmojiSpriteSheetCachedAsset> {
   const resolved = resolveSpriteSheetConfig(spriteSheet);
   const request = createSpriteSheetCacheRequest(resolved);
   const adapter = getSpriteSheetCacheAdapter(resolved);
+  const sharedAsset = getSharedSpriteSheetAsset(request.key);
+
+  if (sharedAsset) {
+    return sharedAsset;
+  }
 
   if (!adapter || !isRemoteUrl(request.url)) {
     return {
@@ -128,22 +191,42 @@ export async function warmEmojiSpriteSheet(
     };
   }
 
-  const cached = await adapter.load(request);
+  const pendingWarmup = pendingSpriteSheetWarmups.get(request.key);
 
-  if (cached) {
-    return cached;
+  if (pendingWarmup) {
+    return pendingWarmup;
   }
 
-  const response = await fetch(request.url, {
-    credentials: 'omit',
-    mode: 'cors',
-  });
+  const warmupPromise = (async () => {
+    const cached = await adapter.load(request);
 
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch emoji sprite sheet: ${response.status} ${response.statusText}`,
+    if (cached) {
+      return storeSharedSpriteSheetAsset(request.key, cached);
+    }
+
+    const response = await fetch(request.url, {
+      credentials: 'omit',
+      mode: 'cors',
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch emoji sprite sheet: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    return storeSharedSpriteSheetAsset(
+      request.key,
+      await adapter.save(request, response),
     );
+  })();
+
+  pendingSpriteSheetWarmups.set(request.key, warmupPromise);
+
+  try {
+    return await warmupPromise;
+  } finally {
+    pendingSpriteSheetWarmups.delete(request.key);
   }
 
-  return adapter.save(request, response);
 }

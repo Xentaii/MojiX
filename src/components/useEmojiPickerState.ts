@@ -29,8 +29,10 @@ import {
   getLocalizedCategoryLabel,
   resolveLocaleDefinition,
 } from '../lib/i18n';
+import { createNativeAssetSource } from '../lib/assets';
 import { warmEmojiSpriteSheet } from '../lib/sprite-cache';
 import {
+  createSpriteSheetCacheKey,
   defaultSpriteSheet,
   resolveSpriteSheetConfig,
 } from '../lib/sprites';
@@ -39,6 +41,10 @@ import {
   readStoredSkinTone,
   writeStoredSkinTone,
 } from '../lib/storage';
+
+// Used as the default asset source when the caller provides no sprite sheet
+// and no explicit asset source — "just works" with native OS emoji.
+const DEFAULT_NATIVE_SOURCE = createNativeAssetSource();
 import type {
   EmojiCategoryId,
   EmojiPickerLabels,
@@ -52,6 +58,7 @@ import type {
   RecentEmojiRecord,
 } from '../lib/types';
 import type { EmojiGridHandle } from './EmojiGrid';
+import { peekWarmedEmojiSpriteSheetUrl } from '../lib/sprite-cache';
 
 function resolveRecentEmoji(
   recent: RecentEmojiRecord,
@@ -104,6 +111,23 @@ export interface EmojiPickerState {
   recentStore: EmojiRecentStore;
 }
 
+function resolveRuntimeSpriteAsset(
+  spriteSheet: ReturnType<typeof resolveSpriteSheetConfig>,
+  key: string,
+) {
+  if (!spriteSheet.cache.enabled) {
+    return null;
+  }
+
+  const url = peekWarmedEmojiSpriteSheetUrl(spriteSheet);
+
+  if (!url) {
+    return null;
+  }
+
+  return { key, url };
+}
+
 export function useEmojiPickerState({
   value,
   searchQuery: controlledSearchQuery,
@@ -129,7 +153,7 @@ export function useEmojiPickerState({
   defaultSkinTone = 'default',
   onSkinToneChange,
   labels,
-  spriteSheet = defaultSpriteSheet,
+  spriteSheet: spriteSheetProp,
   customEmojis = [],
   emptyState,
   unstyled = false,
@@ -147,8 +171,12 @@ export function useEmojiPickerState({
   const isActiveCategoryControlled = controlledActiveCategory !== undefined;
 
   const resolvedSpriteSheet = useMemo(
-    () => resolveSpriteSheetConfig(spriteSheet),
-    [spriteSheet],
+    () => resolveSpriteSheetConfig(spriteSheetProp ?? defaultSpriteSheet),
+    [spriteSheetProp],
+  );
+  const spriteSheetCacheKey = useMemo(
+    () => createSpriteSheetCacheKey(resolvedSpriteSheet),
+    [resolvedSpriteSheet],
   );
   const localeDefinition = useMemo(
     () => resolveLocaleDefinition(locale, locales, fallbackLocale),
@@ -179,8 +207,11 @@ export function useEmojiPickerState({
   const [hoveredEmoji, setHoveredEmoji] = useState<EmojiRenderable | null>(
     null,
   );
-  const [runtimeSpriteUrl, setRuntimeSpriteUrl] = useState<string | null>(
-    null,
+  const [runtimeSpriteAsset, setRuntimeSpriteAsset] = useState<{
+    key: string;
+    url: string;
+  } | null>(
+    () => resolveRuntimeSpriteAsset(resolvedSpriteSheet, spriteSheetCacheKey),
   );
 
   const searchQuery = isSearchControlled
@@ -229,10 +260,11 @@ export function useEmojiPickerState({
   }, [defaultActiveCategory, isActiveCategoryControlled]);
 
   useEffect(() => {
-    let released = false;
-    let releaseCachedAsset: (() => void) | undefined;
+    let cancelled = false;
 
-    setRuntimeSpriteUrl(null);
+    setRuntimeSpriteAsset(
+      resolveRuntimeSpriteAsset(resolvedSpriteSheet, spriteSheetCacheKey),
+    );
 
     if (
       !resolvedSpriteSheet.cache.enabled ||
@@ -243,36 +275,43 @@ export function useEmojiPickerState({
 
     warmEmojiSpriteSheet(resolvedSpriteSheet)
       .then((asset) => {
-        if (released) {
-          asset.release?.();
+        if (cancelled || !asset.cached) {
           return;
         }
 
-        if (!asset.cached) return;
-
-        releaseCachedAsset = asset.release;
-        setRuntimeSpriteUrl(asset.url);
+        setRuntimeSpriteAsset({
+          key: spriteSheetCacheKey,
+          url: asset.url,
+        });
       })
       .catch(() => {
         return;
       });
 
     return () => {
-      released = true;
-      releaseCachedAsset?.();
+      cancelled = true;
     };
-  }, [resolvedSpriteSheet]);
+  }, [resolvedSpriteSheet, spriteSheetCacheKey]);
 
   const activeSpriteSheet = useMemo(
     () =>
-      runtimeSpriteUrl
-        ? { ...resolvedSpriteSheet, url: runtimeSpriteUrl }
+      runtimeSpriteAsset?.key === spriteSheetCacheKey
+        ? { ...resolvedSpriteSheet, url: runtimeSpriteAsset.url }
         : resolvedSpriteSheet,
-    [resolvedSpriteSheet, runtimeSpriteUrl],
+    [resolvedSpriteSheet, runtimeSpriteAsset, spriteSheetCacheKey],
   );
-  const resolvedGridAssetSource = gridAssetSource ?? assetSource;
+  // When the caller provides no spriteSheet and no explicit asset source, fall
+  // back to native OS emoji so <EmojiPicker /> works with zero config.
+  const zeroConfigSource =
+    spriteSheetProp === undefined &&
+    assetSource === undefined &&
+    gridAssetSource === undefined
+      ? DEFAULT_NATIVE_SOURCE
+      : undefined;
+
+  const resolvedGridAssetSource = gridAssetSource ?? assetSource ?? zeroConfigSource;
   const resolvedPreviewAssetSource =
-    previewAssetSource ?? assetSource ?? resolvedGridAssetSource;
+    previewAssetSource ?? assetSource ?? zeroConfigSource ?? resolvedGridAssetSource;
 
   const recentSectionEmojis = useMemo(() => {
     if (!showRecents) return [] as EmojiRenderable[];
@@ -411,7 +450,7 @@ export function useEmojiPickerState({
         localeDefinition,
       );
 
-      setHoveredEmoji(emoji);
+      setHoveredEmoji(null);
       onEmojiSelect?.(selection);
 
       if (showRecents) {
