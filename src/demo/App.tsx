@@ -1,14 +1,31 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   EmojiPicker,
   createNativeAssetSource,
   createEmojiSpriteSheet,
   warmEmojiSpriteSheet,
 } from '../index';
-import type { CustomEmoji, EmojiSelection } from '../index';
+import type {
+  CustomEmoji,
+  EmojiCategoryIconGlyph,
+  EmojiCategoryIconPreset,
+  EmojiLocaleCode,
+  EmojiSelection,
+  EmojiVendor,
+} from '../index';
 import orbitEmoji from './assets/mojix-orbit.svg';
 import sparkEmoji from './assets/mojix-spark.svg';
 import waveEmoji from './assets/mojix-wave.svg';
+import {
+  BUILTIN_DEMO_THEMES,
+  DEMO_THEME_STORAGE_KEY,
+  cloneDemoThemePalette,
+  createCustomDemoThemeId,
+  createPickerThemeStyle,
+  isCustomDemoTheme,
+  type DemoThemeDefinition,
+  type DemoThemePalette,
+} from './themePresets';
 
 const CUSTOM_EMOJIS: CustomEmoji[] = [
   {
@@ -16,6 +33,8 @@ const CUSTOM_EMOJIS: CustomEmoji[] = [
     name: 'MojiX Orbit',
     shortcodes: ['mojix_orbit'],
     keywords: ['brand', 'planet', 'satellite'],
+    categoryId: 'brand',
+    categoryLabel: 'Brand Kit',
     imageUrl: orbitEmoji,
   },
   {
@@ -23,6 +42,8 @@ const CUSTOM_EMOJIS: CustomEmoji[] = [
     name: 'MojiX Spark',
     shortcodes: ['mojix_spark'],
     keywords: ['energy', 'flash', 'brand'],
+    categoryId: 'brand',
+    categoryLabel: 'Brand Kit',
     imageUrl: sparkEmoji,
   },
   {
@@ -30,30 +51,90 @@ const CUSTOM_EMOJIS: CustomEmoji[] = [
     name: 'MojiX Wave',
     shortcodes: ['mojix_wave'],
     keywords: ['hello', 'brand', 'gesture'],
+    categoryId: 'people',
     imageUrl: waveEmoji,
   },
 ];
 
 const NATIVE_FALLBACK_SOURCE = createNativeAssetSource();
+const RECENT_EMPTY_IDS = ['1f44b', '1f389', '2728', '1f680'];
+const DEFAULT_BRAND_LABEL = 'Brand Kit';
+const DEFAULT_CUSTOM_THEME_NAME = 'My Theme';
+const DEFAULT_PREVIEW_EMOJI = String.fromCodePoint(0x1f642);
 
-// ── Code snippets shown in the API showcase section ──────────────────────────
+const VENDOR_OPTIONS: Array<{
+  label: string;
+  value: EmojiVendor;
+}> = [
+  { label: 'Twitter', value: 'twitter' },
+  { label: 'Google', value: 'google' },
+  { label: 'Apple', value: 'apple' },
+  { label: 'Facebook', value: 'facebook' },
+];
+
+const LOCALE_OPTIONS: Array<{
+  label: string;
+  value: EmojiLocaleCode;
+}> = [
+  { label: 'English', value: 'en' },
+  { label: 'Russian', value: 'ru' },
+];
+
+const CATEGORY_ICON_STYLE_OPTIONS: Array<{
+  label: string;
+  value: EmojiCategoryIconPreset;
+}> = [
+  { label: 'Outline mono', value: 'outline' },
+  { label: 'Native emoji', value: 'native' },
+  { label: 'Picker emoji', value: 'picker' },
+  { label: 'Twitter emoji', value: 'twitter' },
+  { label: 'Google emoji', value: 'google' },
+  { label: 'Apple emoji', value: 'apple' },
+  { label: 'Facebook emoji', value: 'facebook' },
+];
+
+const PEOPLE_ICON_STYLE_OPTIONS: Array<{
+  label: string;
+  value: 'inherit' | EmojiCategoryIconPreset;
+}> = [
+  { label: 'Follow global style', value: 'inherit' },
+  { label: 'Outline mono', value: 'outline' },
+  { label: 'Native emoji', value: 'native' },
+  { label: 'Picker emoji', value: 'picker' },
+  { label: 'Twitter emoji', value: 'twitter' },
+  { label: 'Google emoji', value: 'google' },
+];
+
+const BRAND_ICON_OPTIONS: Array<{
+  label: string;
+  value: EmojiCategoryIconGlyph;
+}> = [
+  { label: 'Rocket', value: 'rocket' },
+  { label: 'Sparkles', value: 'sparkles' },
+  { label: 'Star', value: 'star' },
+  { label: 'Heart', value: 'heart' },
+  { label: 'Bolt', value: 'bolt' },
+  { label: 'Gift', value: 'gift' },
+  { label: 'Palette', value: 'palette' },
+  { label: 'Code', value: 'code' },
+];
 
 const SNIPPET_DROPIN = `import { EmojiPicker } from 'mojix';
 import 'mojix/style.css';
 
 <EmojiPicker
   onEmojiSelect={(emoji) => {
-    console.log(emoji.native); // 😄
+    console.log(emoji.native); // native emoji
   }}
 />`;
 
 const SNIPPET_THEMED = `.my-picker {
-  --mx-accent: #7c3aed;
-  --mx-bg:     rgba(17, 12, 46, 0.94);
-  --mx-text:   #e2e8f0;
-  --mx-muted:  #94a3b8;
-  --mx-border: rgba(255,255,255,0.08);
-  --mx-radius: 16px;
+  --mx-accent: #ee7848;
+  --mx-bg: #fffaf4;
+  --mx-panel: #fffafc;
+  --mx-text: #201813;
+  --mx-muted: #7b6e66;
+  --mx-radius: 24px;
 }
 
 <EmojiPicker
@@ -66,52 +147,324 @@ const SNIPPET_HEADLESS = `import { MojiX } from 'mojix';
 function MyPicker({ onSelect }) {
   return (
     <MojiX.Root unstyled onEmojiSelect={onSelect}>
-      <MojiX.Search>
-        {({ searchQuery, setSearchQuery }) => (
-          <input
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search…"
-            className="my-search"
-          />
-        )}
-      </MojiX.Search>
-      <MojiX.Viewport className="my-viewport">
+      <MojiX.Search />
+      <MojiX.Viewport>
         <MojiX.Empty>Nothing found.</MojiX.Empty>
         <MojiX.List />
       </MojiX.Viewport>
-      <MojiX.ActiveEmoji>
-        {({ emoji }) =>
-          emoji && <footer className="my-preview">{emoji.name}</footer>
-        }
-      </MojiX.ActiveEmoji>
+      <MojiX.CategoryNav />
     </MojiX.Root>
   );
 }`;
 
-// ─────────────────────────────────────────────────────────────────────────────
+function formatSelectionPayload(selection: EmojiSelection | null) {
+  if (!selection) {
+    return `{
+  "message": "Select an emoji in the picker."
+}`;
+  }
+
+  return JSON.stringify(selection, null, 2);
+}
+
+function getSelectionToken(selection: EmojiSelection | null) {
+  if (!selection) {
+    return 'waiting';
+  }
+
+  if (selection.native) {
+    return selection.native;
+  }
+
+  if (selection.shortcodes[0]) {
+    return `:${selection.shortcodes[0]}:`;
+  }
+
+  return selection.name;
+}
+
+function escapeSnippetString(value: string) {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function readStoredCustomThemes() {
+  if (typeof window === 'undefined') {
+    return [] as DemoThemeDefinition[];
+  }
+
+  try {
+    const raw = window.localStorage.getItem(DEMO_THEME_STORAGE_KEY);
+
+    if (!raw) {
+      return [] as DemoThemeDefinition[];
+    }
+
+    const parsed = JSON.parse(raw);
+
+    if (!Array.isArray(parsed)) {
+      return [] as DemoThemeDefinition[];
+    }
+
+    return parsed.flatMap((theme) => {
+      if (!theme || typeof theme !== 'object') {
+        return [];
+      }
+
+      const candidate = theme as Partial<DemoThemeDefinition>;
+      const palette = candidate.palette as Partial<DemoThemePalette> | undefined;
+
+      if (
+        typeof candidate.id !== 'string' ||
+        !isCustomDemoTheme(candidate.id) ||
+        typeof candidate.name !== 'string' ||
+        !palette ||
+        (palette.mode !== 'light' && palette.mode !== 'dark') ||
+        typeof palette.accent !== 'string' ||
+        typeof palette.bg !== 'string' ||
+        typeof palette.panel !== 'string' ||
+        typeof palette.text !== 'string' ||
+        typeof palette.muted !== 'string' ||
+        typeof palette.radius !== 'number' ||
+        !Number.isFinite(palette.radius)
+      ) {
+        return [];
+      }
+
+      return [
+        {
+          id: candidate.id,
+          name: candidate.name,
+          palette: {
+            mode: palette.mode,
+            accent: palette.accent,
+            bg: palette.bg,
+            panel: palette.panel,
+            text: palette.text,
+            muted: palette.muted,
+            radius: palette.radius,
+          },
+        },
+      ];
+    });
+  } catch {
+    return [] as DemoThemeDefinition[];
+  }
+}
+
+function buildPlaygroundSnippet(options: {
+  brandIcon: EmojiCategoryIconGlyph;
+  brandLabel: string;
+  brandVisible: boolean;
+  categoryIconStyle: EmojiCategoryIconPreset;
+  columns: number;
+  emojiSize: number;
+  locale: EmojiLocaleCode;
+  peopleIconStyle: 'inherit' | EmojiCategoryIconPreset;
+  recentDefaultActive: boolean;
+  recentEnabled: boolean;
+  recentLimit: number;
+  recentShowWhenEmpty: boolean;
+  recentSort: 'recent' | 'frequent';
+  showSkinTones: boolean;
+  theme: DemoThemePalette;
+  vendor: EmojiVendor;
+}) {
+  const lines = [
+    `const pickerThemeStyle = {`,
+    `  colorScheme: '${options.theme.mode}',`,
+    `  '--mx-accent': '${options.theme.accent}',`,
+    `  '--mx-bg': '${options.theme.bg}',`,
+    `  '--mx-panel': '${options.theme.panel}',`,
+    `  '--mx-text': '${options.theme.text}',`,
+    `  '--mx-muted': '${options.theme.muted}',`,
+    `  '--mx-radius': '${options.theme.radius}px',`,
+    `};`,
+    ``,
+    `<EmojiPicker`,
+    `  showPreview={false}`,
+    `  locale="${options.locale}"`,
+    `  emojiSize={${options.emojiSize}}`,
+    `  columns={${options.columns}}`,
+    `  showSkinTones={${options.showSkinTones}}`,
+    `  categoryIconStyle="${options.categoryIconStyle}"`,
+    `  customEmojis={CUSTOM_EMOJIS}`,
+    `  style={pickerThemeStyle}`,
+    `  spriteSheet={createEmojiSpriteSheet({`,
+    `    source: 'cdn',`,
+    `    vendor: '${options.vendor}',`,
+    `    sheetSize: 64,`,
+    `    variant: 'indexed-256',`,
+    `    cache: { enabled: true, preload: 'mount' },`,
+    `  })}`,
+    `  recent={{`,
+    `    enabled: ${options.recentEnabled},`,
+    `    limit: ${options.recentLimit},`,
+    `    showWhenEmpty: ${options.recentShowWhenEmpty},`,
+    `    defaultActive: ${options.recentDefaultActive},`,
+    `    sort: '${options.recentSort}',`,
+    `    emptyEmojiIds: ['1f44b', '1f389', '2728', '1f680'],`,
+    `  }}`,
+    `  categories={{`,
+    `    brand: {`,
+    `      label: "${escapeSnippetString(options.brandLabel)}",`,
+    `      order: 2.5,`,
+    `      hidden: ${!options.brandVisible},`,
+    `    },`,
+  ];
+
+  if (options.peopleIconStyle !== 'inherit') {
+    lines.push(
+      `    people: {`,
+      `      iconStyle: '${options.peopleIconStyle}',`,
+      `    },`,
+    );
+  }
+
+  lines.push(
+    `  }}`,
+    `  categoryIcons={{ brand: '${options.brandIcon}' }}`,
+    `  onEmojiSelect={handleEmojiSelect}`,
+    `/>`,
+  );
+
+  return lines.join('\n');
+}
 
 export function App() {
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [message, setMessage] = useState('');
   const [lastEmoji, setLastEmoji] = useState<EmojiSelection | null>(null);
   const [spriteWarmed, setSpriteWarmed] = useState(false);
-  const composerRef = useRef<HTMLDivElement>(null);
+  const [vendor, setVendor] = useState<EmojiVendor>('twitter');
+  const [locale, setLocale] = useState<EmojiLocaleCode>('en');
+  const [emojiSize, setEmojiSize] = useState(22);
+  const [columns, setColumns] = useState(9);
+  const [showSkinTones, setShowSkinTones] = useState(true);
+  const [categoryIconStyle, setCategoryIconStyle] =
+    useState<EmojiCategoryIconPreset>('outline');
+  const [recentEnabled, setRecentEnabled] = useState(true);
+  const [recentLimit, setRecentLimit] = useState(12);
+  const [recentShowWhenEmpty, setRecentShowWhenEmpty] = useState(true);
+  const [recentDefaultActive, setRecentDefaultActive] = useState(true);
+  const [recentSort, setRecentSort] =
+    useState<'recent' | 'frequent'>('recent');
+  const [brandVisible, setBrandVisible] = useState(true);
+  const [brandLabel, setBrandLabel] = useState(DEFAULT_BRAND_LABEL);
+  const [brandIcon, setBrandIcon] =
+    useState<EmojiCategoryIconGlyph>('rocket');
+  const [peopleIconStyle, setPeopleIconStyle] =
+    useState<'inherit' | EmojiCategoryIconPreset>('outline');
+  const [customThemes, setCustomThemes] = useState<DemoThemeDefinition[]>(
+    () => readStoredCustomThemes(),
+  );
+  const [selectedThemeId, setSelectedThemeId] = useState(
+    BUILTIN_DEMO_THEMES[0]!.id,
+  );
+  const [themeDraft, setThemeDraft] = useState<DemoThemePalette>(() =>
+    cloneDemoThemePalette(BUILTIN_DEMO_THEMES[0]!.palette),
+  );
+  const [themeName, setThemeName] = useState(DEFAULT_CUSTOM_THEME_NAME);
+
+  const resolvedBrandLabel = brandLabel.trim() || DEFAULT_BRAND_LABEL;
+  const allThemes = useMemo(
+    () => [...BUILTIN_DEMO_THEMES, ...customThemes],
+    [customThemes],
+  );
+  const selectedThemeDefinition = useMemo(
+    () =>
+      allThemes.find((theme) => theme.id === selectedThemeId) ??
+      BUILTIN_DEMO_THEMES[0]!,
+    [allThemes, selectedThemeId],
+  );
+  const pickerThemeStyle = useMemo(
+    () => createPickerThemeStyle(themeDraft),
+    [themeDraft],
+  );
+  const isSelectedCustomTheme = isCustomDemoTheme(selectedThemeId);
 
   const spriteSheet = useMemo(
     () =>
       createEmojiSpriteSheet({
         source: 'cdn',
-        vendor: 'twitter',
+        vendor,
         sheetSize: 64,
         variant: 'indexed-256',
         cache: { enabled: true, preload: 'mount' },
       }),
-    [],
+    [vendor],
+  );
+
+  const demoRecent = useMemo(
+    () => ({
+      enabled: recentEnabled,
+      limit: recentLimit,
+      showWhenEmpty: recentShowWhenEmpty,
+      defaultActive: recentDefaultActive,
+      sort: recentSort,
+      emptyEmojiIds: RECENT_EMPTY_IDS,
+    }),
+    [
+      recentDefaultActive,
+      recentEnabled,
+      recentLimit,
+      recentShowWhenEmpty,
+      recentSort,
+    ],
+  );
+
+  const demoCategories = useMemo(
+    () => ({
+      brand: {
+        label: resolvedBrandLabel,
+        order: 2.5,
+        hidden: !brandVisible,
+      },
+      people: {
+        ...(peopleIconStyle === 'inherit'
+          ? {}
+          : { iconStyle: peopleIconStyle }),
+      },
+    }),
+    [brandVisible, peopleIconStyle, resolvedBrandLabel],
+  );
+
+  const demoCategoryIcons = useMemo(
+    () => ({
+      brand: brandIcon,
+    }),
+    [brandIcon],
   );
 
   useEffect(() => {
+    if (allThemes.some((theme) => theme.id === selectedThemeId)) {
+      return;
+    }
+
+    setSelectedThemeId(BUILTIN_DEMO_THEMES[0]!.id);
+  }, [allThemes, selectedThemeId]);
+
+  useEffect(() => {
+    setThemeDraft(cloneDemoThemePalette(selectedThemeDefinition.palette));
+    setThemeName(
+      selectedThemeDefinition.builtin
+        ? `${selectedThemeDefinition.name} Custom`
+        : selectedThemeDefinition.name,
+    );
+  }, [selectedThemeDefinition]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(
+      DEMO_THEME_STORAGE_KEY,
+      JSON.stringify(customThemes),
+    );
+  }, [customThemes]);
+
+  useEffect(() => {
     let cancelled = false;
+
+    setSpriteWarmed(false);
 
     warmEmojiSpriteSheet(spriteSheet)
       .then(() => {
@@ -130,133 +483,724 @@ export function App() {
     };
   }, [spriteSheet]);
 
-  // Close picker on outside click or Escape
-  useEffect(() => {
-    if (!pickerOpen) return;
-
-    function handleDown(e: PointerEvent) {
-      if (!composerRef.current?.contains(e.target as Node)) {
-        setPickerOpen(false);
-      }
-    }
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setPickerOpen(false);
-    }
-
-    document.addEventListener('pointerdown', handleDown);
-    document.addEventListener('keydown', handleKey);
-    return () => {
-      document.removeEventListener('pointerdown', handleDown);
-      document.removeEventListener('keydown', handleKey);
-    };
-  }, [pickerOpen]);
-
   function handleEmojiSelect(emoji: EmojiSelection) {
-    const token = emoji.native ?? `:${emoji.shortcodes[0]}:`;
     setLastEmoji(emoji);
-    setMessage((m) => `${m}${m === '' || m.endsWith(' ') ? '' : ' '}${token} `);
-    setPickerOpen(false);
   }
+
+  function updateThemeDraft(
+    key: keyof DemoThemePalette,
+    value: DemoThemePalette[keyof DemoThemePalette],
+  ) {
+    setThemeDraft((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  }
+
+  function handleThemeSave() {
+    const nextName = themeName.trim() || DEFAULT_CUSTOM_THEME_NAME;
+
+    if (isSelectedCustomTheme) {
+      setCustomThemes((themes) =>
+        themes.map((theme) =>
+          theme.id === selectedThemeId
+            ? {
+                ...theme,
+                name: nextName,
+                palette: cloneDemoThemePalette(themeDraft),
+              }
+            : theme,
+        ),
+      );
+      return;
+    }
+
+    const nextTheme: DemoThemeDefinition = {
+      id: createCustomDemoThemeId(nextName),
+      name: nextName,
+      palette: cloneDemoThemePalette(themeDraft),
+    };
+
+    setCustomThemes((themes) => [...themes, nextTheme]);
+    setSelectedThemeId(nextTheme.id);
+  }
+
+  function handleThemeDelete() {
+    if (!isSelectedCustomTheme) {
+      return;
+    }
+
+    setCustomThemes((themes) =>
+      themes.filter((theme) => theme.id !== selectedThemeId),
+    );
+    setSelectedThemeId(BUILTIN_DEMO_THEMES[0]!.id);
+  }
+
+  function resetDemoControls() {
+    const defaultTheme = BUILTIN_DEMO_THEMES[0]!;
+
+    setVendor('twitter');
+    setLocale('en');
+    setEmojiSize(22);
+    setColumns(9);
+    setShowSkinTones(true);
+    setCategoryIconStyle('outline');
+    setRecentEnabled(true);
+    setRecentLimit(12);
+    setRecentShowWhenEmpty(true);
+    setRecentDefaultActive(true);
+    setRecentSort('recent');
+    setBrandVisible(true);
+    setBrandLabel(DEFAULT_BRAND_LABEL);
+    setBrandIcon('rocket');
+    setPeopleIconStyle('outline');
+    setSelectedThemeId(defaultTheme.id);
+    setThemeDraft(cloneDemoThemePalette(defaultTheme.palette));
+    setThemeName(DEFAULT_CUSTOM_THEME_NAME);
+  }
+
+  const selectionPayload = useMemo(
+    () => formatSelectionPayload(lastEmoji),
+    [lastEmoji],
+  );
+  const selectionToken = getSelectionToken(lastEmoji);
+  const playgroundSnippet = useMemo(
+    () =>
+      buildPlaygroundSnippet({
+        brandIcon,
+        brandLabel: resolvedBrandLabel,
+        brandVisible,
+        categoryIconStyle,
+        columns,
+        emojiSize,
+        locale,
+        peopleIconStyle,
+        recentDefaultActive,
+        recentEnabled,
+        recentLimit,
+        recentShowWhenEmpty,
+        recentSort,
+        showSkinTones,
+        theme: themeDraft,
+        vendor,
+      }),
+    [
+      brandIcon,
+      brandVisible,
+      categoryIconStyle,
+      columns,
+      emojiSize,
+      locale,
+      peopleIconStyle,
+      recentDefaultActive,
+      recentEnabled,
+      recentLimit,
+      recentShowWhenEmpty,
+      recentSort,
+      resolvedBrandLabel,
+      showSkinTones,
+      themeDraft,
+      vendor,
+    ],
+  );
 
   return (
     <div className="page">
-
-      {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <header className="hero">
         <div className="hero__inner">
           <span className="badge">MojiX</span>
           <h1 className="hero__title">
-            Emoji picker<br />for serious apps.
+            Emoji picker
+            <br />
+            for serious apps.
           </h1>
           <p className="hero__sub">
-            Drop-in ready like emoji-mart.{' '}
-            Fully composable like Radix UI.
+            Drop-in ready like emoji-mart. Fully composable like Radix UI.
           </p>
           <code className="install-cmd">npm install mojix</code>
         </div>
       </header>
 
-      {/* ── Live demo ─────────────────────────────────────────────────────── */}
       <section className="demo-section">
-        <div className="chat-window">
-
-          {/* Header */}
-          <div className="chat-header">
-            <div className="chat-avatar" aria-hidden="true">N</div>
-            <div className="chat-header-info">
-              <strong>Nora</strong>
-              <span className="chat-status">
-                <span className="chat-status__dot" aria-hidden="true" />
-                online
+        <div className="demo-shell">
+          <section className="playground-card playground-card--picker">
+            <div className="playground-card__head">
+              <div>
+                <span className="playground-card__eyebrow">Live Picker</span>
+                <strong>Default UI playground</strong>
+              </div>
+              <span className="playground-status">
+                {selectedThemeDefinition.name} / {vendor} /{' '}
+                {spriteWarmed ? 'ready' : 'warming'}
               </span>
             </div>
-          </div>
-
-          {/* Messages */}
-          <div className="chat-messages" role="log" aria-label="Chat messages">
-            <div className="chat-msg chat-msg--in">
-              <p>Hey! Give the new picker a spin. 👀</p>
-            </div>
-            <div className="chat-msg chat-msg--in">
-              <p>Custom emoji, localized search, vendor sprites — all opt-in.</p>
-            </div>
-            {message && (
-              <div className="chat-msg chat-msg--out">
-                <p>{message.trim()}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Composer */}
-          <div className="chat-composer" ref={composerRef}>
-            <div className="chat-composer__row">
-              <div className="chat-picker-anchor">
-                {pickerOpen && (
-                  <div className="chat-picker-popover" id="demo-emoji-picker">
-                    <EmojiPicker
-                      customEmojis={CUSTOM_EMOJIS}
-                      spriteSheet={spriteSheet}
-                      assetSource={
-                        spriteWarmed ? undefined : NATIVE_FALLBACK_SOURCE
-                      }
-                      emojiSize={22}
-                      onEmojiSelect={handleEmojiSelect}
-                    />
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  className={`chat-emoji-btn${pickerOpen ? ' is-open' : ''}`}
-                  onClick={() => setPickerOpen((o) => !o)}
-                  aria-label={pickerOpen ? 'Close emoji picker' : 'Open emoji picker'}
-                  aria-expanded={pickerOpen}
-                  aria-controls="demo-emoji-picker"
-                  aria-haspopup="dialog"
-                >
-                  {lastEmoji?.native ?? '😊'}
-                </button>
-              </div>
-
-              <textarea
-                className="chat-input"
-                value={message}
-                onChange={(e) => setMessage(e.currentTarget.value)}
-                placeholder="Type a message…"
-                rows={1}
-                aria-label="Message input"
+            <div className="playground-card__body playground-card__body--picker">
+              <EmojiPicker
+                className="demo-picker"
+                showPreview={false}
+                locale={locale}
+                emojiSize={emojiSize}
+                columns={columns}
+                showSkinTones={showSkinTones}
+                categoryIconStyle={categoryIconStyle}
+                customEmojis={CUSTOM_EMOJIS}
+                style={pickerThemeStyle}
+                spriteSheet={spriteSheet}
+                assetSource={
+                  spriteWarmed ? undefined : NATIVE_FALLBACK_SOURCE
+                }
+                recent={demoRecent}
+                categories={demoCategories}
+                categoryIcons={demoCategoryIcons}
+                onEmojiSelect={handleEmojiSelect}
               />
+            </div>
+          </section>
 
-              <button type="button" className="chat-send-btn">
-                Send
+          <section className="playground-card playground-card--preview">
+            <div className="playground-card__head">
+              <div>
+                <span className="playground-card__eyebrow">Selection</span>
+                <strong>Large emoji render</strong>
+              </div>
+              <span className="playground-status playground-status--soft">
+                {lastEmoji ? lastEmoji.categoryLabel : 'idle'}
+              </span>
+            </div>
+            <div className="playground-card__body">
+              <div className="playground-preview" aria-live="polite">
+                <div className="playground-preview__stage">
+                  {lastEmoji?.imageUrl ? (
+                    <img
+                      className="playground-preview__image"
+                      src={lastEmoji.imageUrl}
+                      alt={lastEmoji.name}
+                    />
+                  ) : (
+                    <span className="playground-preview__emoji">
+                      {lastEmoji?.native ?? DEFAULT_PREVIEW_EMOJI}
+                    </span>
+                  )}
+                </div>
+
+                <div className="playground-preview__copy">
+                  <strong>
+                    {lastEmoji?.name ?? 'Pick any emoji from the left panel'}
+                  </strong>
+                  <span>
+                    {lastEmoji
+                      ? `${selectionToken} / ${
+                          lastEmoji.shortcodes[0]
+                            ? `:${lastEmoji.shortcodes[0]}:`
+                            : 'custom asset'
+                        }`
+                      : 'The selected emoji and its label will stay here.'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside className="playground-card playground-card--dev">
+            <div className="playground-card__head">
+              <div>
+                <span className="playground-card__eyebrow">Dev Params</span>
+                <strong>Runtime configuration</strong>
+              </div>
+              <button
+                type="button"
+                className="dev-reset"
+                onClick={resetDemoControls}
+              >
+                Reset
               </button>
             </div>
-          </div>
+            <div className="playground-card__body playground-card__body--scroll">
+              <form
+                className="dev-panel"
+                onSubmit={(event) => event.preventDefault()}
+              >
+                <section className="dev-group">
+                  <div className="dev-group__head">
+                    <h3>Theme</h3>
+                    <span>Presets + custom</span>
+                  </div>
+                  <div className="dev-controls">
+                    <label className="dev-field">
+                      <span className="dev-field__label">Theme preset</span>
+                      <select
+                        className="dev-select"
+                        value={selectedThemeId}
+                        onChange={(event) =>
+                          setSelectedThemeId(event.target.value)
+                        }
+                      >
+                        {allThemes.map((theme) => (
+                          <option key={theme.id} value={theme.id}>
+                            {theme.name}
+                            {theme.builtin ? ' (built-in)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
 
+                    <label className="dev-field">
+                      <span className="dev-field__label">Theme mode</span>
+                      <select
+                        className="dev-select"
+                        value={themeDraft.mode}
+                        onChange={(event) =>
+                          updateThemeDraft(
+                            'mode',
+                            event.target.value as DemoThemePalette['mode'],
+                          )
+                        }
+                      >
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                      </select>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Accent color</span>
+                      <div className="dev-color-row">
+                        <input
+                          className="dev-color__picker"
+                          type="color"
+                          value={themeDraft.accent}
+                          onChange={(event) =>
+                            updateThemeDraft('accent', event.target.value)
+                          }
+                        />
+                        <span className="dev-color__value">
+                          {themeDraft.accent}
+                        </span>
+                      </div>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Background</span>
+                      <div className="dev-color-row">
+                        <input
+                          className="dev-color__picker"
+                          type="color"
+                          value={themeDraft.bg}
+                          onChange={(event) =>
+                            updateThemeDraft('bg', event.target.value)
+                          }
+                        />
+                        <span className="dev-color__value">
+                          {themeDraft.bg}
+                        </span>
+                      </div>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Panel</span>
+                      <div className="dev-color-row">
+                        <input
+                          className="dev-color__picker"
+                          type="color"
+                          value={themeDraft.panel}
+                          onChange={(event) =>
+                            updateThemeDraft('panel', event.target.value)
+                          }
+                        />
+                        <span className="dev-color__value">
+                          {themeDraft.panel}
+                        </span>
+                      </div>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Text</span>
+                      <div className="dev-color-row">
+                        <input
+                          className="dev-color__picker"
+                          type="color"
+                          value={themeDraft.text}
+                          onChange={(event) =>
+                            updateThemeDraft('text', event.target.value)
+                          }
+                        />
+                        <span className="dev-color__value">
+                          {themeDraft.text}
+                        </span>
+                      </div>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Muted text</span>
+                      <div className="dev-color-row">
+                        <input
+                          className="dev-color__picker"
+                          type="color"
+                          value={themeDraft.muted}
+                          onChange={(event) =>
+                            updateThemeDraft('muted', event.target.value)
+                          }
+                        />
+                        <span className="dev-color__value">
+                          {themeDraft.muted}
+                        </span>
+                      </div>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Corner radius</span>
+                      <div className="dev-range">
+                        <input
+                          className="dev-range__input"
+                          type="range"
+                          min="12"
+                          max="32"
+                          step="1"
+                          value={themeDraft.radius}
+                          onChange={(event) =>
+                            updateThemeDraft(
+                              'radius',
+                              Number.parseInt(event.target.value, 10),
+                            )
+                          }
+                        />
+                        <strong>{themeDraft.radius}px</strong>
+                      </div>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Custom theme name</span>
+                      <input
+                        className="dev-input"
+                        type="text"
+                        value={themeName}
+                        onChange={(event) => setThemeName(event.target.value)}
+                        placeholder={DEFAULT_CUSTOM_THEME_NAME}
+                      />
+                    </label>
+
+                    <div className="dev-actions">
+                      <button
+                        type="button"
+                        className="dev-button"
+                        onClick={handleThemeSave}
+                      >
+                        {isSelectedCustomTheme
+                          ? 'Update theme'
+                          : 'Save as custom'}
+                      </button>
+                      <button
+                        type="button"
+                        className="dev-button dev-button--danger"
+                        onClick={handleThemeDelete}
+                        disabled={!isSelectedCustomTheme}
+                      >
+                        Delete custom
+                      </button>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="dev-group">
+                  <div className="dev-group__head">
+                    <h3>Visual</h3>
+                    <span>Live controls</span>
+                  </div>
+                  <div className="dev-controls">
+                    <label className="dev-field">
+                      <span className="dev-field__label">Sprite vendor</span>
+                      <select
+                        className="dev-select"
+                        value={vendor}
+                        onChange={(event) =>
+                          setVendor(event.target.value as EmojiVendor)
+                        }
+                      >
+                        {VENDOR_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Locale</span>
+                      <select
+                        className="dev-select"
+                        value={locale}
+                        onChange={(event) =>
+                          setLocale(event.target.value as EmojiLocaleCode)
+                        }
+                      >
+                        {LOCALE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">
+                        Category icon style
+                      </span>
+                      <select
+                        className="dev-select"
+                        value={categoryIconStyle}
+                        onChange={(event) =>
+                          setCategoryIconStyle(
+                            event.target.value as EmojiCategoryIconPreset,
+                          )
+                        }
+                      >
+                        {CATEGORY_ICON_STYLE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Emoji size</span>
+                      <div className="dev-range">
+                        <input
+                          className="dev-range__input"
+                          type="range"
+                          min="18"
+                          max="32"
+                          step="1"
+                          value={emojiSize}
+                          onChange={(event) =>
+                            setEmojiSize(Number.parseInt(event.target.value, 10))
+                          }
+                        />
+                        <strong>{emojiSize}px</strong>
+                      </div>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Grid columns</span>
+                      <div className="dev-range">
+                        <input
+                          className="dev-range__input"
+                          type="range"
+                          min="7"
+                          max="11"
+                          step="1"
+                          value={columns}
+                          onChange={(event) =>
+                            setColumns(Number.parseInt(event.target.value, 10))
+                          }
+                        />
+                        <strong>{columns}</strong>
+                      </div>
+                    </label>
+
+                    <label className="dev-toggle">
+                      <input
+                        type="checkbox"
+                        checked={showSkinTones}
+                        onChange={(event) =>
+                          setShowSkinTones(event.target.checked)
+                        }
+                      />
+                      <span className="dev-toggle__copy">
+                        <strong>Skin tone switcher</strong>
+                        <small>Expose the tone picker in the toolbar.</small>
+                      </span>
+                    </label>
+                  </div>
+                </section>
+
+                <section className="dev-group">
+                  <div className="dev-group__head">
+                    <h3>Recent</h3>
+                    <span>Category API</span>
+                  </div>
+                  <div className="dev-controls">
+                    <label className="dev-toggle">
+                      <input
+                        type="checkbox"
+                        checked={recentEnabled}
+                        onChange={(event) =>
+                          setRecentEnabled(event.target.checked)
+                        }
+                      />
+                      <span className="dev-toggle__copy">
+                        <strong>Enable Recent</strong>
+                        <small>Show or remove the Recent category.</small>
+                      </span>
+                    </label>
+
+                    <label className="dev-toggle">
+                      <input
+                        type="checkbox"
+                        checked={recentShowWhenEmpty}
+                        onChange={(event) =>
+                          setRecentShowWhenEmpty(event.target.checked)
+                        }
+                      />
+                      <span className="dev-toggle__copy">
+                        <strong>Show when empty</strong>
+                        <small>Seed the tab with starter emoji.</small>
+                      </span>
+                    </label>
+
+                    <label className="dev-toggle">
+                      <input
+                        type="checkbox"
+                        checked={recentDefaultActive}
+                        onChange={(event) =>
+                          setRecentDefaultActive(event.target.checked)
+                        }
+                      />
+                      <span className="dev-toggle__copy">
+                        <strong>Default active</strong>
+                        <small>Open the picker on Recent first.</small>
+                      </span>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Recent sorting</span>
+                      <select
+                        className="dev-select"
+                        value={recentSort}
+                        onChange={(event) =>
+                          setRecentSort(
+                            event.target.value as 'recent' | 'frequent',
+                          )
+                        }
+                      >
+                        <option value="recent">Recent usage</option>
+                        <option value="frequent">Frequency</option>
+                      </select>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Recent limit</span>
+                      <div className="dev-range">
+                        <input
+                          className="dev-range__input"
+                          type="range"
+                          min="4"
+                          max="24"
+                          step="1"
+                          value={recentLimit}
+                          onChange={(event) =>
+                            setRecentLimit(
+                              Number.parseInt(event.target.value, 10),
+                            )
+                          }
+                        />
+                        <strong>{recentLimit}</strong>
+                      </div>
+                    </label>
+                  </div>
+                </section>
+
+                <section className="dev-group">
+                  <div className="dev-group__head">
+                    <h3>Custom categories</h3>
+                    <span>Editable metadata</span>
+                  </div>
+                  <div className="dev-controls">
+                    <label className="dev-toggle">
+                      <input
+                        type="checkbox"
+                        checked={brandVisible}
+                        onChange={(event) =>
+                          setBrandVisible(event.target.checked)
+                        }
+                      />
+                      <span className="dev-toggle__copy">
+                        <strong>Show Brand Kit category</strong>
+                        <small>Hide or reveal the custom brand section.</small>
+                      </span>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Brand label</span>
+                      <input
+                        className="dev-input"
+                        type="text"
+                        value={brandLabel}
+                        onChange={(event) =>
+                          setBrandLabel(event.target.value)
+                        }
+                        placeholder={DEFAULT_BRAND_LABEL}
+                      />
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Brand icon</span>
+                      <select
+                        className="dev-select"
+                        value={brandIcon}
+                        onChange={(event) =>
+                          setBrandIcon(
+                            event.target.value as EmojiCategoryIconGlyph,
+                          )
+                        }
+                      >
+                        {BRAND_ICON_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">
+                        People icon override
+                      </span>
+                      <select
+                        className="dev-select"
+                        value={peopleIconStyle}
+                        onChange={(event) =>
+                          setPeopleIconStyle(
+                            event.target.value as
+                              | 'inherit'
+                              | EmojiCategoryIconPreset,
+                          )
+                        }
+                      >
+                        {PEOPLE_ICON_STYLE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                </section>
+
+                <section className="dev-group">
+                  <div className="dev-group__head">
+                    <h3>Live snippet</h3>
+                    <span>Updates as you tweak props</span>
+                  </div>
+                  <pre className="code-block code-block--compact">
+                    {playgroundSnippet}
+                  </pre>
+                </section>
+
+                <section className="dev-group">
+                  <div className="dev-group__head">
+                    <h3>Selection payload</h3>
+                    <span>Latest onEmojiSelect value</span>
+                  </div>
+                  <pre className="code-block code-block--compact">
+                    {selectionPayload}
+                  </pre>
+                </section>
+              </form>
+            </div>
+          </aside>
         </div>
       </section>
 
-      {/* ── API showcase ──────────────────────────────────────────────────── */}
       <section className="api-section">
         <div className="api-intro">
           <h2>One library, three strategies</h2>
@@ -267,26 +1211,33 @@ export function App() {
           <div className="api-card">
             <span className="api-label api-label--green">Drop-in</span>
             <h3>Zero config</h3>
-            <p>One import, one component. Works immediately with native OS emoji.</p>
+            <p>
+              One import, one component. Works immediately with native OS
+              emoji.
+            </p>
             <pre className="code-block">{SNIPPET_DROPIN}</pre>
           </div>
 
           <div className="api-card">
             <span className="api-label api-label--violet">Themed</span>
             <h3>CSS variables</h3>
-            <p>Every visual token is a CSS variable. Dark mode in five lines.</p>
+            <p>
+              Every visual token is a CSS variable. Dark mode in five lines.
+            </p>
             <pre className="code-block">{SNIPPET_THEMED}</pre>
           </div>
 
           <div className="api-card">
             <span className="api-label api-label--orange">Headless</span>
             <h3>Full control</h3>
-            <p>Compose from primitives. Bring your own styles, layout, and markup.</p>
+            <p>
+              Compose from primitives. Bring your own styles, layout, and
+              markup.
+            </p>
             <pre className="code-block">{SNIPPET_HEADLESS}</pre>
           </div>
         </div>
       </section>
-
     </div>
   );
 }
