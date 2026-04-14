@@ -1,0 +1,93 @@
+# MojiX API Reference
+
+This folder documents the public API surface exported by MojiX.
+
+MojiX does not ship network endpoints, so this reference is organized around:
+
+- components
+- props
+- headless primitives
+- asset helpers
+- sprite helpers
+- cache and storage helpers
+- localization and data helpers
+- exported types
+
+## Quick Examples
+
+### 1. Drop-in picker
+
+```tsx
+import { EmojiPicker } from 'mojix';
+import 'mojix/style.css';
+
+<EmojiPicker onEmojiSelect={(emoji) => console.log(emoji.native)} />;
+```
+
+### 2. Picker with seeded recents and custom category icons
+
+```tsx
+<EmojiPicker
+  showPreview={false}
+  recent={{
+    showWhenEmpty: true,
+    emptyEmojiIds: ['1f44b', '1f389', '2728', '1f680'],
+  }}
+  categories={{
+    brand: { label: 'Brand Kit', order: 2.5 },
+    people: { iconStyle: 'outline' },
+  }}
+  categoryIcons={{
+    brand: 'rocket',
+  }}
+  onEmojiSelect={handleSelect}
+/>
+```
+
+### 3. Headless layout
+
+```tsx
+import { MojiX } from 'mojix';
+
+<MojiX.Root onEmojiSelect={handleSelect} unstyled>
+  <MojiX.Search />
+  <MojiX.Viewport>
+    <MojiX.Empty>No emoji found.</MojiX.Empty>
+    <MojiX.List />
+  </MojiX.Viewport>
+  <MojiX.CategoryNav />
+</MojiX.Root>
+```
+
+### 4. Custom category icon rendering
+
+```tsx
+<EmojiPicker
+  renderCategoryIcon={({ categoryId, icon, context, active }) => {
+    if (categoryId === 'brand') {
+      return <span data-context={context} data-active={active}>BR</span>;
+    }
+
+    return <EmojiCategoryIcon icon={icon} label="Brand" />;
+  }}
+/>
+```
+
+## Categories
+
+- [Picker Props](./categories/picker-props.md)
+  Covers `EmojiPickerProps` and the shared prop surface used by `MojiX.Root`.
+- [Components](./categories/components.md)
+  Covers the ready-made picker and the lower-level UI components.
+- [Headless Primitives](./categories/headless.md)
+  Covers `MojiX.*` exports and state hooks.
+- [Asset Helpers](./categories/assets.md)
+  Covers asset-source factories and asset resolution.
+- [Sprite Helpers](./categories/sprites.md)
+  Covers spritesheet builders and URL helpers.
+- [Cache and Storage](./categories/cache-and-storage.md)
+  Covers cache warmup plus recent/skin-tone persistence helpers.
+- [Localization and Data](./categories/localization-and-data.md)
+  Covers locale helpers and unicode emoji data access.
+- [Types](./categories/types.md)
+  Covers all exported TypeScript types.

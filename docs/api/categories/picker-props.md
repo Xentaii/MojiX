@@ -1,0 +1,89 @@
+# Picker Props
+
+These props are accepted by both `EmojiPicker` and `MojiX.Root`.
+
+`EmojiPickerProps` also extends `HTMLAttributes<HTMLDivElement>`, so regular container props such as `className`, `id`, `aria-*`, and `data-*` are valid too.
+
+## State
+
+| Prop | Type | Purpose |
+| --- | --- | --- |
+| `value` | `string` | Marks an emoji id as selected in the grid. |
+| `searchQuery` | `string` | Controlled search value. |
+| `defaultSearchQuery` | `string` | Initial search value for uncontrolled mode. |
+| `onSearchQueryChange` | `(query) => void` | Fired when the search query changes. |
+| `activeCategory` | `EmojiCategoryId` | Controlled active category id. |
+| `defaultActiveCategory` | `EmojiCategoryId` | Initial category for uncontrolled mode. |
+| `onActiveCategoryChange` | `(categoryId) => void` | Fired when the active category changes. |
+| `skinTone` | `EmojiSkinTone` | Controlled skin tone. |
+| `defaultSkinTone` | `EmojiSkinTone` | Initial skin tone for uncontrolled mode. |
+| `onSkinToneChange` | `(tone) => void` | Fired when the skin tone changes. |
+
+## Layout and UI
+
+| Prop | Type | Purpose |
+| --- | --- | --- |
+| `emojiSize` | `number` | Render size for emoji cells. |
+| `columns` | `number` | Number of emoji columns in the grid. |
+| `loading` | `boolean` | Shows the loading state. |
+| `showPreview` | `boolean` | Shows or hides the default bottom preview area. |
+| `showRecents` | `boolean` | Legacy switch for the recent category. Still supported. |
+| `showSkinTones` | `boolean` | Shows or hides the skin tone control. |
+| `emptyState` | `ReactNode` | Custom content for the empty state. |
+| `unstyled` | `boolean` | Disables built-in styling classes. |
+| `classNames` | `EmojiPickerClassNames` | Per-slot class overrides. |
+| `styles` | `EmojiPickerStyles` | Per-slot inline style overrides. |
+| `style` | `CSSProperties` | Root inline styles. |
+
+## Recents
+
+| Prop | Type | Purpose |
+| --- | --- | --- |
+| `recentLimit` | `number` | Legacy max size for recent entries. |
+| `recentStorageKey` | `string` | Legacy localStorage key for recents. |
+| `recentStore` | `EmojiRecentStore` | Legacy custom recent store injection. |
+| `recent` | `EmojiRecentCategoryConfig` | New recent-category config block. Controls enablement, limit, sort mode, empty seeded emojis, default activation, storage key, and custom store. |
+
+## Localization
+
+| Prop | Type | Purpose |
+| --- | --- | --- |
+| `locale` | `EmojiLocaleCode` | Active locale code. |
+| `fallbackLocale` | `EmojiLocaleCode \| EmojiLocaleCode[]` | Locale fallback chain. |
+| `locales` | `Partial<Record<string, Partial<EmojiLocaleDefinition>>>` | Locale overrides or extra locales. |
+| `labels` | `Partial<EmojiPickerLabels>` | UI text overrides. |
+
+## Categories and Icons
+
+| Prop | Type | Purpose |
+| --- | --- | --- |
+| `categories` | `Partial<Record<string, EmojiCategoryConfig>>` | Per-category overrides for label, icon, icon style, visibility, and order. |
+| `categoryIcons` | `EmojiCategoryIconsMap` | Shortcut map for overriding category icons without redefining the whole category config. |
+| `categoryIconStyle` | `EmojiCategoryIconPreset` | Global category icon preset. Use `outline`, `native`, `picker`, or vendor styles like `twitter` / `google`. Legacy `solid`, `mono-filled`, and `mono-outline` values still map to `outline` for compatibility. |
+
+## Assets and Data
+
+| Prop | Type | Purpose |
+| --- | --- | --- |
+| `spriteSheet` | `EmojiSpriteSheetConfig` | Spritesheet source and delivery config. |
+| `assetSource` | `EmojiAssetSource` | Shared asset strategy for grid and preview. |
+| `gridAssetSource` | `EmojiAssetSource` | Grid-only asset strategy. |
+| `previewAssetSource` | `EmojiAssetSource` | Preview-only asset strategy. |
+| `customEmojis` | `CustomEmoji[]` | Custom emoji records, including custom categories. |
+
+## Rendering and Events
+
+| Prop | Type | Purpose |
+| --- | --- | --- |
+| `renderEmoji` | `(emoji, state) => ReactNode` | Custom emoji cell renderer. |
+| `renderPreview` | `(emoji, selection) => ReactNode` | Custom bottom preview renderer. |
+| `renderCategoryIcon` | `(props) => ReactNode` | Custom category icon renderer for sidebar and section headers. |
+| `onEmojiSelect` | `(emoji) => void` | Fired when an emoji is selected. Returns normalized `EmojiSelection`. |
+
+## Related Types
+
+- `EmojiPickerProps`
+- `EmojiRecentCategoryConfig`
+- `EmojiCategoryConfig`
+- `EmojiCategoryIconsMap`
+- `EmojiCategoryIconPreset`
