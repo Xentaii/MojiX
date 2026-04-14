@@ -1,9 +1,11 @@
 import type {
+  EmojiAssetSource,
   EmojiLocaleDefinition,
   EmojiPickerClassNames,
   EmojiPickerLabels,
   EmojiPickerStyles,
   EmojiSkinTone,
+  EmojiSpriteSheetConfig,
 } from '../lib/types';
 import { EmojiSearchField } from './EmojiSearchField';
 import { EmojiSkinToneButton } from './EmojiSkinToneButton';
@@ -18,6 +20,8 @@ export interface EmojiToolbarProps {
   showSkinTones: boolean;
   labels: EmojiPickerLabels;
   localeDefinition: EmojiLocaleDefinition;
+  spriteSheet?: EmojiSpriteSheetConfig;
+  assetSource?: EmojiAssetSource;
   unstyled?: boolean;
   classNames?: EmojiPickerClassNames;
   styles?: EmojiPickerStyles;
@@ -32,6 +36,8 @@ export function EmojiToolbar({
   showSkinTones,
   labels,
   localeDefinition,
+  spriteSheet,
+  assetSource,
   unstyled,
   classNames,
   styles,
@@ -60,6 +66,8 @@ export function EmojiToolbar({
           onSkinToneChange={onSkinToneChange}
           labels={labels}
           localeDefinition={localeDefinition}
+          spriteSheet={spriteSheet}
+          assetSource={assetSource}
           unstyled={unstyled}
           classNames={classNames}
           styles={styles}

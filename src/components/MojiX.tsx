@@ -512,6 +512,8 @@ export function MojiXSkinToneButton({
       onSkinToneChange={context.setSkinTone}
       labels={context.labelSet}
       localeDefinition={context.localeDefinition}
+      spriteSheet={context.activeSpriteSheet}
+      assetSource={context.gridAssetSource}
       unstyled={context.unstyled}
       classNames={context.classNames}
       styles={context.styles}

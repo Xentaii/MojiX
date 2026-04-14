@@ -1,20 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
 import { SKIN_TONE_OPTIONS } from '../lib/constants';
+import {
+  getUnicodeEmojiById,
+  resolveUnicodeEmojiVariant,
+} from '../lib/data';
 import { getLocalizedSkinToneLabel } from '../lib/i18n';
 import type {
+  EmojiAssetSource,
   EmojiLocaleDefinition,
   EmojiPickerClassNames,
   EmojiPickerLabels,
   EmojiPickerStyles,
   EmojiSkinTone,
+  EmojiSpriteSheetConfig,
 } from '../lib/types';
+import { EmojiSprite } from './EmojiSprite';
 import { getSlotClassName, getSlotStyle } from './utils';
+
+const SKIN_TONE_PREVIEW_EMOJI_ID = '1f44b';
 
 export interface EmojiSkinToneButtonProps {
   skinTone: EmojiSkinTone;
   onSkinToneChange: (tone: EmojiSkinTone) => void;
   labels: EmojiPickerLabels;
   localeDefinition: EmojiLocaleDefinition;
+  spriteSheet?: EmojiSpriteSheetConfig;
+  assetSource?: EmojiAssetSource;
   unstyled?: boolean;
   classNames?: EmojiPickerClassNames;
   styles?: EmojiPickerStyles;
@@ -25,6 +36,8 @@ export function EmojiSkinToneButton({
   onSkinToneChange,
   labels,
   localeDefinition,
+  spriteSheet,
+  assetSource,
   unstyled,
   classNames,
   styles,
@@ -32,6 +45,7 @@ export function EmojiSkinToneButton({
   const [toneMenuOpen, setToneMenuOpen] = useState(false);
   const toneMenuRef = useRef<HTMLDivElement>(null);
   const slotOptions = { unstyled, classNames, styles };
+  const handEmoji = getUnicodeEmojiById(SKIN_TONE_PREVIEW_EMOJI_ID);
 
   useEffect(() => {
     function handleDocumentPointerDown(event: MouseEvent) {
@@ -48,6 +62,34 @@ export function EmojiSkinToneButton({
   function handleSkinToneSelect(nextSkinTone: EmojiSkinTone) {
     onSkinToneChange(nextSkinTone);
     setToneMenuOpen(false);
+  }
+
+  function renderToneIcon(nextSkinTone: EmojiSkinTone) {
+    if (!handEmoji) {
+      return (
+        <span aria-hidden="true">
+          {SKIN_TONE_OPTIONS.find((option) => option.tone === nextSkinTone)?.icon}
+        </span>
+      );
+    }
+
+    return (
+      <span className="mx-picker__tone-emoji" aria-hidden="true">
+        <span className="mx-picker__tone-native-fallback">
+          {resolveUnicodeEmojiVariant(handEmoji, nextSkinTone).native}
+        </span>
+        <span className="mx-picker__tone-sprite">
+          <EmojiSprite
+            emoji={handEmoji}
+            skinTone={nextSkinTone}
+            size={22}
+            spriteSheet={spriteSheet}
+            assetSource={assetSource}
+            assetContext="grid"
+          />
+        </span>
+      </span>
+    );
   }
 
   return (
@@ -71,9 +113,7 @@ export function EmojiSkinToneButton({
         data-mx-slot="toneButton"
         data-open={toneMenuOpen ? 'true' : undefined}
       >
-        <span aria-hidden="true">
-          {SKIN_TONE_OPTIONS.find((option) => option.tone === skinTone)?.icon}
-        </span>
+        {renderToneIcon(skinTone)}
       </button>
 
       {toneMenuOpen && (
@@ -97,10 +137,14 @@ export function EmojiSkinToneButton({
                 option.tone,
                 localeDefinition,
               )}
+              aria-label={getLocalizedSkinToneLabel(
+                option.tone,
+                localeDefinition,
+              )}
               data-mx-slot="toneOption"
               data-active={option.tone === skinTone ? 'true' : undefined}
             >
-              <span aria-hidden="true">{option.icon}</span>
+              {renderToneIcon(option.tone)}
             </button>
           ))}
         </div>

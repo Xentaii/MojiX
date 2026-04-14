@@ -86,6 +86,10 @@ export function EmojiGrid({
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const gridHeights = useRef<Record<string, number>>({});
+  const pendingCategoryScrollRef = useRef<{
+    id: EmojiCategoryId;
+    top: number;
+  } | null>(null);
   const [visibleSections, setVisibleSections] = useState<Set<string> | null>(
     null,
   );
@@ -107,9 +111,13 @@ export function EmojiGrid({
       const container = scrollRef.current;
       const target = sectionRefs.current[id];
       if (!container || !target) return;
+      const nextTop = Math.max(target.offsetTop - 12, 0);
+      pendingCategoryScrollRef.current = {
+        id,
+        top: nextTop,
+      };
       container.scrollTo({
-        top: target.offsetTop - 12,
-        behavior: 'smooth',
+        top: nextTop,
       });
     },
   }));
@@ -123,6 +131,19 @@ export function EmojiGrid({
     const initialSection = firstSection;
 
     function updateActiveCategory() {
+      const pendingScroll = pendingCategoryScrollRef.current;
+
+      if (pendingScroll) {
+        if (
+          Math.abs(activeContainer.scrollTop - pendingScroll.top) <= 4
+        ) {
+          pendingCategoryScrollRef.current = null;
+        }
+
+        onActiveCategoryChangeRef.current(pendingScroll.id);
+        return;
+      }
+
       const threshold = activeContainer.scrollTop + 72;
       let nextCategory = initialSection.id;
 
@@ -396,11 +417,7 @@ export function EmojiGrid({
                       key={`${section.id}:${emoji.id}`}
                       type="button"
                       role="gridcell"
-                      className={getSlotClassName(
-                        'emoji',
-                        slotOptions,
-                        !unstyled && selected && 'is-selected',
-                      )}
+                      className={getSlotClassName('emoji', slotOptions)}
                       style={getSlotStyle('emoji', slotOptions)}
                       data-section={sectionIndex}
                       data-index={emojiIndex}
