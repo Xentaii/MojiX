@@ -81,6 +81,7 @@ export function MojiXRoot({
   recentLimit,
   recentStorageKey,
   recentStore,
+  recent,
   skinToneStorageKey,
   locale,
   fallbackLocale,
@@ -89,6 +90,9 @@ export function MojiXRoot({
   defaultSkinTone,
   onSkinToneChange,
   labels,
+  categories,
+  categoryIcons,
+  categoryIconStyle,
   spriteSheet,
   assetSource,
   gridAssetSource,
@@ -100,6 +104,7 @@ export function MojiXRoot({
   styles,
   renderEmoji,
   renderPreview,
+  renderCategoryIcon,
   onEmojiSelect,
   className,
   style,
@@ -122,6 +127,7 @@ export function MojiXRoot({
     recentLimit,
     recentStorageKey,
     recentStore,
+    recent,
     skinToneStorageKey,
     locale,
     fallbackLocale,
@@ -130,6 +136,9 @@ export function MojiXRoot({
     defaultSkinTone,
     onSkinToneChange,
     labels,
+    categories,
+    categoryIcons,
+    categoryIconStyle,
     spriteSheet,
     assetSource,
     gridAssetSource,
@@ -141,6 +150,7 @@ export function MojiXRoot({
     styles,
     renderEmoji,
     renderPreview,
+    renderCategoryIcon,
     onEmojiSelect,
   });
   const slotOptions = getContextSlotOptions(state);
@@ -301,6 +311,7 @@ export function MojiXList({
       assetSource={context.gridAssetSource}
       localeDefinition={context.localeDefinition}
       renderEmoji={renderEmoji ?? context.renderEmoji}
+      renderCategoryIcon={context.renderCategoryIcon}
       onEmojiSelect={context.handleSelectEmoji}
       onEmojiHover={context.handleEmojiHover}
       onActiveCategoryChange={context.handleActiveCategoryChange}
@@ -428,6 +439,8 @@ export function MojiXCategoryNav({ children }: MojiXCategoryNavProps) {
       sections={context.sections}
       activeCategory={context.activeCategory}
       onCategoryClick={context.handleCategoryClick}
+      renderCategoryIcon={context.renderCategoryIcon}
+      spriteSheet={context.activeSpriteSheet}
       unstyled={context.unstyled}
       classNames={context.classNames}
       styles={context.styles}

@@ -1,6 +1,7 @@
 import generatedEmojiLocales from './generated/emoji-locales.json';
 import type {
   EmojiCategoryId,
+  EmojiLocaleCategoryLabels,
   EmojiLocaleCode,
   EmojiLocaleDefinition,
   EmojiLocaleEmojiTranslation,
@@ -22,7 +23,7 @@ const englishLabels: EmojiPickerLabels = {
   clearSearch: 'Clear search',
 };
 
-const englishCategories: Record<EmojiCategoryId, string> = {
+const englishCategories: EmojiLocaleCategoryLabels = {
   recent: 'Recent',
   smileys: 'Smileys',
   people: 'People',
@@ -55,7 +56,7 @@ const russianLabels: EmojiPickerLabels = {
   clearSearch: 'Очистить поиск',
 };
 
-const russianCategories: Record<EmojiCategoryId, string> = {
+const russianCategories: EmojiLocaleCategoryLabels = {
   recent: 'Недавние',
   smileys: 'Смайлы',
   people: 'Люди',
@@ -175,13 +176,15 @@ function mergeLabels(
 }
 
 function mergeCategories(
-  base: Record<EmojiCategoryId, string>,
-  override?: Partial<Record<EmojiCategoryId, string>>,
+  base: EmojiLocaleCategoryLabels,
+  override?: Partial<Record<string, string>>,
 ) {
-  return {
-    ...base,
-    ...override,
-  };
+  return Object.fromEntries(
+    Object.entries({
+      ...base,
+      ...override,
+    }).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
+  ) as EmojiLocaleCategoryLabels;
 }
 
 function mergeSkinTones(
@@ -310,8 +313,14 @@ export function getLocalizedEmojiKeywords(
 export function getLocalizedCategoryLabel(
   categoryId: EmojiCategoryId,
   localeDefinition: EmojiLocaleDefinition,
+  fallbackLabel?: string,
 ) {
-  return localeDefinition.categories[categoryId] ?? fallbackLocaleDefinition.categories[categoryId];
+  return (
+    localeDefinition.categories[categoryId] ??
+    fallbackLabel ??
+    fallbackLocaleDefinition.categories[categoryId] ??
+    categoryId
+  );
 }
 
 export function getLocalizedSkinToneLabel(

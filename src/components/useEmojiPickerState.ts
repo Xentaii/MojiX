@@ -9,13 +9,19 @@ import {
   useState,
 } from 'react';
 import {
+  CATEGORY_GLYPH_META,
+  CATEGORY_ICON_GLYPHS,
   CATEGORY_META,
   CATEGORY_ORDER,
+  DEFAULT_CATEGORY_ICON_STYLE,
   DEFAULT_COLUMNS,
   DEFAULT_EMOJI_SIZE,
   DEFAULT_RECENT_LIMIT,
   DEFAULT_RECENT_STORAGE_KEY,
   DEFAULT_SKIN_TONE_STORAGE_KEY,
+  getDefaultCategoryOrder,
+  humanizeCategoryId,
+  isSystemCategoryId,
 } from '../lib/constants';
 import {
   createEmojiSelection,
@@ -23,6 +29,7 @@ import {
   getLocalizedSearchTokens,
   getUnicodeEmojiByCategory,
   getUnicodeEmojiById,
+  getUnicodeEmojiByNative,
   prepareCustomEmojis,
 } from '../lib/data';
 import {
@@ -46,7 +53,12 @@ import {
 // and no explicit asset source — "just works" with native OS emoji.
 const DEFAULT_NATIVE_SOURCE = createNativeAssetSource();
 import type {
+  EmojiCategoryConfig,
+  EmojiCategoryIconConfig,
+  EmojiCategoryIconInput,
+  EmojiCategoryIconGlyph,
   EmojiCategoryId,
+  EmojiCategoryIconPreset,
   EmojiPickerLabels,
   EmojiPickerProps,
   EmojiRenderable,
@@ -56,6 +68,7 @@ import type {
   EmojiRecentStore,
   PreparedCustomEmoji,
   RecentEmojiRecord,
+  ResolvedEmojiCategoryIcon,
 } from '../lib/types';
 import type { EmojiGridHandle } from './EmojiGrid';
 import { peekWarmedEmojiSpriteSheetUrl } from '../lib/sprite-cache';
@@ -69,6 +82,125 @@ function resolveRecentEmoji(
   }
 
   return getUnicodeEmojiById(recent.id) ?? null;
+}
+
+const CATEGORY_ICON_GLYPH_SET = new Set<string>(CATEGORY_ICON_GLYPHS);
+
+function sortRecentRecords(
+  records: RecentEmojiRecord[],
+  sortMode: 'recent' | 'frequent',
+) {
+  const nextRecords = [...records];
+
+  if (sortMode === 'frequent') {
+    return nextRecords.sort((left, right) => {
+      if (right.count === left.count) {
+        return right.usedAt - left.usedAt;
+      }
+
+      return right.count - left.count;
+    });
+  }
+
+  return nextRecords.sort((left, right) => right.usedAt - left.usedAt);
+}
+
+function resolveCategoryIconConfig(
+  icon: EmojiCategoryIconInput | undefined,
+  fallbackIcon: EmojiCategoryIconConfig,
+): EmojiCategoryIconConfig {
+  if (!icon) {
+    return { ...fallbackIcon };
+  }
+
+  if (typeof icon === 'string') {
+    if (CATEGORY_ICON_GLYPH_SET.has(icon)) {
+      const glyphMeta = CATEGORY_GLYPH_META[
+        icon as EmojiCategoryIconGlyph
+      ];
+
+      return {
+        ...fallbackIcon,
+        ...glyphMeta,
+      };
+    }
+
+    return {
+      ...fallbackIcon,
+      emoji: icon,
+      emojiId: undefined,
+    };
+  }
+
+  const glyphFallback = icon.glyph
+    ? CATEGORY_GLYPH_META[icon.glyph]
+    : undefined;
+
+  return {
+    glyph: icon.glyph ?? glyphFallback?.glyph ?? fallbackIcon.glyph,
+    emoji:
+      icon.emoji ??
+      glyphFallback?.emoji ??
+      fallbackIcon.emoji,
+    emojiId:
+      icon.emojiId ??
+      glyphFallback?.emojiId ??
+      fallbackIcon.emojiId,
+    style: icon.style ?? fallbackIcon.style,
+  };
+}
+
+function resolveCategoryIconRenderable(
+  icon: EmojiCategoryIconConfig,
+  customEmojiById: Map<string, PreparedCustomEmoji>,
+) {
+  const iconLookup = icon.emojiId ?? icon.emoji;
+
+  if (!iconLookup) {
+    return null;
+  }
+
+  return (
+    customEmojiById.get(iconLookup) ??
+    getUnicodeEmojiById(iconLookup) ??
+    getUnicodeEmojiByNative(iconLookup) ??
+    null
+  );
+}
+
+function buildResolvedCategoryIcon(options: {
+  icon?: EmojiCategoryIconInput;
+  fallbackIcon: EmojiCategoryIconConfig;
+  iconStyle?: EmojiCategoryIconPreset;
+  defaultStyle: EmojiCategoryIconPreset;
+  customEmojiById: Map<string, PreparedCustomEmoji>;
+}): ResolvedEmojiCategoryIcon {
+  const resolvedIconConfig = resolveCategoryIconConfig(
+    options.icon,
+    options.fallbackIcon,
+  );
+
+  return {
+    glyph:
+      resolvedIconConfig.glyph ??
+      options.fallbackIcon.glyph ??
+      CATEGORY_META.custom.icon.glyph ??
+      'custom',
+    emoji:
+      resolvedIconConfig.emoji ??
+      options.fallbackIcon.emoji ??
+      CATEGORY_META.custom.icon.emoji ??
+      '\u2728',
+    emojiId: resolvedIconConfig.emojiId ?? options.fallbackIcon.emojiId,
+    style:
+      resolvedIconConfig.style ??
+      options.iconStyle ??
+      options.defaultStyle,
+    renderable: resolveCategoryIconRenderable(
+      resolvedIconConfig,
+      options.customEmojiById,
+    ),
+  };
 }
 
 export interface EmojiPickerState {
@@ -100,6 +232,7 @@ export interface EmojiPickerState {
   value: EmojiPickerProps['value'];
   renderEmoji: EmojiPickerProps['renderEmoji'];
   renderPreview: EmojiPickerProps['renderPreview'];
+  renderCategoryIcon: EmojiPickerProps['renderCategoryIcon'];
   emptyState: EmojiPickerProps['emptyState'];
   unstyled: boolean;
   classNames: EmojiPickerProps['classNames'];
@@ -134,7 +267,7 @@ export function useEmojiPickerState({
   defaultSearchQuery = '',
   onSearchQueryChange,
   activeCategory: controlledActiveCategory,
-  defaultActiveCategory = 'smileys',
+  defaultActiveCategory,
   onActiveCategoryChange,
   emojiSize = DEFAULT_EMOJI_SIZE,
   columns = DEFAULT_COLUMNS,
@@ -145,6 +278,7 @@ export function useEmojiPickerState({
   recentLimit = DEFAULT_RECENT_LIMIT,
   recentStorageKey = DEFAULT_RECENT_STORAGE_KEY,
   recentStore,
+  recent,
   skinToneStorageKey = DEFAULT_SKIN_TONE_STORAGE_KEY,
   locale = 'en',
   fallbackLocale,
@@ -153,6 +287,9 @@ export function useEmojiPickerState({
   defaultSkinTone = 'default',
   onSkinToneChange,
   labels,
+  categories,
+  categoryIcons,
+  categoryIconStyle = DEFAULT_CATEGORY_ICON_STYLE,
   spriteSheet: spriteSheetProp,
   customEmojis = [],
   emptyState,
@@ -161,6 +298,7 @@ export function useEmojiPickerState({
   styles,
   renderEmoji,
   renderPreview,
+  renderCategoryIcon,
   onEmojiSelect,
   assetSource,
   gridAssetSource,
@@ -194,6 +332,45 @@ export function useEmojiPickerState({
     () => new Map(preparedCustomEmojis.map((emoji) => [emoji.id, emoji])),
     [preparedCustomEmojis],
   );
+  const customEmojiByCategory = useMemo(() => {
+    const groups = new Map<EmojiCategoryId, PreparedCustomEmoji[]>();
+
+    for (const emoji of preparedCustomEmojis) {
+      const existing = groups.get(emoji.categoryId);
+
+      if (existing) {
+        existing.push(emoji);
+      } else {
+        groups.set(emoji.categoryId, [emoji]);
+      }
+    }
+
+    return groups;
+  }, [preparedCustomEmojis]);
+  const resolvedRecentConfig = useMemo(
+    () => ({
+      enabled: recent?.enabled ?? showRecents,
+      limit: recent?.limit ?? recentLimit,
+      showWhenEmpty: recent?.showWhenEmpty ?? true,
+      defaultActive: recent?.defaultActive ?? true,
+      sort: recent?.sort ?? ('recent' as const),
+      emptyEmojiIds: recent?.emptyEmojiIds ?? [],
+      storageKey: recent?.storageKey ?? recentStorageKey,
+      store: recent?.store ?? recentStore,
+    }),
+    [
+      recent,
+      recentLimit,
+      recentStorageKey,
+      recentStore,
+      showRecents,
+    ],
+  );
+  const resolvedDefaultActiveCategory =
+    defaultActiveCategory ??
+    (resolvedRecentConfig.enabled && resolvedRecentConfig.defaultActive
+      ? 'recent'
+      : 'smileys');
 
   const [uncontrolledSearchQuery, setUncontrolledSearchQuery] =
     useState(defaultSearchQuery);
@@ -203,7 +380,7 @@ export function useEmojiPickerState({
       readStoredSkinTone(skinToneStorageKey, defaultSkinTone),
     );
   const [uncontrolledActiveCategory, setUncontrolledActiveCategory] =
-    useState<EmojiCategoryId>(defaultActiveCategory);
+    useState<EmojiCategoryId>(resolvedDefaultActiveCategory);
   const [hoveredEmoji, setHoveredEmoji] = useState<EmojiRenderable | null>(
     null,
   );
@@ -227,8 +404,10 @@ export function useEmojiPickerState({
   const searchId = useId();
   const gridRef = useRef<EmojiGridHandle>(null);
   const resolvedRecentStore = useMemo(
-    () => recentStore ?? createLocalStorageRecentStore(recentStorageKey),
-    [recentStorageKey, recentStore],
+    () =>
+      resolvedRecentConfig.store ??
+      createLocalStorageRecentStore(resolvedRecentConfig.storageKey),
+    [resolvedRecentConfig.storageKey, resolvedRecentConfig.store],
   );
 
   useEffect(() => {
@@ -255,9 +434,9 @@ export function useEmojiPickerState({
 
   useEffect(() => {
     if (!isActiveCategoryControlled) {
-      setUncontrolledActiveCategory(defaultActiveCategory);
+      setUncontrolledActiveCategory(resolvedDefaultActiveCategory);
     }
-  }, [defaultActiveCategory, isActiveCategoryControlled]);
+  }, [isActiveCategoryControlled, resolvedDefaultActiveCategory]);
 
   useEffect(() => {
     let cancelled = false;
@@ -314,71 +493,206 @@ export function useEmojiPickerState({
     previewAssetSource ?? assetSource ?? zeroConfigSource ?? resolvedGridAssetSource;
 
   const recentSectionEmojis = useMemo(() => {
-    if (!showRecents) return [] as EmojiRenderable[];
+    if (!resolvedRecentConfig.enabled) {
+      return [] as EmojiRenderable[];
+    }
 
-    return recentEmoji
+    const resolvedRecentEmoji = sortRecentRecords(
+      recentEmoji,
+      resolvedRecentConfig.sort,
+    )
       .map((recent) => resolveRecentEmoji(recent, customEmojiById))
       .filter((emoji): emoji is EmojiRenderable => Boolean(emoji));
-  }, [customEmojiById, recentEmoji, showRecents]);
+
+    if (resolvedRecentEmoji.length > 0) {
+      return resolvedRecentEmoji;
+    }
+
+    return resolvedRecentConfig.emptyEmojiIds
+      .map(
+        (emojiId) =>
+          customEmojiById.get(emojiId) ??
+          getUnicodeEmojiById(emojiId) ??
+          getUnicodeEmojiByNative(emojiId) ??
+          null,
+      )
+      .filter((emoji): emoji is EmojiRenderable => Boolean(emoji));
+  }, [
+    customEmojiById,
+    recentEmoji,
+    resolvedRecentConfig.emptyEmojiIds,
+    resolvedRecentConfig.enabled,
+    resolvedRecentConfig.sort,
+  ]);
 
   const sections = useMemo(() => {
-    const nextSections: EmojiSection[] = [];
+    const nextSections: Array<{
+      order: number;
+      index: number;
+      section: EmojiSection;
+    }> = [];
+    const categoryConfigs = categories ?? {};
+    const isSearching = deferredSearchQuery.trim().length > 0;
+    let customCategoryOrder = CATEGORY_ORDER.length;
 
-    if (showRecents && recentSectionEmojis.length > 0) {
-      nextSections.push({
-        ...CATEGORY_META.recent,
-        label: getLocalizedCategoryLabel('recent', localeDefinition),
-        emojis: filterEmoji(
-          recentSectionEmojis,
-          deferredSearchQuery,
-          (emoji) => getLocalizedSearchTokens(emoji, localeDefinition),
-        ),
-      });
-    }
+    const pushSection = (options: {
+      categoryId: EmojiCategoryId;
+      fallbackLabel: string;
+      fallbackIcon: EmojiCategoryIconConfig;
+      emojis: EmojiRenderable[];
+      fallbackOrder: number;
+    }) => {
+      const categoryConfig = categoryConfigs[options.categoryId];
+      const explicitIcon =
+        categoryIcons?.[options.categoryId] ?? categoryConfig?.icon;
 
-    for (const categoryId of CATEGORY_ORDER) {
-      if (categoryId === 'recent' || categoryId === 'custom') continue;
-
-      const categoryMeta = CATEGORY_META[categoryId];
-      const categoryEmoji = getUnicodeEmojiByCategory(categoryId);
-      const visibleEmoji = filterEmoji(
-        categoryEmoji,
-        deferredSearchQuery,
-        (emoji) => getLocalizedSearchTokens(emoji, localeDefinition),
-      );
-
-      if (visibleEmoji.length === 0) continue;
+      if (categoryConfig?.hidden) {
+        return;
+      }
 
       nextSections.push({
-        ...categoryMeta,
-        label: getLocalizedCategoryLabel(categoryId, localeDefinition),
-        emojis: visibleEmoji,
+        order:
+          categoryConfig?.order ??
+          options.fallbackOrder,
+        index: nextSections.length,
+        section: {
+          id: options.categoryId,
+          label:
+            categoryConfig?.label ??
+            getLocalizedCategoryLabel(
+              options.categoryId,
+              localeDefinition,
+              options.fallbackLabel,
+            ),
+          icon: buildResolvedCategoryIcon({
+            icon: explicitIcon,
+            fallbackIcon: options.fallbackIcon,
+            iconStyle: categoryConfig?.iconStyle,
+            defaultStyle: categoryIconStyle,
+            customEmojiById,
+          }),
+          emojis: options.emojis,
+        },
       });
-    }
+    };
 
-    if (preparedCustomEmojis.length > 0) {
-      const filteredCustom = filterEmoji(
-        preparedCustomEmojis,
+    if (resolvedRecentConfig.enabled) {
+      const filteredRecent = filterEmoji(
+        recentSectionEmojis,
         deferredSearchQuery,
+        (emoji) =>
+          emoji.kind === 'custom'
+            ? []
+            : getLocalizedSearchTokens(emoji, localeDefinition),
       );
 
-      if (filteredCustom.length > 0) {
-        nextSections.push({
-          ...CATEGORY_META.custom,
-          label: getLocalizedCategoryLabel('custom', localeDefinition),
-          emojis: filteredCustom,
+      if (
+        filteredRecent.length > 0 ||
+        (resolvedRecentConfig.showWhenEmpty && !isSearching)
+      ) {
+        pushSection({
+          categoryId: 'recent',
+          fallbackLabel: labelSet.recents,
+          fallbackIcon: CATEGORY_META.recent.icon,
+          emojis: filteredRecent,
+          fallbackOrder: getDefaultCategoryOrder('recent'),
         });
       }
     }
 
-    return nextSections;
+    for (const categoryId of CATEGORY_ORDER) {
+      if (categoryId === 'recent' || categoryId === 'custom') {
+        continue;
+      }
+
+      const categoryEmoji = [
+        ...getUnicodeEmojiByCategory(categoryId),
+        ...(customEmojiByCategory.get(categoryId) ?? []),
+      ];
+      const visibleEmoji = filterEmoji(
+        categoryEmoji,
+        deferredSearchQuery,
+        (emoji) =>
+          emoji.kind === 'custom'
+            ? []
+            : getLocalizedSearchTokens(emoji, localeDefinition),
+      );
+
+      if (visibleEmoji.length === 0) {
+        continue;
+      }
+
+      pushSection({
+        categoryId,
+        fallbackLabel: CATEGORY_META[categoryId].label,
+        fallbackIcon: CATEGORY_META[categoryId].icon,
+        emojis: visibleEmoji,
+        fallbackOrder: getDefaultCategoryOrder(categoryId),
+      });
+    }
+
+    for (const [categoryId, groupedEmoji] of customEmojiByCategory) {
+      if (categoryId === 'recent') {
+        continue;
+      }
+
+      if (isSystemCategoryId(categoryId) && categoryId !== 'custom') {
+        continue;
+      }
+
+      const visibleEmoji = filterEmoji(
+        groupedEmoji,
+        deferredSearchQuery,
+      );
+
+      if (visibleEmoji.length === 0) {
+        continue;
+      }
+
+      pushSection({
+        categoryId,
+        fallbackLabel:
+          groupedEmoji[0]?.categoryLabel ??
+          (categoryId === 'custom'
+            ? labelSet.custom
+            : humanizeCategoryId(categoryId)),
+        fallbackIcon: CATEGORY_META.custom.icon,
+        emojis: visibleEmoji,
+        fallbackOrder:
+          categoryId === 'custom'
+            ? getDefaultCategoryOrder('custom', customCategoryOrder)
+            : customCategoryOrder++,
+      });
+    }
+
+    return nextSections
+      .sort((left, right) => {
+        if (left.order === right.order) {
+          return left.index - right.index;
+        }
+
+        return left.order - right.order;
+      })
+      .map((entry) => entry.section);
   }, [
+    categories,
+    categoryIcons,
+    categoryIconStyle,
+    customEmojiByCategory,
+    customEmojiById,
     deferredSearchQuery,
+    labelSet.custom,
+    labelSet.recents,
     localeDefinition,
-    preparedCustomEmojis,
     recentSectionEmojis,
-    showRecents,
+    resolvedRecentConfig.enabled,
+    resolvedRecentConfig.showWhenEmpty,
   ]);
+  const categoryLabelById = useMemo(
+    () =>
+      new Map(sections.map((section) => [section.id, section.label])),
+    [sections],
+  );
 
   const setActiveCategory = useCallback(
     (nextCategory: EmojiCategoryId) => {
@@ -448,12 +762,15 @@ export function useEmojiPickerState({
         emoji,
         skinTone,
         localeDefinition,
+        {
+          categoryLabel: categoryLabelById.get(emoji.categoryId),
+        },
       );
 
       setHoveredEmoji(null);
       onEmojiSelect?.(selection);
 
-      if (showRecents) {
+      if (resolvedRecentConfig.enabled) {
         setRecentEmoji(
           resolvedRecentStore.push(
             {
@@ -461,17 +778,18 @@ export function useEmojiPickerState({
               custom: emoji.kind === 'custom',
               skinTone,
             },
-            recentLimit,
+            resolvedRecentConfig.limit,
           ),
         );
       }
     },
     [
+      categoryLabelById,
       localeDefinition,
       onEmojiSelect,
-      recentLimit,
+      resolvedRecentConfig.enabled,
+      resolvedRecentConfig.limit,
       resolvedRecentStore,
-      showRecents,
       skinTone,
     ],
   );
@@ -481,14 +799,20 @@ export function useEmojiPickerState({
     gridRef.current?.scrollToCategory(categoryId);
   }, [setActiveCategory]);
 
+  const firstVisibleEmoji =
+    sections.find((section) => section.emojis.length > 0)?.emojis[0] ?? null;
   const previewEmoji =
     hoveredEmoji ??
-    sections.find((section) => section.id === activeCategory)?.emojis[0] ??
-    sections[0]?.emojis[0] ??
-    null;
+    sections.find(
+      (section) =>
+        section.id === activeCategory && section.emojis.length > 0,
+    )?.emojis[0] ??
+    firstVisibleEmoji;
 
   const previewSelection = previewEmoji
-    ? createEmojiSelection(previewEmoji, skinTone, localeDefinition)
+    ? createEmojiSelection(previewEmoji, skinTone, localeDefinition, {
+        categoryLabel: categoryLabelById.get(previewEmoji.categoryId),
+      })
     : null;
 
   return {
@@ -513,13 +837,14 @@ export function useEmojiPickerState({
     handleEmojiHover,
     gridRef,
     showPreview,
-    showRecents,
+    showRecents: resolvedRecentConfig.enabled,
     showSkinTones,
     emojiSize,
     columns,
     value,
     renderEmoji,
     renderPreview,
+    renderCategoryIcon,
     emptyState,
     unstyled,
     classNames,

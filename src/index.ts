@@ -3,6 +3,7 @@
 // Styled usage: import 'mojix/style.css' (or the local path when developing).
 export { EmojiPicker } from './components/EmojiPicker';
 export { EmojiGrid } from './components/EmojiGrid';
+export { EmojiCategoryIcon } from './components/EmojiCategoryIcon';
 export { EmojiPreview } from './components/EmojiPreview';
 export { EmojiSearchField } from './components/EmojiSearchField';
 export { EmojiSidebar } from './components/EmojiSidebar';
@@ -69,13 +70,21 @@ export {
 export { getUnicodeEmojiData } from './lib/data';
 export type {
   CustomEmoji,
+  EmojiCategoryConfig,
   EmojiAssetRenderContext,
   EmojiAssetRequest,
   EmojiAssetSource,
+  EmojiCategoryIconConfig,
+  EmojiCategoryIconGlyph,
+  EmojiCategoryIconInput,
+  EmojiCategoryIconsMap,
+  EmojiCategoryIconPreset,
+  EmojiCategoryIconRenderProps,
   EmojiImageAsset,
   EmojiImageAssetSource,
   EmojiCategoryId,
   EmojiLocaleCode,
+  EmojiLocaleCategoryLabels,
   EmojiLocaleDefinition,
   EmojiLocaleEmojiTranslation,
   EmojiMixedAssetSource,
@@ -89,6 +98,7 @@ export type {
   EmojiResolvedAsset,
   EmojiRenderState,
   EmojiRenderable,
+  EmojiRecentCategoryConfig,
   EmojiSelection,
   EmojiSkinTone,
   EmojiSpriteAsset,
@@ -102,7 +112,9 @@ export type {
   EmojiSpriteSheetContext,
   EmojiSpriteSheetSource,
   EmojiSpriteSheetVariant,
+  EmojiSystemCategoryId,
   EmojiVendor,
+  ResolvedEmojiCategoryIcon,
   EmojiSvgAsset,
   EmojiSvgAssetSource,
   UnicodeEmoji,

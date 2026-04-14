@@ -3,7 +3,11 @@ import {
   getLocalizedCategoryLabel,
   getLocalizedEmojiKeywords,
 } from './i18n';
-import { CATEGORY_META } from './constants';
+import {
+  CATEGORY_META,
+  humanizeCategoryId,
+  isSystemCategoryId,
+} from './constants';
 import type {
   BuiltInEmojiCategoryId,
   CustomEmoji,
@@ -70,6 +74,9 @@ const unicodeEmojiData = (
 }));
 
 const unicodeEmojiById = new Map(unicodeEmojiData.map((emoji) => [emoji.id, emoji]));
+const unicodeEmojiByNative = new Map(
+  unicodeEmojiData.map((emoji) => [emoji.native, emoji]),
+);
 
 const unicodeEmojiByCategory = unicodeEmojiData.reduce<
   Record<BuiltInEmojiCategoryId, UnicodeEmoji[]>
@@ -158,6 +165,10 @@ export function getUnicodeEmojiById(id: string) {
   return unicodeEmojiById.get(id);
 }
 
+export function getUnicodeEmojiByNative(native: string) {
+  return unicodeEmojiByNative.get(native);
+}
+
 export function resolveUnicodeEmojiVariant(
   emoji: UnicodeEmoji,
   skinTone: EmojiSkinTone,
@@ -235,6 +246,12 @@ export function filterEmoji<T extends { searchTokens: string[] }>(
 
 export function prepareCustomEmojis(customEmojis: CustomEmoji[] = []) {
   return customEmojis.map<PreparedCustomEmoji>((emoji) => {
+    const categoryId = emoji.categoryId?.trim() || 'custom';
+    const categoryLabel =
+      emoji.categoryLabel?.trim() ||
+      (isSystemCategoryId(categoryId)
+        ? CATEGORY_META[categoryId].label
+        : humanizeCategoryId(categoryId));
     const shortcodes = Array.from(
       new Set(
         (emoji.shortcodes ?? []).filter(
@@ -272,8 +289,8 @@ export function prepareCustomEmojis(customEmojis: CustomEmoji[] = []) {
       shortcodes,
       emoticons,
       searchTokens,
-      categoryId: 'custom',
-      categoryLabel: emoji.categoryLabel?.trim() || CATEGORY_META.custom.label,
+      categoryId,
+      categoryLabel,
     };
   });
 }
@@ -282,8 +299,19 @@ export function createEmojiSelection(
   emoji: EmojiRenderable,
   skinTone: EmojiSkinTone,
   localeDefinition: EmojiLocaleDefinition,
+  options: {
+    categoryLabel?: string;
+  } = {},
 ): EmojiSelection {
   if (emoji.kind === 'custom') {
+    const localizedCategoryLabel =
+      options.categoryLabel ??
+      getLocalizedCategoryLabel(
+        emoji.categoryId,
+        localeDefinition,
+        emoji.categoryLabel,
+      );
+
     return {
       id: emoji.id,
       name: emoji.name,
@@ -292,8 +320,8 @@ export function createEmojiSelection(
       shortcodes: emoji.shortcodes,
       emoticons: emoji.emoticons,
       categoryId: emoji.categoryId,
-      categoryLabel: emoji.categoryLabel,
-      englishCategoryLabel: emoji.categoryLabel,
+      categoryLabel: localizedCategoryLabel,
+      englishCategoryLabel: emoji.categoryLabel || localizedCategoryLabel,
       custom: true,
       imageUrl: emoji.imageUrl,
       skinTone,
@@ -305,6 +333,7 @@ export function createEmojiSelection(
   const localizedCategoryLabel = getLocalizedCategoryLabel(
     emoji.categoryId,
     localeDefinition,
+    options.categoryLabel ?? emoji.categoryLabel,
   );
 
   return {

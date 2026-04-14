@@ -17,7 +17,7 @@ export type EmojiSkinTone =
   | 'medium-dark'
   | 'dark';
 
-export type EmojiCategoryId =
+export type EmojiSystemCategoryId =
   | 'recent'
   | 'smileys'
   | 'people'
@@ -30,9 +30,52 @@ export type EmojiCategoryId =
   | 'flags'
   | 'custom';
 
+export type EmojiCategoryId =
+  | EmojiSystemCategoryId
+  | (string & {});
+
 export type BuiltInEmojiCategoryId = Exclude<
-  EmojiCategoryId,
+  EmojiSystemCategoryId,
   'recent' | 'custom'
+>;
+
+export type EmojiCategoryIconGlyph =
+  | EmojiSystemCategoryId
+  | 'sparkles'
+  | 'star'
+  | 'heart'
+  | 'bolt'
+  | 'music'
+  | 'gamepad'
+  | 'palette'
+  | 'code'
+  | 'leaf'
+  | 'gift'
+  | 'rocket';
+
+export type EmojiCategoryIconPreset =
+  | 'solid'
+  | 'outline'
+  | 'mono-filled'
+  | 'mono-outline'
+  | 'native'
+  | 'picker'
+  | EmojiVendor;
+
+export interface EmojiCategoryIconConfig {
+  glyph?: EmojiCategoryIconGlyph;
+  emoji?: string;
+  emojiId?: string;
+  style?: EmojiCategoryIconPreset;
+}
+
+export type EmojiCategoryIconInput =
+  | EmojiCategoryIconGlyph
+  | string
+  | EmojiCategoryIconConfig;
+
+export type EmojiCategoryIconsMap = Partial<
+  Record<string, EmojiCategoryIconInput>
 >;
 
 export type EmojiSpriteSheetVariant =
@@ -92,6 +135,7 @@ export interface CustomEmoji {
   shortcodes?: string[];
   keywords?: string[];
   emoticons?: string[];
+  categoryId?: EmojiCategoryId;
   categoryLabel?: string;
   imageUrl?: string;
   sprite?: CustomEmojiSprite;
@@ -102,11 +146,29 @@ export interface PreparedCustomEmoji extends CustomEmoji {
   shortcodes: string[];
   emoticons: string[];
   searchTokens: string[];
-  categoryId: 'custom';
+  categoryId: EmojiCategoryId;
   categoryLabel: string;
 }
 
 export type EmojiRenderable = UnicodeEmoji | PreparedCustomEmoji;
+
+export interface ResolvedEmojiCategoryIcon {
+  glyph: EmojiCategoryIconGlyph;
+  emoji: string;
+  emojiId?: string;
+  style: EmojiCategoryIconPreset;
+  renderable?: EmojiRenderable | null;
+}
+
+export interface EmojiCategoryIconRenderProps {
+  categoryId: EmojiCategoryId;
+  label: string;
+  icon: ResolvedEmojiCategoryIcon;
+  context: 'sidebar' | 'section';
+  size: number;
+  active: boolean;
+  spriteSheet?: EmojiSpriteSheetConfig;
+}
 
 export interface EmojiSelection {
   id: string;
@@ -200,10 +262,14 @@ export interface EmojiLocaleEmojiTranslation {
   keywords: string[];
 }
 
+export type EmojiLocaleCategoryLabels =
+  Record<EmojiSystemCategoryId, string> &
+  Record<string, string>;
+
 export interface EmojiLocaleDefinition {
   code: EmojiLocaleCode;
   labels: EmojiPickerLabels;
-  categories: Record<EmojiCategoryId, string>;
+  categories: EmojiLocaleCategoryLabels;
   skinTones: Record<EmojiSkinTone, string>;
   emoji: Record<string, EmojiLocaleEmojiTranslation>;
 }
@@ -214,6 +280,25 @@ export interface EmojiRecentStore {
     entry: Pick<RecentEmojiRecord, 'id' | 'custom' | 'skinTone'>,
     limit: number,
   ) => RecentEmojiRecord[];
+}
+
+export interface EmojiCategoryConfig {
+  label?: string;
+  icon?: EmojiCategoryIconInput;
+  iconStyle?: EmojiCategoryIconPreset;
+  hidden?: boolean;
+  order?: number;
+}
+
+export interface EmojiRecentCategoryConfig {
+  enabled?: boolean;
+  limit?: number;
+  showWhenEmpty?: boolean;
+  defaultActive?: boolean;
+  sort?: 'recent' | 'frequent';
+  emptyEmojiIds?: string[];
+  storageKey?: string;
+  store?: EmojiRecentStore;
 }
 
 export interface EmojiRenderState {
@@ -363,6 +448,7 @@ export interface EmojiPickerProps
   recentLimit?: number;
   recentStorageKey?: string;
   recentStore?: EmojiRecentStore;
+  recent?: EmojiRecentCategoryConfig;
   skinToneStorageKey?: string;
   locale?: EmojiLocaleCode;
   fallbackLocale?: EmojiLocaleCode | EmojiLocaleCode[];
@@ -371,6 +457,9 @@ export interface EmojiPickerProps
   defaultSkinTone?: EmojiSkinTone;
   onSkinToneChange?: (tone: EmojiSkinTone) => void;
   labels?: Partial<EmojiPickerLabels>;
+  categories?: Partial<Record<string, EmojiCategoryConfig>>;
+  categoryIcons?: EmojiCategoryIconsMap;
+  categoryIconStyle?: EmojiCategoryIconPreset;
   spriteSheet?: EmojiSpriteSheetConfig;
   assetSource?: EmojiAssetSource;
   gridAssetSource?: EmojiAssetSource;
@@ -388,6 +477,9 @@ export interface EmojiPickerProps
     emoji: EmojiRenderable,
     selection: EmojiSelection,
   ) => ReactNode;
+  renderCategoryIcon?: (
+    props: EmojiCategoryIconRenderProps,
+  ) => ReactNode;
   onEmojiSelect?: (emoji: EmojiSelection) => void;
   style?: CSSProperties;
 }
@@ -395,14 +487,14 @@ export interface EmojiPickerProps
 export interface EmojiSection {
   id: EmojiCategoryId;
   label: string;
-  icon: string;
+  icon: ResolvedEmojiCategoryIcon;
   emojis: EmojiRenderable[];
 }
 
 export interface EmojiCategoryMeta {
   id: EmojiCategoryId;
   label: string;
-  icon: string;
+  icon: EmojiCategoryIconConfig;
 }
 
 export interface RecentEmojiRecord {
