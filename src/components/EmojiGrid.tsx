@@ -5,11 +5,11 @@ import {
   useEffect,
   useImperativeHandle,
   useRef,
-  useState,
 } from 'react';
 import { getLocalizedEmojiName } from '../lib/i18n';
 import type {
   EmojiAssetSource,
+  EmojiCategoryIconRenderProps,
   EmojiCategoryId,
   EmojiLocaleDefinition,
   EmojiPickerClassNames,
@@ -21,6 +21,7 @@ import type {
   EmojiSkinTone,
   EmojiSpriteSheetConfig,
 } from '../lib/types';
+import { EmojiCategoryIcon } from './EmojiCategoryIcon';
 import { EmojiSprite } from './EmojiSprite';
 import {
   formatEmojiName,
@@ -46,6 +47,9 @@ export interface EmojiGridProps {
     emoji: EmojiRenderable,
     state: EmojiRenderState,
   ) => ReactNode;
+  renderCategoryIcon?: (
+    props: EmojiCategoryIconRenderProps,
+  ) => ReactNode;
   onEmojiSelect: (emoji: EmojiRenderable) => void;
   onEmojiHover: (emoji: EmojiRenderable | null) => void;
   onActiveCategoryChange: (id: EmojiCategoryId) => void;
@@ -58,8 +62,34 @@ export interface EmojiGridProps {
   styles?: EmojiPickerStyles;
 }
 
-const OBSERVER_ROOT_MARGIN = '400px 0px';
-const ROW_HEIGHT_ESTIMATE = 52;
+function getContainerPaddingTop(container: HTMLDivElement) {
+  return Number.parseFloat(window.getComputedStyle(container).paddingTop) || 0;
+}
+
+function getScrollBehavior() {
+  if (
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) {
+    return 'auto' as const;
+  }
+
+  return 'smooth' as const;
+}
+
+function getSectionScrollTop(
+  container: HTMLDivElement,
+  section: HTMLElement,
+) {
+  const containerRect = container.getBoundingClientRect();
+  const sectionRect = section.getBoundingClientRect();
+  const paddingTop = getContainerPaddingTop(container);
+
+  return Math.max(
+    container.scrollTop + sectionRect.top - containerRect.top - paddingTop,
+    0,
+  );
+}
 
 export function EmojiGrid({
   ref,
@@ -72,6 +102,7 @@ export function EmojiGrid({
   assetSource,
   localeDefinition,
   renderEmoji,
+  renderCategoryIcon,
   onEmojiSelect,
   onEmojiHover,
   onActiveCategoryChange,
@@ -85,57 +116,80 @@ export function EmojiGrid({
 }: EmojiGridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-  const gridHeights = useRef<Record<string, number>>({});
   const pendingCategoryScrollRef = useRef<{
     id: EmojiCategoryId;
     top: number;
   } | null>(null);
-  const [visibleSections, setVisibleSections] = useState<Set<string> | null>(
-    null,
-  );
   const slotOptions = { unstyled, classNames, styles };
+  const hasRenderableEmoji = sections.some(
+    (section) => section.emojis.length > 0,
+  );
+  const firstFocusableSectionIndex = sections.findIndex(
+    (section) => section.emojis.length > 0,
+  );
 
   const onActiveCategoryChangeRef = useRef(onActiveCategoryChange);
   onActiveCategoryChangeRef.current = onActiveCategoryChange;
 
-  const prevSectionsRef = useRef(sections);
-  if (sections !== prevSectionsRef.current) {
-    prevSectionsRef.current = sections;
-    if (visibleSections !== null) {
-      setVisibleSections(null);
+  const scrollToCategory = useCallback((id: EmojiCategoryId) => {
+    const container = scrollRef.current;
+    const target = sectionRefs.current[id];
+    if (!container || !target) {
+      return;
     }
-  }
 
-  useImperativeHandle(ref, () => ({
-    scrollToCategory(id: EmojiCategoryId) {
-      const container = scrollRef.current;
-      const target = sectionRefs.current[id];
-      if (!container || !target) return;
-      const nextTop = Math.max(target.offsetTop - 12, 0);
+    const nextTop = getSectionScrollTop(container, target);
+    pendingCategoryScrollRef.current = {
+      id,
+      top: nextTop,
+    };
+    const behavior = getScrollBehavior();
+    container.scrollTo({ top: nextTop, behavior });
+
+    requestAnimationFrame(() => {
+      const nextContainer = scrollRef.current;
+      const nextTarget = sectionRefs.current[id];
+      if (!nextContainer || !nextTarget) {
+        return;
+      }
+
+      const settledTop = getSectionScrollTop(nextContainer, nextTarget);
+      if (Math.abs(nextContainer.scrollTop - settledTop) <= 1) {
+        return;
+      }
+
       pendingCategoryScrollRef.current = {
         id,
-        top: nextTop,
+        top: settledTop,
       };
-      container.scrollTo({
-        top: nextTop,
-      });
-    },
-  }));
+      nextContainer.scrollTo({ top: settledTop, behavior });
+    });
+  }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      scrollToCategory,
+    }),
+    [scrollToCategory],
+  );
 
   useEffect(() => {
     const container = scrollRef.current;
     const firstSection = sections[0];
-    if (!container || !firstSection) return;
+    if (!container || !firstSection) {
+      return;
+    }
 
     const activeContainer = container;
-    const initialSection = firstSection;
+    const initialCategory = firstSection.id;
 
     function updateActiveCategory() {
       const pendingScroll = pendingCategoryScrollRef.current;
 
       if (pendingScroll) {
         if (
-          Math.abs(activeContainer.scrollTop - pendingScroll.top) <= 4
+          Math.abs(activeContainer.scrollTop - pendingScroll.top) <= 2
         ) {
           pendingCategoryScrollRef.current = null;
         }
@@ -144,14 +198,23 @@ export function EmojiGrid({
         return;
       }
 
-      const threshold = activeContainer.scrollTop + 72;
-      let nextCategory = initialSection.id;
+      const containerRect = activeContainer.getBoundingClientRect();
+      const paddingTop = getContainerPaddingTop(activeContainer);
+      const threshold = containerRect.top + paddingTop + 48;
+      let nextCategory = initialCategory;
 
       for (const section of sections) {
         const element = sectionRefs.current[section.id];
-        if (element && element.offsetTop <= threshold) {
-          nextCategory = section.id;
+        if (!element) {
+          continue;
         }
+
+        if (element.getBoundingClientRect().top <= threshold) {
+          nextCategory = section.id;
+          continue;
+        }
+
+        break;
       }
 
       onActiveCategoryChangeRef.current(nextCategory);
@@ -161,63 +224,13 @@ export function EmojiGrid({
     activeContainer.addEventListener('scroll', updateActiveCategory, {
       passive: true,
     });
-    return () =>
+    window.addEventListener('resize', updateActiveCategory);
+
+    return () => {
       activeContainer.removeEventListener('scroll', updateActiveCategory);
+      window.removeEventListener('resize', updateActiveCategory);
+    };
   }, [sections]);
-
-  useEffect(() => {
-    const container = scrollRef.current;
-    if (!container) return;
-
-    for (const section of sections) {
-      const el = sectionRefs.current[section.id];
-      if (el) {
-        const grid = el.querySelector('[data-mx-slot="grid"]');
-        if (grid instanceof HTMLElement) {
-          gridHeights.current[section.id] = grid.clientHeight;
-        }
-      }
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        setVisibleSections((prev) => {
-          const next = new Set(prev ?? sections.map((section) => section.id));
-          for (const entry of entries) {
-            const id = (entry.target as HTMLElement).dataset.sectionId;
-            if (!id) continue;
-            if (entry.isIntersecting) {
-              next.add(id);
-            } else {
-              next.delete(id);
-            }
-          }
-          return next;
-        });
-      },
-      { root: container, rootMargin: OBSERVER_ROOT_MARGIN },
-    );
-
-    for (const section of sections) {
-      const el = sectionRefs.current[section.id];
-      if (el) observer.observe(el);
-    }
-
-    return () => observer.disconnect();
-  }, [sections]);
-
-  const isSectionVisible = (id: string) =>
-    visibleSections === null || visibleSections.has(id);
-
-  const estimateGridHeight = useCallback(
-    (sectionId: string, emojiCount: number) => {
-      if (gridHeights.current[sectionId]) {
-        return gridHeights.current[sectionId];
-      }
-      return Math.ceil(emojiCount / columns) * ROW_HEIGHT_ESTIMATE;
-    },
-    [columns],
-  );
 
   function handleKeyDown(event: React.KeyboardEvent) {
     const target = event.target as HTMLElement;
@@ -346,7 +359,7 @@ export function EmojiGrid({
       onKeyDown={handleKeyDown}
       data-mx-slot="content"
     >
-      {sections.length === 0 && !hideEmptyState && (
+      {!hasRenderableEmoji && !hideEmptyState && (
         <div
           className={getSlotClassName('empty', slotOptions)}
           style={getSlotStyle('empty', slotOptions)}
@@ -361,121 +374,110 @@ export function EmojiGrid({
         </div>
       )}
 
-      {sections.map((section, sectionIndex) => {
-        const visible = isSectionVisible(section.id);
-
-        return (
-          <section
-            key={section.id}
-            className={getSlotClassName('section', slotOptions)}
-            style={getSlotStyle('section', slotOptions)}
-            data-section-id={section.id}
-            data-category-id={section.id}
-            data-mx-slot="section"
-            ref={(node) => {
-              sectionRefs.current[section.id] = node;
-            }}
+      {sections.map((section, sectionIndex) => (
+        <section
+          key={section.id}
+          className={getSlotClassName('section', slotOptions)}
+          style={getSlotStyle('section', slotOptions)}
+          data-category-id={section.id}
+          data-mx-slot="section"
+          ref={(node) => {
+            sectionRefs.current[section.id] = node;
+          }}
+        >
+          <header
+            className={getSlotClassName('sectionHeader', slotOptions)}
+            style={getSlotStyle('sectionHeader', slotOptions)}
+            data-mx-slot="sectionHeader"
           >
-            <header
-              className={getSlotClassName('sectionHeader', slotOptions)}
-              style={getSlotStyle('sectionHeader', slotOptions)}
-              data-mx-slot="sectionHeader"
+            <span
+              className={getSlotClassName('sectionIcon', slotOptions)}
+              style={getSlotStyle('sectionIcon', slotOptions)}
+              aria-hidden="true"
+              data-mx-slot="sectionIcon"
             >
-              <span
-                className={getSlotClassName('sectionIcon', slotOptions)}
-                style={getSlotStyle('sectionIcon', slotOptions)}
-                aria-hidden="true"
-                data-mx-slot="sectionIcon"
-              >
-                {section.icon}
-              </span>
-              <strong>{section.label}</strong>
-              <span>{section.emojis.length}</span>
-            </header>
+              {renderCategoryIcon?.({
+                categoryId: section.id,
+                label: section.label,
+                icon: section.icon,
+                context: 'section',
+                size: 15,
+                active: false,
+                spriteSheet,
+              }) ?? (
+                <EmojiCategoryIcon
+                  icon={section.icon}
+                  label={section.label}
+                  size={15}
+                  spriteSheet={spriteSheet}
+                />
+              )}
+            </span>
+            <strong>{section.label}</strong>
+            <span>{section.emojis.length}</span>
+          </header>
 
-            {visible ? (
-              <div
-                className={getSlotClassName('grid', slotOptions)}
-                style={getSlotStyle('grid', slotOptions)}
-                role="grid"
-                aria-label={section.label}
-                data-mx-slot="grid"
-                ref={(node) => {
-                  if (node) {
-                    gridHeights.current[section.id] = node.clientHeight;
-                  }
-                }}
-              >
-                {section.emojis.map((emoji, emojiIndex) => {
-                  const selected = value === emoji.id;
-                  const isFirstEmoji =
-                    sectionIndex === 0 && emojiIndex === 0;
-                  const active = hoveredEmojiId === emoji.id;
+          <div
+            className={getSlotClassName('grid', slotOptions)}
+            style={getSlotStyle('grid', slotOptions)}
+            role="grid"
+            aria-label={section.label}
+            data-mx-slot="grid"
+          >
+            {section.emojis.map((emoji, emojiIndex) => {
+              const selected = value === emoji.id;
+              const isFirstEmoji =
+                sectionIndex === firstFocusableSectionIndex &&
+                emojiIndex === 0;
+              const active = hoveredEmojiId === emoji.id;
 
-                  return (
-                    <button
-                      key={`${section.id}:${emoji.id}`}
-                      type="button"
-                      role="gridcell"
-                      className={getSlotClassName('emoji', slotOptions)}
-                      style={getSlotStyle('emoji', slotOptions)}
-                      data-section={sectionIndex}
-                      data-index={emojiIndex}
-                      data-category-id={section.id}
-                      data-mx-slot="emoji"
-                      data-active={active ? 'true' : undefined}
-                      data-selected={selected ? 'true' : undefined}
-                      tabIndex={isFirstEmoji ? 0 : -1}
-                      onClick={() => onEmojiSelect(emoji)}
-                      onMouseEnter={() => onEmojiHover(emoji)}
-                      onMouseLeave={() => onEmojiHover(null)}
-                      onFocus={(event) => handleEmojiFocus(event, emoji)}
-                      onBlur={() => onEmojiHover(null)}
-                      title={formatEmojiName(
-                        getLocalizedEmojiName(emoji, localeDefinition),
-                      )}
-                      aria-label={formatEmojiName(
-                        getLocalizedEmojiName(emoji, localeDefinition),
-                      )}
-                    >
-                      {renderEmoji?.(emoji, {
-                        active,
-                        selected,
-                        skinTone,
-                        size: emojiSize,
-                      }) ?? (
-                        <EmojiSprite
-                          emoji={emoji}
-                          size={emojiSize}
-                          skinTone={skinTone}
-                          spriteSheet={spriteSheet}
-                          assetSource={assetSource}
-                          assetContext="grid"
-                        />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div
-                className={getSlotClassName('gridPlaceholder', slotOptions)}
-                style={getSlotStyle(
-                  'gridPlaceholder',
-                  slotOptions,
-                  {
-                    height: `${estimateGridHeight(
-                      section.id,
-                      section.emojis.length,
-                    )}px`,
-                  },
-                )}
-                data-mx-slot="gridPlaceholder"
-              />
-            )}
-          </section>
-        );
-      })}
+              return (
+                <button
+                  key={`${section.id}:${emoji.id}`}
+                  type="button"
+                  role="gridcell"
+                  className={getSlotClassName('emoji', slotOptions)}
+                  style={getSlotStyle('emoji', slotOptions)}
+                  data-section={sectionIndex}
+                  data-index={emojiIndex}
+                  data-category-id={section.id}
+                  data-mx-slot="emoji"
+                  data-active={active ? 'true' : undefined}
+                  data-selected={selected ? 'true' : undefined}
+                  tabIndex={isFirstEmoji ? 0 : -1}
+                  onClick={() => onEmojiSelect(emoji)}
+                  onMouseEnter={() => onEmojiHover(emoji)}
+                  onMouseLeave={() => onEmojiHover(null)}
+                  onFocus={(event) => handleEmojiFocus(event, emoji)}
+                  onBlur={() => onEmojiHover(null)}
+                  title={formatEmojiName(
+                    getLocalizedEmojiName(emoji, localeDefinition),
+                  )}
+                  aria-label={formatEmojiName(
+                    getLocalizedEmojiName(emoji, localeDefinition),
+                  )}
+                >
+                  {renderEmoji?.(emoji, {
+                    active,
+                    selected,
+                    skinTone,
+                    size: emojiSize,
+                  }) ?? (
+                    <EmojiSprite
+                      emoji={emoji}
+                      size={emojiSize}
+                      skinTone={skinTone}
+                      spriteSheet={spriteSheet}
+                      assetSource={assetSource}
+                      assetContext="grid"
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

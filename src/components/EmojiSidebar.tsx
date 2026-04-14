@@ -1,15 +1,21 @@
+import type { ReactNode } from 'react';
 import type {
+  EmojiCategoryIconRenderProps,
   EmojiCategoryId,
   EmojiPickerClassNames,
   EmojiPickerStyles,
   EmojiSection,
+  EmojiSpriteSheetConfig,
 } from '../lib/types';
+import { EmojiCategoryIcon } from './EmojiCategoryIcon';
 import { getSlotClassName, getSlotStyle } from './utils';
 
 export interface EmojiSidebarProps {
   sections: EmojiSection[];
   activeCategory: EmojiCategoryId;
   onCategoryClick: (id: EmojiCategoryId) => void;
+  renderCategoryIcon?: (props: EmojiCategoryIconRenderProps) => ReactNode;
+  spriteSheet?: EmojiSpriteSheetConfig;
   unstyled?: boolean;
   classNames?: EmojiPickerClassNames;
   styles?: EmojiPickerStyles;
@@ -19,6 +25,8 @@ export function EmojiSidebar({
   sections,
   activeCategory,
   onCategoryClick,
+  renderCategoryIcon,
+  spriteSheet,
   unstyled,
   classNames,
   styles,
@@ -51,7 +59,21 @@ export function EmojiSidebar({
           }
           data-category-id={section.id}
         >
-          <span aria-hidden="true">{section.icon}</span>
+          {renderCategoryIcon?.({
+            categoryId: section.id,
+            label: section.label,
+            icon: section.icon,
+            context: 'sidebar',
+            size: 18,
+            active: activeCategory === section.id,
+            spriteSheet,
+          }) ?? (
+            <EmojiCategoryIcon
+              icon={section.icon}
+              label={section.label}
+              spriteSheet={spriteSheet}
+            />
+          )}
         </button>
       ))}
     </div>

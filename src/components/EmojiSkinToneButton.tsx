@@ -17,7 +17,7 @@ import type {
 import { EmojiSprite } from './EmojiSprite';
 import { getSlotClassName, getSlotStyle } from './utils';
 
-const SKIN_TONE_PREVIEW_EMOJI_ID = '1f44b';
+const SKIN_TONE_PREVIEW_EMOJI_ID = '1f91a';
 
 export interface EmojiSkinToneButtonProps {
   skinTone: EmojiSkinTone;
