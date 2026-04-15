@@ -3,7 +3,7 @@ import type {
   EmojiPickerClassNames,
   EmojiPickerSlot,
   EmojiPickerStyles,
-} from '../lib/types';
+} from '../core/types';
 
 const SLOT_CLASS_NAMES: Record<EmojiPickerSlot, string[]> = {
   root: ['mx-picker'],

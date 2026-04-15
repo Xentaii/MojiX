@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { SKIN_TONE_OPTIONS } from '../lib/constants';
+import { SKIN_TONE_OPTIONS } from '../core/constants';
 import {
   getUnicodeEmojiById,
   resolveUnicodeEmojiVariant,
-} from '../lib/data';
-import { getLocalizedSkinToneLabel } from '../lib/i18n';
+} from '../core/data';
+import { getLocalizedSkinToneLabel } from '../core/i18n';
 import type {
   EmojiAssetSource,
   EmojiLocaleDefinition,
@@ -13,7 +13,7 @@ import type {
   EmojiPickerStyles,
   EmojiSkinTone,
   EmojiSpriteSheetConfig,
-} from '../lib/types';
+} from '../core/types';
 import { EmojiSprite } from './EmojiSprite';
 import { getSlotClassName, getSlotStyle } from './utils';
 

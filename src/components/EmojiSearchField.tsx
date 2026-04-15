@@ -3,7 +3,7 @@ import type {
   EmojiPickerClassNames,
   EmojiPickerLabels,
   EmojiPickerStyles,
-} from '../lib/types';
+} from '../core/types';
 import { getSlotClassName, getSlotStyle } from './utils';
 
 const SEARCH_ICON = String.fromCodePoint(0x2315);

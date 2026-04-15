@@ -351,7 +351,7 @@ export function App() {
   const [brandIcon, setBrandIcon] =
     useState<EmojiCategoryIconGlyph>('rocket');
   const [peopleIconStyle, setPeopleIconStyle] =
-    useState<'inherit' | EmojiCategoryIconPreset>('outline');
+    useState<'inherit' | EmojiCategoryIconPreset>('inherit');
   const [customThemes, setCustomThemes] = useState<DemoThemeDefinition[]>(
     () => readStoredCustomThemes(),
   );
@@ -553,7 +553,7 @@ export function App() {
     setBrandVisible(true);
     setBrandLabel(DEFAULT_BRAND_LABEL);
     setBrandIcon('rocket');
-    setPeopleIconStyle('outline');
+    setPeopleIconStyle('inherit');
     setSelectedThemeId(defaultTheme.id);
     setThemeDraft(cloneDemoThemePalette(defaultTheme.palette));
     setThemeName(DEFAULT_CUSTOM_THEME_NAME);

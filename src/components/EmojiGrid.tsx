@@ -1,4 +1,5 @@
 import {
+  type CSSProperties,
   type ReactNode,
   type Ref,
   useCallback,
@@ -7,7 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { getLocalizedEmojiName } from '../lib/i18n';
+import { getLocalizedEmojiName } from '../core/i18n';
 import type {
   EmojiAssetSource,
   EmojiCategoryIconRenderProps,
@@ -21,7 +22,7 @@ import type {
   EmojiSection,
   EmojiSkinTone,
   EmojiSpriteSheetConfig,
-} from '../lib/types';
+} from '../core/types';
 import { EmojiCategoryIcon } from './EmojiCategoryIcon';
 import { EmojiSprite } from './EmojiSprite';
 import {
@@ -61,6 +62,10 @@ export interface EmojiGridProps {
   unstyled?: boolean;
   classNames?: EmojiPickerClassNames;
   styles?: EmojiPickerStyles;
+  resolveEmojiHoverColor?: (
+    emoji: EmojiRenderable,
+    state: EmojiRenderState,
+  ) => string | undefined;
 }
 
 function getContainerPaddingTop(container: HTMLDivElement) {
@@ -114,6 +119,7 @@ export function EmojiGrid({
   unstyled,
   classNames,
   styles,
+  resolveEmojiHoverColor,
 }: EmojiGridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -435,8 +441,25 @@ export function EmojiGrid({
               const active = hoveredKey
                 ? hoveredKey === emojiKey
                 : hoveredEmojiId === emoji.id;
+              const renderState: EmojiRenderState = {
+                active,
+                selected,
+                skinTone,
+                size: emojiSize,
+              };
               const displayName = formatEmojiName(
                 getLocalizedEmojiName(emoji, localeDefinition),
+              );
+              const hoverColor = resolveEmojiHoverColor?.(
+                emoji,
+                renderState,
+              );
+              const buttonStyle = getSlotStyle(
+                'emoji',
+                slotOptions,
+                hoverColor
+                  ? ({ ['--mx-emoji-hover']: hoverColor } as CSSProperties)
+                  : undefined,
               );
 
               return (
@@ -445,7 +468,7 @@ export function EmojiGrid({
                   type="button"
                   role="gridcell"
                   className={getSlotClassName('emoji', slotOptions)}
-                  style={getSlotStyle('emoji', slotOptions)}
+                  style={buttonStyle}
                   data-section={sectionIndex}
                   data-index={emojiIndex}
                   data-category-id={section.id}
@@ -477,12 +500,7 @@ export function EmojiGrid({
                   title={displayName}
                   aria-label={displayName}
                 >
-                  {renderEmoji?.(emoji, {
-                    active,
-                    selected,
-                    skinTone,
-                    size: emojiSize,
-                  }) ?? (
+                  {renderEmoji?.(emoji, renderState) ?? (
                     <EmojiSprite
                       emoji={emoji}
                       size={emojiSize}

@@ -37,7 +37,7 @@ export {
   createSpriteSheetAssetSource,
   createSvgAssetSource,
   resolveEmojiAsset,
-} from './lib/assets';
+} from './core/assets';
 export {
   createEmojiSpriteSheet,
   createEmojiCdnSpriteSheet,
@@ -46,11 +46,11 @@ export {
   createEmojiLocalUrl,
   defaultSpriteSheet,
   resolveVendorPackageName,
-} from './lib/sprites';
+} from './core/sprites';
 export {
   createBrowserSpriteSheetCacheAdapter,
   warmEmojiSpriteSheet,
-} from './lib/sprite-cache';
+} from './core/sprite-cache';
 export {
   createLocalStorageRecentStore,
   pushRecentEmoji,
@@ -58,16 +58,17 @@ export {
   readStoredSkinTone,
   writeRecentEmoji,
   writeStoredSkinTone,
-} from './lib/storage';
+} from './core/storage';
 export {
   emojiPickerLocales,
   getLocalizedCategoryLabel,
   getLocalizedEmojiKeywords,
   getLocalizedEmojiName,
   getLocalizedSkinToneLabel,
+  registerEmojiLocalePack,
   resolveLocaleDefinition,
-} from './lib/i18n';
-export { getUnicodeEmojiData } from './lib/data';
+} from './core/i18n';
+export { getUnicodeEmojiData } from './core/data';
 export type {
   CustomEmoji,
   EmojiCategoryConfig,
@@ -90,6 +91,7 @@ export type {
   EmojiMixedAssetSource,
   EmojiNativeAsset,
   EmojiNativeAssetSource,
+  EmojiPickerColors,
   EmojiPickerProps,
   EmojiPickerClassNames,
   EmojiPickerSlot,
@@ -118,4 +120,4 @@ export type {
   EmojiSvgAsset,
   EmojiSvgAssetSource,
   UnicodeEmoji,
-} from './lib/types';
+} from './core/types';

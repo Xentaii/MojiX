@@ -1,13 +1,14 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { createContext, useContext } from 'react';
-import { SKIN_TONE_OPTIONS } from '../lib/constants';
+import { SKIN_TONE_OPTIONS } from '../core/constants';
 import type {
   EmojiCategoryId,
+  EmojiPickerColors,
   EmojiPickerProps,
   EmojiRenderable,
   EmojiSelection,
   EmojiSkinTone,
-} from '../lib/types';
+} from '../core/types';
 import { EmojiGrid } from './EmojiGrid';
 import { EmojiPreview } from './EmojiPreview';
 import { EmojiSearchField } from './EmojiSearchField';
@@ -58,6 +59,31 @@ function renderChild<T>(
   return child ?? null;
 }
 
+function getRootColorStyles(colors: EmojiPickerColors | undefined) {
+  if (!colors) {
+    return undefined;
+  }
+
+  return {
+    ['--mx-accent' as string]: colors.accent,
+    ['--mx-accent-soft' as string]: colors.accentSoft,
+    ['--mx-hover' as string]: colors.hover,
+    ['--mx-emoji-hover' as string]:
+      typeof colors.emojiHover === 'string'
+        ? colors.emojiHover
+        : undefined,
+    ['--mx-category-hover' as string]:
+      typeof colors.categoryHover === 'string'
+        ? colors.categoryHover
+        : undefined,
+    ['--mx-category-active-bg' as string]: colors.categoryActiveBg,
+    ['--mx-category-active-color' as string]: colors.categoryActiveColor,
+    ['--mx-scrollbar-thumb' as string]: colors.scrollbarThumb,
+    ['--mx-scrollbar-thumb-hover' as string]:
+      colors.scrollbarThumbHover,
+  };
+}
+
 export interface MojiXRootProps
   extends Omit<EmojiPickerProps, 'children'> {
   children?: ReactNode | RenderChild<EmojiPickerState>;
@@ -90,6 +116,8 @@ export function MojiXRoot({
   defaultSkinTone,
   onSkinToneChange,
   labels,
+  colors,
+  autoScrollCategoriesOnHover,
   categories,
   categoryIcons,
   categoryIconStyle,
@@ -136,6 +164,8 @@ export function MojiXRoot({
     defaultSkinTone,
     onSkinToneChange,
     labels,
+    colors,
+    autoScrollCategoriesOnHover,
     categories,
     categoryIcons,
     categoryIconStyle,
@@ -154,6 +184,7 @@ export function MojiXRoot({
     onEmojiSelect,
   });
   const slotOptions = getContextSlotOptions(state);
+  const rootColorStyles = getRootColorStyles(colors);
 
   return (
     <MojiXContext.Provider value={state}>
@@ -167,6 +198,7 @@ export function MojiXRoot({
             ['--mx-emoji-size' as string]: `${state.emojiSize}px`,
             ['--mx-columns' as string]: `${state.columns}`,
           },
+          rootColorStyles,
           style,
         )}
         data-mx-slot="root"
@@ -322,6 +354,7 @@ export function MojiXList({
       unstyled={context.unstyled}
       classNames={context.classNames}
       styles={context.styles}
+      resolveEmojiHoverColor={context.resolveEmojiHoverColor}
     />
   );
 }
@@ -444,6 +477,8 @@ export function MojiXCategoryNav({ children }: MojiXCategoryNavProps) {
       unstyled={context.unstyled}
       classNames={context.classNames}
       styles={context.styles}
+      resolveCategoryHoverColor={context.resolveCategoryHoverColor}
+      autoScrollOnHover={context.autoScrollCategoriesOnHover}
     />
   );
 }

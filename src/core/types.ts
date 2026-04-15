@@ -430,8 +430,26 @@ export type EmojiPickerStyles = Partial<
   Record<EmojiPickerSlot, CSSProperties>
 >;
 
+export interface EmojiPickerColors {
+  accent?: string;
+  accentSoft?: string;
+  hover?: string;
+  emojiHover?:
+    | string
+    | ((emoji: EmojiRenderable, state: EmojiRenderState) => string | undefined);
+  categoryHover?:
+    | string
+    | ((categoryId: EmojiCategoryId) => string | undefined);
+  categoryActiveBg?: string;
+  categoryActiveColor?: string;
+  scrollbarThumb?: string;
+  scrollbarThumbHover?: string;
+}
+
 export interface EmojiPickerProps
   extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> {
+  colors?: EmojiPickerColors;
+  autoScrollCategoriesOnHover?: boolean;
   value?: string;
   searchQuery?: string;
   defaultSearchQuery?: string;

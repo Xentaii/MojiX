@@ -10,7 +10,7 @@ import {
   MojiXViewport,
 } from './MojiX';
 import { getSlotClassName, getSlotStyle } from './utils';
-import type { EmojiPickerProps } from '../lib/types';
+import type { EmojiPickerProps } from '../core/types';
 
 export function EmojiPicker(props: EmojiPickerProps) {
   return (

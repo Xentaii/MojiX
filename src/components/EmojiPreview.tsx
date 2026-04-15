@@ -6,7 +6,7 @@ import type {
   EmojiRenderable,
   EmojiSelection,
   EmojiSpriteSheetConfig,
-} from '../lib/types';
+} from '../core/types';
 import { EmojiSprite } from './EmojiSprite';
 import {
   formatEmojiName,

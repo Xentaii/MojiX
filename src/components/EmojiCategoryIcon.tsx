@@ -1,21 +1,27 @@
 import {
   createNativeAssetSource,
   createSpriteSheetAssetSource,
-} from '../lib/assets';
+} from '../core/assets';
 import {
   createEmojiSpriteSheet,
   resolveSpriteSheetConfig,
-} from '../lib/sprites';
+} from '../core/sprites';
 import type {
   EmojiCategoryIconPreset,
   EmojiSpriteSheetConfig,
   ResolvedEmojiCategoryIcon,
-} from '../lib/types';
+} from '../core/types';
 import { LUCIDE_CATEGORY_ICON_BODIES } from './icons/lucideCategoryIconBodies';
 import { EmojiSprite } from './EmojiSprite';
 import { createClassName } from './utils';
 
 const NATIVE_SOURCE = createNativeAssetSource();
+const FILLED_CATEGORY_ICON_BODIES: Partial<Record<string, string>> = {
+  people: `<circle cx="9" cy="7.5" r="4" />
+<path d="M2 20a7 7 0 0 1 14 0v1H2z" />
+<circle cx="17.5" cy="8" r="3" />
+<path d="M14 20a5 5 0 0 1 5-5h.5A2.5 2.5 0 0 1 22 17.5V21h-8z" />`,
+};
 
 export interface EmojiCategoryIconProps {
   icon: ResolvedEmojiCategoryIcon;
@@ -25,23 +31,29 @@ export interface EmojiCategoryIconProps {
   spriteSheet?: EmojiSpriteSheetConfig;
 }
 
+type ResolvedCategoryIconStyle =
+  | 'outline'
+  | 'solid'
+  | 'native'
+  | Exclude<EmojiCategoryIconPreset, 'picker' | 'mono-filled' | 'mono-outline' | 'solid' | 'outline' | 'native'>;
+
 function resolveIconStyle(
   style: EmojiCategoryIconPreset,
   spriteSheet?: EmojiSpriteSheetConfig,
-) {
+): ResolvedCategoryIconStyle {
   if (style === 'picker') {
-    return resolveSpriteSheetConfig(spriteSheet).vendor;
+    return resolveSpriteSheetConfig(spriteSheet).vendor as ResolvedCategoryIconStyle;
   }
 
   if (style === 'solid' || style === 'mono-filled') {
+    return 'solid';
+  }
+
+  if (style === 'outline' || style === 'mono-outline') {
     return 'outline';
   }
 
-  if (style === 'mono-outline') {
-    return 'outline';
-  }
-
-  return style;
+  return style as ResolvedCategoryIconStyle;
 }
 
 function createVendorSheet(
@@ -66,10 +78,48 @@ function createVendorSheet(
   });
 }
 
-function renderMonochromeGlyph(icon: ResolvedEmojiCategoryIcon) {
+function renderMonochromeGlyph(
+  icon: ResolvedEmojiCategoryIcon,
+  filled: boolean,
+) {
+  const filledBody = FILLED_CATEGORY_ICON_BODIES[icon.glyph];
   const definition =
     LUCIDE_CATEGORY_ICON_BODIES[icon.glyph] ??
     LUCIDE_CATEGORY_ICON_BODIES.sparkles;
+
+  if (filled && filledBody) {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        className="mx-picker__category-glyph"
+        aria-hidden="true"
+      >
+        <g
+          fill="currentColor"
+          dangerouslySetInnerHTML={{ __html: filledBody }}
+        />
+      </svg>
+    );
+  }
+
+  if (filled) {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        className="mx-picker__category-glyph"
+        aria-hidden="true"
+      >
+        <g
+          fill="currentColor"
+          stroke="currentColor"
+          strokeWidth="1.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          dangerouslySetInnerHTML={{ __html: definition.body }}
+        />
+      </svg>
+    );
+  }
 
   return (
     <svg
@@ -103,14 +153,14 @@ export function EmojiCategoryIcon({
     fontSize: `${size}px`,
   };
 
-  if (resolvedStyle === 'outline') {
+  if (resolvedStyle === 'outline' || resolvedStyle === 'solid') {
     return (
       <span
         aria-hidden="true"
         className={createClassName('mx-picker__category-icon', className)}
         style={iconSizeStyle}
       >
-        {renderMonochromeGlyph(icon)}
+        {renderMonochromeGlyph(icon, resolvedStyle === 'solid')}
       </span>
     );
   }

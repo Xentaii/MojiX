@@ -22,7 +22,7 @@ import {
   getDefaultCategoryOrder,
   humanizeCategoryId,
   isSystemCategoryId,
-} from '../lib/constants';
+} from '../core/constants';
 import {
   createEmojiSelection,
   filterEmoji,
@@ -31,23 +31,23 @@ import {
   getUnicodeEmojiById,
   getUnicodeEmojiByNative,
   prepareCustomEmojis,
-} from '../lib/data';
+} from '../core/data';
 import {
   getLocalizedCategoryLabel,
   resolveLocaleDefinition,
-} from '../lib/i18n';
-import { createNativeAssetSource } from '../lib/assets';
-import { warmEmojiSpriteSheet } from '../lib/sprite-cache';
+} from '../core/i18n';
+import { createNativeAssetSource } from '../core/assets';
+import { warmEmojiSpriteSheet } from '../core/sprite-cache';
 import {
   createSpriteSheetCacheKey,
   defaultSpriteSheet,
   resolveSpriteSheetConfig,
-} from '../lib/sprites';
+} from '../core/sprites';
 import {
   createLocalStorageRecentStore,
   readStoredSkinTone,
   writeStoredSkinTone,
-} from '../lib/storage';
+} from '../core/storage';
 
 // Used as the default asset source when the caller provides no sprite sheet
 // and no explicit asset source — "just works" with native OS emoji.
@@ -60,8 +60,10 @@ import type {
   EmojiCategoryId,
   EmojiCategoryIconPreset,
   EmojiPickerLabels,
+  EmojiPickerColors,
   EmojiPickerProps,
   EmojiRenderable,
+  EmojiRenderState,
   EmojiSection,
   EmojiSelection,
   EmojiSkinTone,
@@ -69,9 +71,9 @@ import type {
   PreparedCustomEmoji,
   RecentEmojiRecord,
   ResolvedEmojiCategoryIcon,
-} from '../lib/types';
+} from '../core/types';
 import type { EmojiGridHandle } from './EmojiGrid';
-import { peekWarmedEmojiSpriteSheetUrl } from '../lib/sprite-cache';
+import { peekWarmedEmojiSpriteSheetUrl } from '../core/sprite-cache';
 
 function resolveRecentEmoji(
   recent: RecentEmojiRecord,
@@ -237,9 +239,18 @@ export interface EmojiPickerState {
   unstyled: boolean;
   classNames: EmojiPickerProps['classNames'];
   styles: EmojiPickerProps['styles'];
+  colors: EmojiPickerColors | undefined;
   assetSource: EmojiPickerProps['assetSource'];
   gridAssetSource: EmojiPickerProps['gridAssetSource'];
   previewAssetSource: EmojiPickerProps['previewAssetSource'];
+  resolveEmojiHoverColor: (
+    emoji: EmojiRenderable,
+    state: EmojiRenderState,
+  ) => string | undefined;
+  resolveCategoryHoverColor: (
+    categoryId: EmojiCategoryId,
+  ) => string | undefined;
+  autoScrollCategoriesOnHover: boolean;
   loading: boolean;
   recentStore: EmojiRecentStore;
 }
@@ -287,6 +298,8 @@ export function useEmojiPickerState({
   defaultSkinTone = 'default',
   onSkinToneChange,
   labels,
+  colors,
+  autoScrollCategoriesOnHover = true,
   categories,
   categoryIcons,
   categoryIconStyle = DEFAULT_CATEGORY_ICON_STYLE,
@@ -693,6 +706,26 @@ export function useEmojiPickerState({
       new Map(sections.map((section) => [section.id, section.label])),
     [sections],
   );
+  const resolveEmojiHoverColor = useCallback(
+    (emoji: EmojiRenderable, state: EmojiRenderState) => {
+      if (typeof colors?.emojiHover === 'function') {
+        return colors.emojiHover(emoji, state);
+      }
+
+      return colors?.emojiHover;
+    },
+    [colors],
+  );
+  const resolveCategoryHoverColor = useCallback(
+    (categoryId: EmojiCategoryId) => {
+      if (typeof colors?.categoryHover === 'function') {
+        return colors.categoryHover(categoryId);
+      }
+
+      return colors?.categoryHover;
+    },
+    [colors],
+  );
 
   const setActiveCategory = useCallback(
     (nextCategory: EmojiCategoryId) => {
@@ -849,9 +882,13 @@ export function useEmojiPickerState({
     unstyled,
     classNames,
     styles,
+    colors,
     assetSource,
     gridAssetSource: resolvedGridAssetSource,
     previewAssetSource: resolvedPreviewAssetSource,
+    resolveEmojiHoverColor,
+    resolveCategoryHoverColor,
+    autoScrollCategoriesOnHover,
     loading,
     recentStore: resolvedRecentStore,
   };

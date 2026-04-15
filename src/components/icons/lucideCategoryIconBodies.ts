@@ -1,4 +1,4 @@
-import type { EmojiCategoryIconGlyph } from '../../lib/types';
+import type { EmojiCategoryIconGlyph } from '../../core/types';
 
 export interface LucideCategoryIconDefinition {
   lucideName: string;

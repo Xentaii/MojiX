@@ -1,13 +1,13 @@
 import type { CSSProperties } from 'react';
-import { resolveEmojiAsset } from '../lib/assets';
-import { getSpriteStyle, resolveSpriteSheetConfig } from '../lib/sprites';
+import { resolveEmojiAsset } from '../core/assets';
+import { getSpriteStyle, resolveSpriteSheetConfig } from '../core/sprites';
 import type {
   EmojiAssetRenderContext,
   EmojiAssetSource,
   EmojiRenderable,
   EmojiSkinTone,
   EmojiSpriteSheetConfig,
-} from '../lib/types';
+} from '../core/types';
 import { createClassName } from './utils';
 
 export interface EmojiSpriteProps {

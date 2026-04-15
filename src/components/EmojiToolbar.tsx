@@ -6,7 +6,7 @@ import type {
   EmojiPickerStyles,
   EmojiSkinTone,
   EmojiSpriteSheetConfig,
-} from '../lib/types';
+} from '../core/types';
 import { EmojiSearchField } from './EmojiSearchField';
 import { EmojiSkinToneButton } from './EmojiSkinToneButton';
 import { getSlotClassName, getSlotStyle } from './utils';
