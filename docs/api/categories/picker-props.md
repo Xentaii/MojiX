@@ -29,6 +29,8 @@ These props are accepted by both `EmojiPicker` and `MojiX.Root`.
 | `showPreview` | `boolean` | Shows or hides the default bottom preview area. |
 | `showRecents` | `boolean` | Legacy switch for the recent category. Still supported. |
 | `showSkinTones` | `boolean` | Shows or hides the skin tone control. |
+| `colors` | `EmojiPickerColors` | High-level color tokens plus per-emoji/per-category hover overrides. |
+| `autoScrollCategoriesOnHover` | `boolean` | Enables edge-hover autoscroll for the horizontal category row when it overflows. |
 | `emptyState` | `ReactNode` | Custom content for the empty state. |
 | `unstyled` | `boolean` | Disables built-in styling classes. |
 | `classNames` | `EmojiPickerClassNames` | Per-slot class overrides. |
@@ -59,7 +61,7 @@ These props are accepted by both `EmojiPicker` and `MojiX.Root`.
 | --- | --- | --- |
 | `categories` | `Partial<Record<string, EmojiCategoryConfig>>` | Per-category overrides for label, icon, icon style, visibility, and order. |
 | `categoryIcons` | `EmojiCategoryIconsMap` | Shortcut map for overriding category icons without redefining the whole category config. |
-| `categoryIconStyle` | `EmojiCategoryIconPreset` | Global category icon preset. Use `outline`, `native`, `picker`, or vendor styles like `twitter` / `google`. Legacy `solid`, `mono-filled`, and `mono-outline` values still map to `outline` for compatibility. |
+| `categoryIconStyle` | `EmojiCategoryIconPreset` | Global category icon preset. Use `outline`, `solid`, `native`, `picker`, or vendor styles like `twitter` / `google`. `mono-filled` maps to `solid`, and `mono-outline` maps to `outline` for compatibility. |
 
 ## Assets and Data
 
@@ -83,6 +85,7 @@ These props are accepted by both `EmojiPicker` and `MojiX.Root`.
 ## Related Types
 
 - `EmojiPickerProps`
+- `EmojiPickerColors`
 - `EmojiRecentCategoryConfig`
 - `EmojiCategoryConfig`
 - `EmojiCategoryIconsMap`

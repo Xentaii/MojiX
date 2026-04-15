@@ -1,12 +1,12 @@
 # Generation rules
 
-These rules govern how `scripts/build-emoji-data.mjs` produces the JSON artifacts under `src/lib/generated/`. Any future generator must follow them.
+These rules govern how `scripts/build-emoji-data.mjs` produces the JSON artifacts under `src/core/generated/`. Any future generator must follow them.
 
 ## Outputs
 
-- `src/lib/generated/emoji-data.json` — the canonical, locale-independent catalog of emoji (id, unicode, sprite coordinates, skin variations, aliases, emoticons, category).
-- `src/lib/generated/emoji-locales.json` — per-locale translations: `{ [locale]: { [emojiId]: { name, keywords } } }`.
-- `src/lib/generated/emoji-meta.json` — sprite metadata (source package version, sprite grid size).
+- `src/core/generated/emoji-data.json` — the canonical, locale-independent catalog of emoji (id, unicode, sprite coordinates, skin variations, aliases, emoticons, category).
+- `src/core/generated/emoji-locales.json` — per-locale translations: `{ [locale]: { [emojiId]: { name, keywords } } }`.
+- `src/core/generated/emoji-meta.json` — sprite metadata (source package version, sprite grid size).
 
 ## Sources
 
@@ -62,5 +62,5 @@ Run `npm run emoji:data` from the project root. It is a pure function of the inp
 1. Ensure CLDR annotations exist at `node_modules/cldr-annotations-full/annotations/<code>/annotations.json`.
 2. Add the code to `SUPPORTED_LOCALES`.
 3. If needed, add a `FLAG_LABEL_BY_LOCALE[code]` entry (used for region-derived flag names).
-4. Add a matching locale module under `src/lib/i18n/locales/<code>.ts` that wires labels, categories, and skin-tone strings, and re-exports it from `src/lib/i18n/locales/index.ts`.
+4. Add a matching locale module under `src/core/i18n/locales/<code>.ts` that wires labels, categories, and skin-tone strings, and re-exports it from `src/core/i18n/locales/index.ts`.
 5. Regenerate and commit the updated JSON artifacts.

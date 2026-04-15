@@ -8,6 +8,7 @@ This file lists the TypeScript types exported from the package root.
 | --- | --- |
 | `EmojiPickerProps` | Main prop surface for `EmojiPicker` and `MojiXRoot`. |
 | `EmojiPickerClassNames` | Slot-to-className map for built-in UI parts. |
+| `EmojiPickerColors` | High-level theme color tokens and hover-color overrides for the default UI. |
 | `EmojiPickerSlot` | All styleable slot ids in the default UI. |
 | `EmojiPickerStyles` | Slot-to-inline-style map for built-in UI parts. |
 | `EmojiRenderState` | State passed to custom emoji renderers. |
