@@ -2,9 +2,9 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const INPUT_PATH = resolve('node_modules/emoji-datasource/emoji.json');
-const OUTPUT_PATH = resolve('src/lib/generated/emoji-data.json');
-const LOCALE_OUTPUT_PATH = resolve('src/lib/generated/emoji-locales.json');
-const META_OUTPUT_PATH = resolve('src/lib/generated/emoji-meta.json');
+const OUTPUT_PATH = resolve('src/core/generated/emoji-data.json');
+const LOCALE_OUTPUT_PATH = resolve('src/core/generated/emoji-locales.json');
+const META_OUTPUT_PATH = resolve('src/core/generated/emoji-meta.json');
 const CLDR_BASE_PATH = resolve('node_modules/cldr-annotations-full/annotations');
 const PACKAGE_PATH = resolve('node_modules/emoji-datasource/package.json');
 const SUPPORTED_LOCALES = ['en', 'ru'];
@@ -233,11 +233,17 @@ const localeData = Object.fromEntries(
   ),
 );
 
-await mkdir(resolve('src/lib/generated'), { recursive: true });
+await mkdir(resolve('src/core/generated'), { recursive: true });
 await writeFile(OUTPUT_PATH, JSON.stringify(emojiData));
 await writeFile(LOCALE_OUTPUT_PATH, JSON.stringify(localeData));
 await writeFile(META_OUTPUT_PATH, JSON.stringify(emojiMeta));
 
+for (const [locale, translations] of Object.entries(localeData)) {
+  const perLocalePath = resolve(`src/core/generated/emoji-locale.${locale}.json`);
+  await writeFile(perLocalePath, JSON.stringify(translations));
+  console.log(`Generated '${locale}' locale pack to ${perLocalePath}`);
+}
+
 console.log(`Generated ${emojiData.length} emoji records to ${OUTPUT_PATH}`);
-console.log(`Generated locale packs to ${LOCALE_OUTPUT_PATH}`);
+console.log(`Generated combined locale packs to ${LOCALE_OUTPUT_PATH}`);
 console.log(`Generated emoji metadata to ${META_OUTPUT_PATH}`);
