@@ -13,11 +13,16 @@ export default defineConfig({
     assetsInlineLimit: 0,
     chunkSizeWarningLimit: 1500,
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        'locales/en': resolve(__dirname, 'src/entries/locales/en.ts'),
+        'locales/ru': resolve(__dirname, 'src/entries/locales/ru.ts'),
+      },
       name: 'MojiX',
       formats: ['es', 'cjs'],
       cssFileName: 'style',
-      fileName: (format) => (format === 'es' ? 'index.js' : 'index.cjs'),
+      fileName: (format, entryName) =>
+        format === 'es' ? `${entryName}.js` : `${entryName}.cjs`,
     },
     rollupOptions: {
       external: ['react', 'react-dom', 'react/jsx-runtime'],

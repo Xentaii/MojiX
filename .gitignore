@@ -5,7 +5,7 @@ node_modules/
 dist/
 coverage/
 *.tsbuildinfo
-src/lib/generated/
+src/core/generated/
 
 # Environment files
 .env

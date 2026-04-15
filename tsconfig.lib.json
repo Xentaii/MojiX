@@ -6,6 +6,6 @@
     "outDir": "./dist/lib",
     "rootDir": "./src"
   },
-  "include": ["src"],
-  "exclude": ["src/demo", "src/main.tsx"]
+  "include": ["src/index.ts", "src/components", "src/core", "src/entries"],
+  "exclude": ["src/demo", "src/main.tsx", "**/*.test.*", "**/*.spec.*"]
 }

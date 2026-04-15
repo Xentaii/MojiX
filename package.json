@@ -1,7 +1,7 @@
 {
   "name": "mojix-picker",
   "version": "0.1.0",
-  "description": "Universal React emoji picker with spritesheet support, CDN/local sources, and a minimal modern UI.",
+  "description": "Universal React emoji picker with spritesheet support, CDN/local sources, headless primitives, and a minimal modern UI.",
   "type": "module",
   "main": "./dist/lib/index.cjs",
   "module": "./dist/lib/index.js",
@@ -12,14 +12,29 @@
       "import": "./dist/lib/index.js",
       "require": "./dist/lib/index.cjs"
     },
+    "./locales/en": {
+      "types": "./dist/lib/entries/locales/en.d.ts",
+      "import": "./dist/lib/locales/en.js",
+      "require": "./dist/lib/locales/en.cjs"
+    },
+    "./locales/ru": {
+      "types": "./dist/lib/entries/locales/ru.d.ts",
+      "import": "./dist/lib/locales/ru.js",
+      "require": "./dist/lib/locales/ru.cjs"
+    },
     "./style.css": "./dist/lib/style.css"
   },
   "files": [
     "dist/lib"
   ],
   "sideEffects": [
-    "**/*.css"
+    "**/*.css",
+    "./dist/lib/locales/*.js",
+    "./dist/lib/locales/*.cjs"
   ],
+  "engines": {
+    "node": ">=18.17"
+  },
   "scripts": {
     "dev": "vite",
     "prepare": "node ./scripts/build-emoji-data.mjs",
@@ -29,16 +44,26 @@
     "build:package": "npm run emoji:data && npm run build:lib",
     "build": "npm run emoji:data && npm run build:demo && npm run build:lib",
     "prepack": "npm run build:package",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build:package",
     "pack:check": "npm pack --dry-run",
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.lib.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "preview": "vite preview"
   },
   "keywords": [
     "emoji",
     "emoji-picker",
+    "picker",
     "react",
+    "react-component",
     "spritesheet",
-    "unicode"
+    "twemoji",
+    "unicode",
+    "cldr",
+    "headless",
+    "i18n",
+    "tsx"
   ],
   "author": "Xentaii",
   "license": "MIT",
@@ -51,22 +76,27 @@
   },
   "homepage": "https://github.com/Xentaii/MojiX#readme",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "cldr-annotations-full": "^48.2.0",
     "emoji-datasource": "^16.0.0",
+    "jsdom": "^26.1.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "typescript": "^6.0.2",
-    "vite": "^8.0.8"
+    "vite": "^8.0.8",
+    "vitest": "^3.2.4"
   }
 }
