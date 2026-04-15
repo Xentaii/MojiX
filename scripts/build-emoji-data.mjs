@@ -38,8 +38,95 @@ function unicodeToNative(unified) {
     .join('');
 }
 
-function createEnglishFallbackName(value) {
-  return value.toLowerCase();
+function toSentenceCase(value) {
+  if (typeof value !== 'string' || value.length === 0) {
+    return value;
+  }
+
+  const lower = value.toLocaleLowerCase();
+  return lower.charAt(0).toLocaleUpperCase() + lower.slice(1);
+}
+
+function normalizeKeywords(keywords) {
+  const seen = new Set();
+  const result = [];
+
+  for (const raw of keywords) {
+    if (typeof raw !== 'string') {
+      continue;
+    }
+
+    const normalized = toSentenceCase(raw.trim());
+
+    if (!normalized || seen.has(normalized)) {
+      continue;
+    }
+
+    seen.add(normalized);
+    result.push(normalized);
+  }
+
+  return result;
+}
+
+const FLAG_LABEL_BY_LOCALE = {
+  en: 'Flag',
+  ru: 'Флаг',
+};
+
+const REGIONAL_INDICATOR_BASE = 0x1f1e6;
+const REGIONAL_INDICATOR_LAST = 0x1f1ff;
+
+function parseRegionalIndicatorCode(unified) {
+  const parts = unified.split('-').map((segment) => Number.parseInt(segment, 16));
+
+  if (parts.length !== 2) {
+    return null;
+  }
+
+  const [first, second] = parts;
+
+  if (
+    first < REGIONAL_INDICATOR_BASE ||
+    first > REGIONAL_INDICATOR_LAST ||
+    second < REGIONAL_INDICATOR_BASE ||
+    second > REGIONAL_INDICATOR_LAST
+  ) {
+    return null;
+  }
+
+  return (
+    String.fromCharCode('A'.charCodeAt(0) + (first - REGIONAL_INDICATOR_BASE)) +
+    String.fromCharCode('A'.charCodeAt(0) + (second - REGIONAL_INDICATOR_BASE))
+  );
+}
+
+function buildFlagNameResolver(locale) {
+  const regionNames = new Intl.DisplayNames([locale, 'en'], {
+    type: 'region',
+    fallback: 'none',
+  });
+  const flagLabel = FLAG_LABEL_BY_LOCALE[locale] ?? FLAG_LABEL_BY_LOCALE.en;
+
+  return (emoji) => {
+    if (emoji.categoryId !== 'flags') {
+      return null;
+    }
+
+    const regionCode = parseRegionalIndicatorCode(emoji.unified);
+
+    if (!regionCode) {
+      return null;
+    }
+
+    const regionName = regionNames.of(regionCode);
+
+    if (!regionName) {
+      return null;
+    }
+
+    return `${flagLabel}: ${regionName}`;
+  };
 }
 
 const rawData = JSON.parse(await readFile(INPUT_PATH, 'utf8'));
@@ -78,7 +165,7 @@ const emojiData = rawData
       id: entry.unified.toLowerCase(),
       unified: entry.unified,
       native: unicodeToNative(entry.unified),
-      name: entry.name,
+      name: toSentenceCase(entry.name),
       aliases,
       emoticons,
       categoryId: CATEGORY_IDS[entry.category],
@@ -108,34 +195,34 @@ const emojiMeta = {
   gridSize,
 };
 
+function lookupAnnotation(annotations, native) {
+  return (
+    annotations[native] ??
+    annotations[native.replace(/\uFE0F/g, '')] ??
+    null
+  );
+}
+
 const localeData = Object.fromEntries(
   await Promise.all(
     SUPPORTED_LOCALES.map(async (locale) => {
       const annotationPath = resolve(CLDR_BASE_PATH, locale, 'annotations.json');
       const annotationJson = JSON.parse(await readFile(annotationPath, 'utf8'));
       const annotations = annotationJson.annotations.annotations;
+      const resolveFlagName = buildFlagNameResolver(locale);
 
       const translations = Object.fromEntries(
         emojiData.map((emoji) => {
-          const annotation = annotations[emoji.native];
-
-          if (!annotation) {
-            return [
-              emoji.id,
-              {
-                name: locale === 'en' ? createEnglishFallbackName(emoji.name) : emoji.name,
-                keywords: [],
-              },
-            ];
-          }
+          const annotation = lookupAnnotation(annotations, emoji.native);
+          const ttsName = annotation?.tts?.[0];
+          const flagName = resolveFlagName(emoji);
+          const resolvedName = ttsName ?? flagName ?? emoji.name;
 
           return [
             emoji.id,
             {
-              name:
-                annotation.tts?.[0] ??
-                (locale === 'en' ? createEnglishFallbackName(emoji.name) : emoji.name),
-              keywords: Array.from(new Set(annotation.default ?? [])),
+              name: toSentenceCase(resolvedName),
+              keywords: normalizeKeywords(annotation?.default ?? []),
             },
           ];
         }),
