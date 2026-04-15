@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import type {
   EmojiCategoryIconRenderProps,
   EmojiCategoryId,
@@ -32,9 +32,35 @@ export function EmojiSidebar({
   styles,
 }: EmojiSidebarProps) {
   const slotOptions = { unstyled, classNames, styles };
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    const container = sidebarRef.current;
+    const target = buttonRefs.current[activeCategory];
+    if (!container || !target) {
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+
+    if (targetRect.left < containerRect.left) {
+      container.scrollBy({
+        left: targetRect.left - containerRect.left - 12,
+        behavior: 'smooth',
+      });
+    } else if (targetRect.right > containerRect.right) {
+      container.scrollBy({
+        left: targetRect.right - containerRect.right + 12,
+        behavior: 'smooth',
+      });
+    }
+  }, [activeCategory]);
 
   return (
     <div
+      ref={sidebarRef}
       className={getSlotClassName('sidebar', slotOptions)}
       style={getSlotStyle('sidebar', slotOptions)}
       aria-label="Emoji categories"
@@ -43,6 +69,9 @@ export function EmojiSidebar({
       {sections.map((section) => (
         <button
           key={section.id}
+          ref={(node) => {
+            buttonRefs.current[section.id] = node;
+          }}
           type="button"
           className={getSlotClassName(
             'navButton',

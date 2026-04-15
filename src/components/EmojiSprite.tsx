@@ -19,6 +19,7 @@ export interface EmojiSpriteProps {
   size?: number;
   className?: string;
   title?: string;
+  alt?: string;
 }
 
 export function EmojiSprite({
@@ -30,6 +31,7 @@ export function EmojiSprite({
   size = 24,
   className,
   title,
+  alt,
 }: EmojiSpriteProps) {
   const resolvedConfig = resolveSpriteSheetConfig(spriteSheet);
   const asset = resolveEmojiAsset({
@@ -49,8 +51,8 @@ export function EmojiSprite({
         <img
           className={createClassName('mx-emoji-sprite', className)}
           src={asset.src}
-          alt={asset.alt ?? emoji.name}
-          title={title ?? asset.alt ?? emoji.name}
+          alt={alt ?? asset.alt ?? emoji.name}
+          title={title ?? alt ?? asset.alt ?? emoji.name}
           width={size}
           height={size}
           loading="lazy"
@@ -69,8 +71,8 @@ export function EmojiSprite({
     return (
       <span
         role="img"
-        aria-label={emoji.name}
-        title={title ?? emoji.name}
+        aria-label={alt ?? emoji.name}
+        title={title ?? alt ?? emoji.name}
         className={createClassName('mx-emoji-native', className)}
         style={{ fontSize: `${size}px`, lineHeight: 1 }}
       >
@@ -84,8 +86,8 @@ export function EmojiSprite({
   return (
     <span
       role="img"
-      aria-label={emoji.name}
-      title={title ?? emoji.name}
+      aria-label={alt ?? emoji.name}
+      title={title ?? alt ?? emoji.name}
       className={createClassName('mx-emoji-sprite', className)}
       style={getSpriteStyle({
         sheetX: asset.sheetX,

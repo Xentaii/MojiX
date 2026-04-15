@@ -5,6 +5,7 @@ import {
   useEffect,
   useImperativeHandle,
   useRef,
+  useState,
 } from 'react';
 import { getLocalizedEmojiName } from '../lib/i18n';
 import type {
@@ -116,6 +117,7 @@ export function EmojiGrid({
 }: EmojiGridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const pendingCategoryScrollRef = useRef<{
     id: EmojiCategoryId;
     top: number;
@@ -429,7 +431,13 @@ export function EmojiGrid({
               const isFirstEmoji =
                 sectionIndex === firstFocusableSectionIndex &&
                 emojiIndex === 0;
-              const active = hoveredEmojiId === emoji.id;
+              const emojiKey = `${section.id}:${emoji.id}`;
+              const active = hoveredKey
+                ? hoveredKey === emojiKey
+                : hoveredEmojiId === emoji.id;
+              const displayName = formatEmojiName(
+                getLocalizedEmojiName(emoji, localeDefinition),
+              );
 
               return (
                 <button
@@ -446,16 +454,28 @@ export function EmojiGrid({
                   data-selected={selected ? 'true' : undefined}
                   tabIndex={isFirstEmoji ? 0 : -1}
                   onClick={() => onEmojiSelect(emoji)}
-                  onMouseEnter={() => onEmojiHover(emoji)}
-                  onMouseLeave={() => onEmojiHover(null)}
-                  onFocus={(event) => handleEmojiFocus(event, emoji)}
-                  onBlur={() => onEmojiHover(null)}
-                  title={formatEmojiName(
-                    getLocalizedEmojiName(emoji, localeDefinition),
-                  )}
-                  aria-label={formatEmojiName(
-                    getLocalizedEmojiName(emoji, localeDefinition),
-                  )}
+                  onMouseEnter={() => {
+                    setHoveredKey(emojiKey);
+                    onEmojiHover(emoji);
+                  }}
+                  onMouseLeave={() => {
+                    setHoveredKey((current) =>
+                      current === emojiKey ? null : current,
+                    );
+                    onEmojiHover(null);
+                  }}
+                  onFocus={(event) => {
+                    setHoveredKey(emojiKey);
+                    handleEmojiFocus(event, emoji);
+                  }}
+                  onBlur={() => {
+                    setHoveredKey((current) =>
+                      current === emojiKey ? null : current,
+                    );
+                    onEmojiHover(null);
+                  }}
+                  title={displayName}
+                  aria-label={displayName}
                 >
                   {renderEmoji?.(emoji, {
                     active,
@@ -470,6 +490,8 @@ export function EmojiGrid({
                       spriteSheet={spriteSheet}
                       assetSource={assetSource}
                       assetContext="grid"
+                      title={displayName}
+                      alt={displayName}
                     />
                   )}
                 </button>

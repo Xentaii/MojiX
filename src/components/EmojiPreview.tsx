@@ -79,6 +79,8 @@ export function EmojiPreview({
           spriteSheet={spriteSheet}
           assetSource={assetSource}
           assetContext="preview"
+          title={displayName}
+          alt={displayName}
         />
         <div
           className={getSlotClassName('previewCopy', slotOptions)}

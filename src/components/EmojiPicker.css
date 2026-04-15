@@ -68,13 +68,19 @@
 .mx-picker__sidebar {
   display: flex;
   flex-direction: row;
+  flex-wrap: nowrap;
   gap: 8px;
   align-items: center;
   padding: 8px 10px 10px;
   border-top: 1px solid var(--mx-border);
   background: var(--mx-sidebar-bg);
-  overflow: auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 
 .mx-picker__sidebar::-webkit-scrollbar {
