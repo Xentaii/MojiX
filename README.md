@@ -1,58 +1,47 @@
+<div align="center">
+
 # MojiX
 
-Universal React emoji picker with:
+**Universal React emoji picker with spritesheet delivery, headless primitives, and first-class theming.**
 
-- compact modal-first UI
-- CDN-first spritesheet delivery
-- vendor presets for `twitter`, `google`, `apple`, `facebook`
-- `default`, `indexed-128`, `indexed-256`, and `clean` sheet variants
-- optional runtime sprite caching
-- built-in i18n for picker UI and emoji names
-- English-first search with selected-locale support
-- asset providers for `native`, `spritesheet`, `image`, `svg`, and `mixed`
-- headless primitives and hooks via `MojiX.Root`, `MojiX.Search`, `MojiX.List`, and friends
-- `unstyled`, `classNames`, and slot-level `styles`
-- exported structural primitives: `EmojiToolbar`, `EmojiGrid`, `EmojiPreview`, `EmojiSidebar`
-- locale fallback chains and pluggable recent stores
-- recents with `localStorage` persistence
-- controlled or uncontrolled search, skin tone, and active category
-- custom emoji support
+[![npm](https://img.shields.io/npm/v/mojix?style=flat-square)](https://www.npmjs.com/package/mojix)
+[![license](https://img.shields.io/npm/l/mojix?style=flat-square)](./LICENSE)
+[![React](https://img.shields.io/badge/react-18%20%7C%2019-61dafb?style=flat-square)](https://react.dev)
 
-## Development
+[Features](#features) • [Install](#install) • [Quick start](#quick-start) • [Headless](#headless-api) • [Theming](#theming) • [Docs](./docs/api/README.md)
+
+</div>
+
+---
+
+## Features
+
+- Compact modal-first picker with recent, skin tone, search, preview, and category navigation out of the box.
+- **CDN-first spritesheet delivery** with vendor presets (`twitter`, `google`, `apple`, `facebook`) and `default` / `indexed-128` / `indexed-256` / `clean` variants.
+- **Pluggable asset sources** — native, spritesheet, image, SVG, and mixed providers — decoupled from the sprite config.
+- **Headless API** (`MojiX.Root`, `MojiX.Search`, `MojiX.List`, …) on the same engine that powers `EmojiPicker`.
+- **Three-level theming**: CSS variables, per-slot `classNames` / `styles`, or fully `unstyled` with stable `[data-mx-slot]` hooks.
+- Built-in **i18n** for picker chrome and emoji names/keywords, with fallback chains and override hooks.
+- Controlled or uncontrolled search, skin tone, and active category.
+- Custom emoji categories with per-category icons.
+- Recents with `localStorage` persistence or a pluggable recent store.
+- Runtime sprite caching with optional adapter for Electron / Tauri filesystems.
+- Ships types, ESM, and CJS builds; React 18 and 19 supported.
+
+## Install
 
 ```bash
-npm install
-npm run emoji:data
-npm run dev
+npm install mojix
 ```
 
-## Build
-
-```bash
-npm run build
+```tsx
+import { EmojiPicker } from 'mojix';
+import 'mojix/style.css';
 ```
 
-This produces:
+`react` and `react-dom` are peer dependencies.
 
-- `dist/demo` for the demo app
-- `dist/lib` for the reusable package build
-
-## Architecture
-
-- `src/lib/data.ts`: normalized emoji dataset helpers and search
-- `src/lib/i18n.ts`: locale resolution and localized emoji names/keywords
-- `src/lib/sprites.ts`: sprite presets, URL builders, and background-position math
-- `src/lib/sprite-cache.ts`: runtime cache helpers for remote sheets
-- `src/lib/storage.ts`: recents and skin tone persistence
-- `src/components/MojiX.tsx`: headless/composable primitives and hooks
-- `src/components/useEmojiPickerState.ts`: shared picker state engine
-- `src/components/EmojiPicker.tsx`: picker orchestration and public component API
-- `src/components/EmojiToolbar.tsx`: search and skin tone controls
-- `src/components/EmojiGrid.tsx`: virtualized emoji grid and keyboard navigation
-- `src/components/EmojiPreview.tsx`: preview surface
-- `src/components/EmojiSidebar.tsx`: category navigation
-
-## CDN-First Example
+## Quick start
 
 ```tsx
 import { EmojiPicker, createEmojiSpriteSheet } from 'mojix';
@@ -68,21 +57,19 @@ export function ComposerEmojiPicker() {
         sheetSize: 64,
         variant: 'indexed-256',
       })}
-      onEmojiSelect={(emoji) => console.log(emoji)}
+      onEmojiSelect={(emoji) => console.log(emoji.native, emoji.shortcodes)}
     />
   );
 }
 ```
 
-Default CDN preset:
+Default CDN resolution:
 
-```txt
+```
 https://cdn.jsdelivr.net/npm/emoji-datasource-twitter@16.0.0/img/twitter/sheets-256/64.png
 ```
 
-## Asset Sources
-
-`spriteSheet` still works, but MojiX now also supports `assetSource`, `gridAssetSource`, and `previewAssetSource`.
+## Asset sources
 
 ```tsx
 import {
@@ -92,11 +79,6 @@ import {
   createSvgAssetSource,
 } from 'mojix';
 
-const gridAssets = createSpriteSheetAssetSource();
-const previewAssets = createSvgAssetSource({
-  resolveUrl: ({ emoji }) => `/emoji/svg/${emoji.id}.svg`,
-});
-
 <EmojiPicker
   spriteSheet={createEmojiSpriteSheet({
     source: 'cdn',
@@ -104,70 +86,16 @@ const previewAssets = createSvgAssetSource({
     sheetSize: 64,
     variant: 'indexed-256',
   })}
-  gridAssetSource={gridAssets}
-  previewAssetSource={previewAssets}
+  gridAssetSource={createSpriteSheetAssetSource()}
+  previewAssetSource={createSvgAssetSource({
+    resolveUrl: ({ emoji }) => `/emoji/svg/${emoji.id}.svg`,
+  })}
 />;
 ```
 
-Built-in providers:
-
-- `createNativeAssetSource()`
-- `createSpriteSheetAssetSource()`
-- `createImageAssetSource()`
-- `createSvgAssetSource()`
-- `createMixedAssetSource()`
-
-If no asset source is provided, the picker falls back to the current `spriteSheet` behavior.
-
-## Customization
-
-`EmojiPicker` supports three levels of UI customization:
-
-- theme the default UI with CSS variables and root `className`
-- override individual slots with `classNames` and `styles`
-- remove built-in classes with `unstyled` and style through your own selectors or `[data-mx-slot]`
-
-```tsx
-<EmojiPicker
-  unstyled
-  classNames={{
-    root: 'my-picker',
-    toolbar: 'my-toolbar',
-    searchInput: 'my-search-input',
-    emoji: 'my-emoji-button',
-    sidebar: 'my-sidebar',
-    navButton: 'my-nav-button',
-  }}
-  styles={{
-    root: { width: 360 },
-    preview: { borderTop: '1px solid var(--border)' },
-  }}
-/>
-```
-
-Stable slot attributes are present on structural parts such as:
-
-- `root`
-- `panel`
-- `toolbar`
-- `content`
-- `section`
-- `grid`
-- `emoji`
-- `preview`
-- `sidebar`
-
-Example CSS target:
-
-```css
-[data-mx-slot='emoji'][data-active='true'] {
-  transform: translateY(-1px);
-}
-```
+Providers: `createNativeAssetSource`, `createSpriteSheetAssetSource`, `createImageAssetSource`, `createSvgAssetSource`, `createMixedAssetSource`. If no source is passed, the picker keeps the existing `spriteSheet` behavior.
 
 ## Headless API
-
-MojiX now ships a composable layer on top of the same engine that powers `EmojiPicker`.
 
 ```tsx
 import { MojiX } from 'mojix';
@@ -190,34 +118,47 @@ import { MojiX } from 'mojix';
 </MojiX.Root>;
 ```
 
-Available primitives:
+Primitives: `MojiX.Root`, `Search`, `Viewport`, `List`, `Empty`, `Loading`, `Footer`, `CategoryNav`, `ActiveEmoji`, `SkinTone`, `SkinToneButton`.
 
-- `MojiX.Root`
-- `MojiX.Search`
-- `MojiX.Viewport`
-- `MojiX.List`
-- `MojiX.Empty`
-- `MojiX.Loading`
-- `MojiX.Footer`
-- `MojiX.CategoryNav`
-- `MojiX.ActiveEmoji`
-- `MojiX.SkinTone`
-- `MojiX.SkinToneButton`
+Hooks: `useMojiX`, `useEmojiSearch`, `useEmojiCategories`, `useEmojiSelection`, `useActiveEmoji`, `useSkinTone`.
 
-Useful hooks:
+`EmojiPicker` itself is a preset composed from these primitives, so anything the built-in UI can do is reachable headlessly.
 
-- `useMojiX()`
-- `useEmojiSearch()`
-- `useEmojiCategories()`
-- `useEmojiSelection()`
-- `useActiveEmoji()`
-- `useSkinTone()`
+## Theming
 
-The bundled `EmojiPicker` now acts as the reference preset built from the same public primitives.
+Three layers, pick whatever fits:
 
-## Controlled State
+1. **CSS variables** on the root — the fastest way to reskin.
+2. **Per-slot `classNames` and `styles`** — fine-grained targeting without unmounting.
+3. **`unstyled` + `[data-mx-slot]`** — drop every built-in rule and style from scratch.
 
-Search, skin tone, and active category can be controlled from the outside:
+```tsx
+<EmojiPicker
+  unstyled
+  classNames={{
+    root: 'my-picker',
+    toolbar: 'my-toolbar',
+    searchInput: 'my-search-input',
+    emoji: 'my-emoji-button',
+    sidebar: 'my-sidebar',
+    navButton: 'my-nav-button',
+  }}
+  styles={{
+    root: { width: 360 },
+    preview: { borderTop: '1px solid var(--border)' },
+  }}
+/>
+```
+
+Stable slot attributes: `root`, `panel`, `toolbar`, `content`, `section`, `grid`, `emoji`, `preview`, `sidebar`, plus full list in the API docs.
+
+```css
+[data-mx-slot='emoji'][data-active='true'] {
+  transform: translateY(-1px);
+}
+```
+
+## Controlled state
 
 ```tsx
 import type { EmojiCategoryId, EmojiSkinTone } from 'mojix';
@@ -237,29 +178,28 @@ const [activeCategory, setActiveCategory] =
 />;
 ```
 
-If those props are omitted, MojiX keeps the current uncontrolled behavior.
+Omit any of those props to get the default uncontrolled behavior.
 
-## Mixed Asset Example
+## Localization
 
 ```tsx
-import {
-  EmojiPicker,
-  createMixedAssetSource,
-  createSpriteSheetAssetSource,
-  createSvgAssetSource,
-} from 'mojix';
-
-const assetSource = createMixedAssetSource({
-  unicode: createSpriteSheetAssetSource(),
-  custom: createSvgAssetSource({
-    resolveUrl: ({ emoji }) => `/custom-emoji/${emoji.id}.svg`,
-  }),
-});
-
-<EmojiPicker assetSource={assetSource} />;
+<EmojiPicker
+  locale="ru"
+  fallbackLocale={['en']}
+  locales={{
+    ru: {
+      labels: { searchPlaceholder: 'Найти эмодзи' },
+    },
+  }}
+/>
 ```
 
-## Cache Warmup
+- Built-in locales: `en`, `ru`. Each locale module lives at [src/lib/i18n/locales](./src/lib/i18n/locales) and composes labels, category names, skin-tone names, and translated emoji names/keywords generated from CLDR.
+- Search keeps English as the ranking language while also indexing names and keywords in the active locale.
+- `fallbackLocale` accepts a single code or an ordered array so region-specific packs stay small.
+- See [scripts/README.md](./scripts/README.md) for the rules that govern generated translation data (sentence case, CLDR fallback chain, flag derivation, adding a locale).
+
+## Cache warmup
 
 ```tsx
 import {
@@ -273,9 +213,7 @@ const spriteSheet = createEmojiSpriteSheet({
   vendor: 'google',
   sheetSize: 64,
   variant: 'clean',
-  cache: {
-    enabled: true,
-  },
+  cache: { enabled: true },
 });
 
 await warmEmojiSpriteSheet(spriteSheet);
@@ -283,11 +221,9 @@ await warmEmojiSpriteSheet(spriteSheet);
 <EmojiPicker spriteSheet={spriteSheet} />;
 ```
 
-When cache is enabled, MojiX can download the active CDN sheet and keep it in managed browser storage. On regular web apps this is the safest portable default.
+When cache is enabled, MojiX downloads the active CDN sheet into managed browser storage. For Electron / Tauri pass a custom adapter via `spriteSheet.cache.adapter`.
 
-If you need true file-system caching in Electron, Tauri, or another host shell, pass a custom cache adapter through `spriteSheet.cache.adapter`. The adapter decides where bytes are stored and returns a URL the renderer can use.
-
-## Local Sprite Preset
+## Local sprite preset
 
 ```tsx
 <EmojiPicker
@@ -301,41 +237,18 @@ If you need true file-system caching in Electron, Tauri, or another host shell, 
 />
 ```
 
-You can also point directly at a specific local file:
+Or target a specific file directly:
 
 ```tsx
 <EmojiPicker
-  spriteSheet={createEmojiLocalSpriteSheet('/sprites/twitter/sheets-256/64.png', {
-    vendor: 'twitter',
-    sheetSize: 64,
-    variant: 'indexed-256',
-  })}
+  spriteSheet={createEmojiLocalSpriteSheet(
+    '/sprites/twitter/sheets-256/64.png',
+    { vendor: 'twitter', sheetSize: 64, variant: 'indexed-256' },
+  )}
 />
 ```
 
-## Localization
-
-```tsx
-<EmojiPicker
-  locale="ru"
-  fallbackLocale={['en']}
-  locales={{
-    ru: {
-      labels: {
-        searchPlaceholder: 'Найти эмодзи',
-      },
-    },
-  }}
-/>
-```
-
-Search keeps English as the primary ranking language, while also indexing emoji names and keywords from the active locale.
-
-`fallbackLocale` accepts either one locale code or an ordered array, so host apps can keep custom region-specific packs small and still fall back cleanly.
-
-## Recent Store
-
-By default, recents use `localStorage`, but you can swap the store:
+## Recent store
 
 ```tsx
 import {
@@ -348,47 +261,86 @@ const recentStore = createLocalStorageRecentStore('my-app:emoji-recents');
 <EmojiPicker recentStore={recentStore} />;
 ```
 
-This is useful when the host app wants its own persistence boundary or plans to wrap the store with desktop or cloud sync behavior.
+Useful when the host app wants its own persistence boundary or plans to wrap the store with desktop or cloud sync.
 
-## Structural Components
+## Structural components
 
-MojiX still exports the current UI building blocks too:
+For smaller surgical replacements you can reach for the UI building blocks directly: `EmojiToolbar`, `EmojiGrid`, `EmojiPreview`, `EmojiSidebar`, `EmojiSearchField`, `EmojiSkinToneButton`, `EmojiSprite`.
 
-- `EmojiToolbar`
-- `EmojiGrid`
-- `EmojiPreview`
-- `EmojiSidebar`
-- `EmojiSearchField`
-- `EmojiSkinToneButton`
-- `EmojiSprite`
+## Project structure
 
-These work well when you want to keep the built-in layout but replace only one area.
+```
+src/
+├── components/              React layer (EmojiPicker, MojiX primitives, slots)
+│   ├── MojiX.tsx            Headless composable primitives
+│   ├── EmojiPicker.tsx      Default preset
+│   ├── useEmojiPickerState.ts
+│   └── Emoji{Grid,Toolbar,Sidebar,Preview,Sprite,…}.tsx
+├── lib/
+│   ├── data.ts              Emoji dataset helpers and search
+│   ├── i18n/                Locale resolution and translation modules
+│   │   ├── index.ts         resolveLocaleDefinition, getters
+│   │   └── locales/         en.ts, ru.ts, index.ts
+│   ├── sprites.ts           Sprite presets, URL builders, math
+│   ├── sprite-cache.ts      Runtime sheet cache
+│   ├── storage.ts           Recents / skin tone persistence
+│   ├── assets.ts            Asset source providers
+│   ├── types.ts             Public types
+│   └── generated/           Build artifact (gitignored)
+├── demo/                    Playground app used by `npm run dev`
+└── index.ts                 Public entry
+scripts/
+└── build-emoji-data.mjs     Generator for src/lib/generated/*
+```
 
-## Migration Notes
+`src/lib/generated/` is a build artifact — regenerated by the `prepare` script after install, or manually with `npm run emoji:data`.
 
-The easiest migration path is:
+## Development
 
-1. Keep using `EmojiPicker` if the default layout still fits.
-2. Move styling to `unstyled`, `classNames`, and `styles` if you only need a custom skin.
-3. Move to `MojiX.Root` plus primitives when you want a different layout.
+```bash
+git clone https://github.com/ObsidianThread/MojiX
+cd MojiX
+npm install         # also runs scripts/build-emoji-data.mjs via `prepare`
+npm run dev         # launch the playground
+```
 
-Common prop mapping:
+Other scripts:
 
-- `searchQuery` and `onSearchQueryChange` map directly to `MojiX.Search` through `MojiX.Root`
-- `skinTone` and `onSkinToneChange` map directly to `MojiX.SkinTone` or `MojiX.SkinToneButton`
-- `renderEmoji` maps to `MojiX.List`
-- `renderPreview` maps to `MojiX.ActiveEmoji`
-- `showPreview` becomes whether you render `MojiX.ActiveEmoji`
-- `showSkinTones` becomes whether you render `MojiX.SkinToneButton`
-- `showRecents`, `locale`, `fallbackLocale`, `assetSource`, `spriteSheet`, and `recentStore` stay on `MojiX.Root`
+| Script | Purpose |
+| --- | --- |
+| `npm run dev` | Vite dev server for the demo playground |
+| `npm run emoji:data` | Regenerate `src/lib/generated/` from `emoji-datasource` + CLDR |
+| `npm run typecheck` | Strict TypeScript check for the app and library projects |
+| `npm run build:demo` | Build the playground |
+| `npm run build:lib` | Build the publishable library (ESM + CJS + types) |
+| `npm run build` | Data generation + demo build + library build |
 
-## Roadmap
+### How published packages stay self-contained
 
-The long-term direction is to evolve MojiX into a layered system with a headless/composable API plus the current default UI on top.
+`npm publish` ships only the `dist/` directory (see `files` in `package.json`). Generated JSON under `src/lib/generated/` is imported statically, so Vite inlines it into the library bundle — consumers don't need `emoji-datasource`, CLDR data, or the generator script at install time. Re-generation is only for people cloning the repo to develop MojiX itself.
 
-See [docs/HEADLESS_API_ROADMAP.md](./docs/HEADLESS_API_ROADMAP.md) for:
+## Docs
 
-- target public API
-- asset provider direction
-- localization goals
-- version-by-version roadmap toward `v1.0`
+- [API reference](./docs/api/README.md) — structured public surface, slots, hooks, primitives.
+- [Headless API roadmap](./docs/HEADLESS_API_ROADMAP.md) — long-term direction.
+- [Generation rules](./scripts/README.md) — conventions for the generated dataset.
+
+## Migration notes
+
+1. Keep using `EmojiPicker` when the default layout fits.
+2. Move styling to `unstyled` + `classNames` + `styles` when you only need a custom skin.
+3. Move to `MojiX.Root` + primitives when you want a different layout.
+
+Prop → primitive mapping:
+
+- `searchQuery` / `onSearchQueryChange` → `MojiX.Search` inside `MojiX.Root`
+- `skinTone` / `onSkinToneChange` → `MojiX.SkinTone` or `MojiX.SkinToneButton`
+- `renderEmoji` → `MojiX.List`
+- `renderPreview` → `MojiX.ActiveEmoji`
+- `showPreview` → whether you render `MojiX.ActiveEmoji`
+- `showSkinTones` → whether you render `MojiX.SkinToneButton`
+- `showRecents`, `locale`, `fallbackLocale`, `assetSource`, `spriteSheet`, `recentStore` stay on `MojiX.Root`
+
+## License
+
+[MIT](./LICENSE)
