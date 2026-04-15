@@ -22,6 +22,7 @@
   ],
   "scripts": {
     "dev": "vite",
+    "prepare": "node ./scripts/build-emoji-data.mjs",
     "emoji:data": "node ./scripts/build-emoji-data.mjs",
     "build:demo": "vite build",
     "build:lib": "vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json",
