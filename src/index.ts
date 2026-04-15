@@ -1,6 +1,6 @@
 // Styles are NOT auto-imported so that headless / unstyled usage doesn't
 // ship MojiX CSS to consumers who bring their own design system.
-// Styled usage: import 'mojix/style.css' (or the local path when developing).
+// Styled usage: import 'mojix-picker/style.css' (or the local path when developing).
 export { EmojiPicker } from './components/EmojiPicker';
 export { EmojiGrid } from './components/EmojiGrid';
 export { EmojiCategoryIcon } from './components/EmojiCategoryIcon';

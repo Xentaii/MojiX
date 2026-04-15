@@ -9,7 +9,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist/lib',
-    emptyOutDir: false,
+    copyPublicDir: false,
     assetsInlineLimit: 0,
     chunkSizeWarningLimit: 1500,
     lib: {

@@ -18,8 +18,8 @@ MojiX does not ship network endpoints, so this reference is organized around:
 ### 1. Drop-in picker
 
 ```tsx
-import { EmojiPicker } from 'mojix';
-import 'mojix/style.css';
+import { EmojiPicker } from 'mojix-picker';
+import 'mojix-picker/style.css';
 
 <EmojiPicker onEmojiSelect={(emoji) => console.log(emoji.native)} />;
 ```
@@ -47,7 +47,7 @@ import 'mojix/style.css';
 ### 3. Headless layout
 
 ```tsx
-import { MojiX } from 'mojix';
+import { MojiX } from 'mojix-picker';
 
 <MojiX.Root onEmojiSelect={handleSelect} unstyled>
   <MojiX.Search />

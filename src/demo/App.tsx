@@ -119,8 +119,8 @@ const BRAND_ICON_OPTIONS: Array<{
   { label: 'Code', value: 'code' },
 ];
 
-const SNIPPET_DROPIN = `import { EmojiPicker } from 'mojix';
-import 'mojix/style.css';
+const SNIPPET_DROPIN = `import { EmojiPicker } from 'mojix-picker';
+import 'mojix-picker/style.css';
 
 <EmojiPicker
   onEmojiSelect={(emoji) => {
@@ -142,7 +142,7 @@ const SNIPPET_THEMED = `.my-picker {
   onEmojiSelect={handler}
 />`;
 
-const SNIPPET_HEADLESS = `import { MojiX } from 'mojix';
+const SNIPPET_HEADLESS = `import { MojiX } from 'mojix-picker';
 
 function MyPicker({ onSelect }) {
   return (
@@ -617,7 +617,7 @@ export function App() {
           <p className="hero__sub">
             Drop-in ready like emoji-mart. Fully composable like Radix UI.
           </p>
-          <code className="install-cmd">npm install mojix</code>
+          <code className="install-cmd">npm install mojix-picker</code>
         </div>
       </header>
 

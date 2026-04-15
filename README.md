@@ -4,8 +4,8 @@
 
 **Universal React emoji picker with spritesheet delivery, headless primitives, and first-class theming.**
 
-[![npm](https://img.shields.io/npm/v/mojix?style=flat-square)](https://www.npmjs.com/package/mojix)
-[![license](https://img.shields.io/npm/l/mojix?style=flat-square)](./LICENSE)
+[![npm](https://img.shields.io/npm/v/mojix-picker?style=flat-square)](https://www.npmjs.com/package/mojix-picker)
+[![license](https://img.shields.io/npm/l/mojix-picker?style=flat-square)](./LICENSE)
 [![React](https://img.shields.io/badge/react-18%20%7C%2019-61dafb?style=flat-square)](https://react.dev)
 
 [Features](#features) • [Install](#install) • [Quick start](#quick-start) • [Headless](#headless-api) • [Theming](#theming) • [Docs](./docs/api/README.md)
@@ -31,12 +31,12 @@
 ## Install
 
 ```bash
-npm install mojix
+npm install mojix-picker
 ```
 
 ```tsx
-import { EmojiPicker } from 'mojix';
-import 'mojix/style.css';
+import { EmojiPicker } from 'mojix-picker';
+import 'mojix-picker/style.css';
 ```
 
 `react` and `react-dom` are peer dependencies.
@@ -44,8 +44,8 @@ import 'mojix/style.css';
 ## Quick start
 
 ```tsx
-import { EmojiPicker, createEmojiSpriteSheet } from 'mojix';
-import 'mojix/style.css';
+import { EmojiPicker, createEmojiSpriteSheet } from 'mojix-picker';
+import 'mojix-picker/style.css';
 
 export function ComposerEmojiPicker() {
   return (
@@ -77,7 +77,7 @@ import {
   createEmojiSpriteSheet,
   createSpriteSheetAssetSource,
   createSvgAssetSource,
-} from 'mojix';
+} from 'mojix-picker';
 
 <EmojiPicker
   spriteSheet={createEmojiSpriteSheet({
@@ -98,7 +98,7 @@ Providers: `createNativeAssetSource`, `createSpriteSheetAssetSource`, `createIma
 ## Headless API
 
 ```tsx
-import { MojiX } from 'mojix';
+import { MojiX } from 'mojix-picker';
 
 <MojiX.Root locale="ru" fallbackLocale={['en']} columns={9}>
   <MojiX.Search />
@@ -161,7 +161,7 @@ Stable slot attributes: `root`, `panel`, `toolbar`, `content`, `section`, `grid`
 ## Controlled state
 
 ```tsx
-import type { EmojiCategoryId, EmojiSkinTone } from 'mojix';
+import type { EmojiCategoryId, EmojiSkinTone } from 'mojix-picker';
 
 const [searchQuery, setSearchQuery] = useState('');
 const [skinTone, setSkinTone] = useState<EmojiSkinTone>('medium');
@@ -206,7 +206,7 @@ import {
   EmojiPicker,
   createEmojiSpriteSheet,
   warmEmojiSpriteSheet,
-} from 'mojix';
+} from 'mojix-picker';
 
 const spriteSheet = createEmojiSpriteSheet({
   source: 'cdn',
@@ -254,7 +254,7 @@ Or target a specific file directly:
 import {
   EmojiPicker,
   createLocalStorageRecentStore,
-} from 'mojix';
+} from 'mojix-picker';
 
 const recentStore = createLocalStorageRecentStore('my-app:emoji-recents');
 
@@ -298,7 +298,7 @@ scripts/
 ## Development
 
 ```bash
-git clone https://github.com/ObsidianThread/MojiX
+git clone https://github.com/Xentaii/MojiX
 cd MojiX
 npm install         # also runs scripts/build-emoji-data.mjs via `prepare`
 npm run dev         # launch the playground
@@ -313,11 +313,13 @@ Other scripts:
 | `npm run typecheck` | Strict TypeScript check for the app and library projects |
 | `npm run build:demo` | Build the playground |
 | `npm run build:lib` | Build the publishable library (ESM + CJS + types) |
+| `npm run build:package` | Regenerate data and build only the npm package artifacts |
 | `npm run build` | Data generation + demo build + library build |
+| `npm run pack:check` | Run `npm pack --dry-run` against the current package layout |
 
 ### How published packages stay self-contained
 
-`npm publish` ships only the `dist/` directory (see `files` in `package.json`). Generated JSON under `src/lib/generated/` is imported statically, so Vite inlines it into the library bundle — consumers don't need `emoji-datasource`, CLDR data, or the generator script at install time. Re-generation is only for people cloning the repo to develop MojiX itself.
+`npm publish` ships only the `dist/lib/` directory (see `files` in `package.json`). Generated JSON under `src/lib/generated/` is imported statically, so Vite inlines it into the library bundle — consumers don't need `emoji-datasource`, CLDR data, or the generator script at install time. Re-generation is only for people cloning the repo to develop MojiX itself.
 
 ## Docs
 

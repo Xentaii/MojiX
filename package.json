@@ -1,5 +1,5 @@
 {
-  "name": "mojix",
+  "name": "mojix-picker",
   "version": "0.1.0",
   "description": "Universal React emoji picker with spritesheet support, CDN/local sources, and a minimal modern UI.",
   "type": "module",
@@ -15,7 +15,7 @@
     "./style.css": "./dist/lib/style.css"
   },
   "files": [
-    "dist"
+    "dist/lib"
   ],
   "sideEffects": [
     "**/*.css"
@@ -26,7 +26,10 @@
     "emoji:data": "node ./scripts/build-emoji-data.mjs",
     "build:demo": "vite build",
     "build:lib": "vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json",
+    "build:package": "npm run emoji:data && npm run build:lib",
     "build": "npm run emoji:data && npm run build:demo && npm run build:lib",
+    "prepack": "npm run build:package",
+    "pack:check": "npm pack --dry-run",
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.lib.json --noEmit",
     "preview": "vite preview"
   },
@@ -37,8 +40,19 @@
     "spritesheet",
     "unicode"
   ],
-  "author": "",
+  "author": "Xentaii",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Xentaii/MojiX.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Xentaii/MojiX/issues"
+  },
+  "homepage": "https://github.com/Xentaii/MojiX#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
