@@ -11,11 +11,10 @@
 [![license](https://img.shields.io/npm/l/mojix-picker?style=flat-square)](./LICENSE)
 [![React](https://img.shields.io/badge/react-18%20%7C%2019-61dafb?style=flat-square)](https://react.dev)
 
-[Features](#features) • [Install](#install) • [Quick start](#quick-start) • [Headless](#headless-api) • [Theming](#theming) • [SSR](#ssr-nextjs--remix) • [Docs](./docs/api/README.md)
+[Features](#features) • [Install](#install) • [Quick start](#quick-start) • [Headless](#headless-api) • [Theming](#theming) • [SSR](#ssr-nextjs--remix) • [Docs](./docs/api/README.md) • [Live demo](https://xentaii.github.io/MojiX/)
 
 <!-- TODO: replace with real screenshot / GIF before 1.0 -->
 <!-- ![MojiX picker demo](./docs/assets/demo.png) -->
-<!-- Live demo: https://xentaii.github.io/MojiX/ -->
 
 
 </div>

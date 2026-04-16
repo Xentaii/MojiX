@@ -612,10 +612,11 @@ export function App() {
           <h1 className="hero__title">
             Emoji picker
             <br />
-            for serious apps.
+            for React.
           </h1>
           <p className="hero__sub">
-            Drop-in ready like emoji-mart. Fully composable like Radix UI.
+            Drop-in ready out of the box. Fully composable when you need
+            control.
           </p>
           <code className="install-cmd">npm install mojix-picker</code>
         </div>
