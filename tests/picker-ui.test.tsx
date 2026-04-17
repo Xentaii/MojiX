@@ -30,6 +30,9 @@ describe('picker UI theming hooks', () => {
     expect(root?.style.getPropertyValue('--mx-scrollbar-thumb')).toBe(
       'rgba(9, 9, 9, 0.4)',
     );
+    expect(root?.style.getPropertyValue('--mx-scrollbar-thumb-hover')).toBe(
+      'color-mix(in srgb, rgba(9, 9, 9, 0.4) 82%, var(--mx-text) 18%)',
+    );
   });
 
   it('supports per-item emoji and category hover colors', () => {

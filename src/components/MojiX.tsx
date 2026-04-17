@@ -80,7 +80,10 @@ function getRootColorStyles(colors: EmojiPickerColors | undefined) {
     ['--mx-category-active-color' as string]: colors.categoryActiveColor,
     ['--mx-scrollbar-thumb' as string]: colors.scrollbarThumb,
     ['--mx-scrollbar-thumb-hover' as string]:
-      colors.scrollbarThumbHover,
+      colors.scrollbarThumbHover ??
+      (typeof colors.scrollbarThumb === 'string'
+        ? `color-mix(in srgb, ${colors.scrollbarThumb} 82%, var(--mx-text) 18%)`
+        : undefined),
   };
 }
 
