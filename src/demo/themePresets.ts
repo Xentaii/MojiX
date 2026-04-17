@@ -8,6 +8,8 @@ export interface DemoThemePalette {
   text: string;
   muted: string;
   radius: number;
+  accentMix: number;
+  scrollbar: string;
 }
 
 export interface DemoThemeDefinition {
@@ -32,6 +34,8 @@ export const BUILTIN_DEMO_THEMES: DemoThemeDefinition[] = [
       text: '#201813',
       muted: '#7b6e66',
       radius: 24,
+      accentMix: 14,
+      scrollbar: '#7b6e66',
     },
   },
   {
@@ -46,6 +50,8 @@ export const BUILTIN_DEMO_THEMES: DemoThemeDefinition[] = [
       text: '#f5ede6',
       muted: '#b8a79c',
       radius: 24,
+      accentMix: 22,
+      scrollbar: '#5a4d44',
     },
   },
 ];
@@ -97,20 +103,21 @@ export function createPickerThemeStyle(
   palette: DemoThemePalette,
 ): CSSProperties {
   const isDark = palette.mode === 'dark';
+  const mix = palette.accentMix ?? (isDark ? 22 : 14);
   const border = withAlpha(palette.text, isDark ? 0.26 : 0.08);
-  const accentSoft = withAlpha(palette.accent, isDark ? 0.22 : 0.14);
+  const accentSoft = withAlpha(palette.accent, mix / 100);
   const hover = withAlpha(palette.text, isDark ? 0.1 : 0.05);
-  const rootGlow = withAlpha(palette.accent, isDark ? 0.2 : 0.22);
-  const toolbarBg = withAlpha(palette.panel, isDark ? 0.72 : 0.42);
+  const toolbarBg = withAlpha(palette.panel, isDark ? 0.72 : 0.54);
   const searchBg = withAlpha(palette.panel, isDark ? 0.88 : 0.8);
-  const previewBg = withAlpha(palette.panel, isDark ? 0.32 : 0.38);
+  const previewBg = withAlpha(palette.panel, isDark ? 0.32 : 0.5);
+  const shadowColor = isDark ? '#000000' : palette.text;
   const floatingShadow = `0 18px 34px ${withAlpha(
-    palette.text,
-    isDark ? 0.34 : 0.16,
+    shadowColor,
+    isDark ? 0.5 : 0.16,
   )}`;
   const rootShadow = `0 18px 44px ${withAlpha(
-    palette.text,
-    isDark ? 0.28 : 0.12,
+    shadowColor,
+    isDark ? 0.4 : 0.12,
   )}`;
 
   return {
@@ -121,34 +128,29 @@ export function createPickerThemeStyle(
     '--mx-text': palette.text,
     '--mx-muted': palette.muted,
     '--mx-accent': palette.accent,
-    '--mx-accent-soft': accentSoft,
+    '--mx-accent-soft': `color-mix(in srgb, ${palette.accent} ${mix}%, transparent)`,
     '--mx-hover': hover,
     '--mx-shadow': rootShadow,
     '--mx-shadow-floating': floatingShadow,
     '--mx-radius': `${palette.radius}px`,
     '--mx-placeholder': withAlpha(palette.muted, isDark ? 0.92 : 0.88),
-    '--mx-root-bg': `radial-gradient(circle at top right, ${rootGlow}, transparent 28%), linear-gradient(180deg, ${withAlpha(
-      palette.panel,
-      isDark ? 0.94 : 0.92,
-    )}, ${withAlpha(
-      palette.bg,
-      isDark ? 0.98 : 0.96,
-    )}), ${withAlpha(palette.bg, isDark ? 0.96 : 0.92)}`,
-    '--mx-sidebar-bg': `linear-gradient(180deg, ${withAlpha(
-      palette.panel,
-      isDark ? 0.92 : 0.92,
-    )}, ${withAlpha(palette.bg, isDark ? 0.98 : 0.98)})`,
+    '--mx-root-bg': withAlpha(palette.bg, isDark ? 0.96 : 0.92),
+    '--mx-sidebar-bg': withAlpha(palette.panel, isDark ? 0.92 : 0.95),
     '--mx-toolbar-bg': toolbarBg,
     '--mx-search-bg': searchBg,
     '--mx-tone-button-bg': withAlpha(palette.panel, isDark ? 0.92 : 0.82),
     '--mx-tone-menu-bg': withAlpha(palette.panel, isDark ? 0.98 : 0.98),
-    '--mx-section-header-bg': `linear-gradient(180deg, ${withAlpha(
-      palette.panel,
-      isDark ? 0.98 : 0.97,
-    )}, ${withAlpha(palette.bg, isDark ? 0.94 : 0.88)})`,
+    '--mx-section-header-bg': isDark
+      ? `color-mix(in srgb, ${palette.panel} 80%, ${palette.text} 6%)`
+      : withAlpha(palette.panel, 0.94),
     '--mx-preview-bg': previewBg,
-    '--mx-chip-bg': withAlpha(palette.accent, isDark ? 0.16 : 0.08),
-    '--mx-chip-border': withAlpha(palette.accent, isDark ? 0.3 : 0.16),
+    '--mx-emoji-hover': `color-mix(in srgb, ${palette.accent} ${Math.round(mix * 0.5)}%, transparent)`,
+    '--mx-category-hover': `color-mix(in srgb, ${palette.accent} ${mix}%, transparent)`,
+    '--mx-category-active-bg': `color-mix(in srgb, ${palette.accent} ${mix}%, transparent)`,
+    '--mx-chip-bg': withAlpha(palette.accent, Math.max(mix * 0.6, 6) / 100),
+    '--mx-chip-border': withAlpha(palette.accent, Math.max(mix * 1.1, 12) / 100),
     '--mx-chip-muted-bg': withAlpha(palette.text, isDark ? 0.14 : 0.04),
+    '--mx-scrollbar-thumb': palette.scrollbar,
+    '--mx-scrollbar-thumb-hover': `color-mix(in srgb, ${palette.scrollbar} 82%, ${palette.text} 18%)`,
   } as CSSProperties;
 }
