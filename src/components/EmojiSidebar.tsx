@@ -41,6 +41,7 @@ export function EmojiSidebar({
   const slotOptions = { unstyled, classNames, styles };
   const sidebarRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const pointerActivatedCategoryRef = useRef<EmojiCategoryId | null>(null);
 
   useEffect(() => {
     const container = sidebarRef.current;
@@ -77,41 +78,78 @@ export function EmojiSidebar({
     let cursorX: number | null = null;
     let rafId = 0;
 
-    const loop = () => {
-      if (cursorX !== null) {
-        const overflow = container.scrollWidth - container.clientWidth;
-        if (overflow > 1) {
-          const rect = container.getBoundingClientRect();
-          const fromLeft = cursorX - rect.left;
-          const fromRight = rect.right - cursorX;
-
-          if (fromLeft >= 0 && fromLeft < AUTOSCROLL_EDGE_PX) {
-            container.scrollLeft -=
-              AUTOSCROLL_MAX_SPEED * (1 - fromLeft / AUTOSCROLL_EDGE_PX);
-          } else if (fromRight >= 0 && fromRight < AUTOSCROLL_EDGE_PX) {
-            container.scrollLeft +=
-              AUTOSCROLL_MAX_SPEED * (1 - fromRight / AUTOSCROLL_EDGE_PX);
-          }
-        }
+    const stopLoop = () => {
+      if (rafId !== 0) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
       }
+    };
+
+    const loop = () => {
+      rafId = 0;
+      if (cursorX === null) {
+        return;
+      }
+
+      const overflow = container.scrollWidth - container.clientWidth;
+      if (overflow <= 1) {
+        return;
+      }
+
+      const rect = container.getBoundingClientRect();
+      const fromLeft = cursorX - rect.left;
+      const fromRight = rect.right - cursorX;
+
+      let delta = 0;
+      if (fromLeft >= 0 && fromLeft < AUTOSCROLL_EDGE_PX) {
+        delta = -AUTOSCROLL_MAX_SPEED * (1 - fromLeft / AUTOSCROLL_EDGE_PX);
+      } else if (fromRight >= 0 && fromRight < AUTOSCROLL_EDGE_PX) {
+        delta = AUTOSCROLL_MAX_SPEED * (1 - fromRight / AUTOSCROLL_EDGE_PX);
+      }
+
+      if (delta === 0) {
+        return;
+      }
+
+      container.scrollLeft += delta;
+      rafId = requestAnimationFrame(loop);
+    };
+
+    const ensureLoop = () => {
+      if (cursorX === null || rafId !== 0) {
+        return;
+      }
+
       rafId = requestAnimationFrame(loop);
     };
 
     const onMove = (event: MouseEvent) => {
       cursorX = event.clientX;
+      ensureLoop();
     };
+
     const onLeave = () => {
       cursorX = null;
+      stopLoop();
+    };
+
+    const onWheel = (event: WheelEvent) => {
+      const overflow = container.scrollWidth - container.clientWidth;
+      if (overflow > 1 && Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+        event.preventDefault();
+        container.scrollLeft += event.deltaY;
+      }
     };
 
     container.addEventListener('mousemove', onMove);
     container.addEventListener('mouseleave', onLeave);
-    rafId = requestAnimationFrame(loop);
+    container.addEventListener('wheel', onWheel, { passive: false });
 
     return () => {
-      cancelAnimationFrame(rafId);
+      stopLoop();
       container.removeEventListener('mousemove', onMove);
       container.removeEventListener('mouseleave', onLeave);
+      container.removeEventListener('wheel', onWheel);
     };
   }, [autoScrollOnHover]);
 
@@ -146,7 +184,27 @@ export function EmojiSidebar({
               !unstyled && activeCategory === section.id && 'is-active',
             )}
             style={buttonStyle}
-            onClick={() => onCategoryClick(section.id)}
+            onPointerDown={(event) => {
+              if (
+                (event.pointerType === 'mouse' || event.pointerType === 'pen') &&
+                event.button === 0
+              ) {
+                pointerActivatedCategoryRef.current = section.id;
+                onCategoryClick(section.id);
+              }
+            }}
+            onClick={(event) => {
+              if (
+                pointerActivatedCategoryRef.current === section.id &&
+                event.detail > 0
+              ) {
+                pointerActivatedCategoryRef.current = null;
+                return;
+              }
+
+              pointerActivatedCategoryRef.current = null;
+              onCategoryClick(section.id);
+            }}
             aria-label={section.label}
             title={section.label}
             data-mx-slot="navButton"

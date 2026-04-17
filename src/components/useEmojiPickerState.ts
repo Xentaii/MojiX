@@ -1,4 +1,5 @@
 import {
+  startTransition,
   type RefObject,
   useCallback,
   useDeferredValue,
@@ -397,6 +398,8 @@ export function useEmojiPickerState({
   const [hoveredEmoji, setHoveredEmoji] = useState<EmojiRenderable | null>(
     null,
   );
+  const pendingHoveredEmojiRef = useRef<EmojiRenderable | null>(null);
+  const hoveredEmojiFrameRef = useRef<number | null>(null);
   const [runtimeSpriteAsset, setRuntimeSpriteAsset] = useState<{
     key: string;
     url: string;
@@ -782,11 +785,38 @@ export function useEmojiPickerState({
     [setActiveCategory],
   );
 
+  const flushHoveredEmoji = useCallback((nextEmoji: EmojiRenderable | null) => {
+    startTransition(() => {
+      setHoveredEmoji((current) => (current === nextEmoji ? current : nextEmoji));
+    });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (hoveredEmojiFrameRef.current !== null) {
+        cancelAnimationFrame(hoveredEmojiFrameRef.current);
+      }
+    };
+  }, []);
+
   const handleEmojiHover = useCallback(
     (emoji: EmojiRenderable | null) => {
-      setHoveredEmoji(emoji);
+      if (pendingHoveredEmojiRef.current === emoji) {
+        return;
+      }
+
+      pendingHoveredEmojiRef.current = emoji;
+
+      if (hoveredEmojiFrameRef.current !== null) {
+        return;
+      }
+
+      hoveredEmojiFrameRef.current = requestAnimationFrame(() => {
+        hoveredEmojiFrameRef.current = null;
+        flushHoveredEmoji(pendingHoveredEmojiRef.current);
+      });
     },
-    [],
+    [flushHoveredEmoji],
   );
 
   const handleSelectEmoji = useCallback(
@@ -800,7 +830,12 @@ export function useEmojiPickerState({
         },
       );
 
-      setHoveredEmoji(null);
+      pendingHoveredEmojiRef.current = null;
+      if (hoveredEmojiFrameRef.current !== null) {
+        cancelAnimationFrame(hoveredEmojiFrameRef.current);
+        hoveredEmojiFrameRef.current = null;
+      }
+      flushHoveredEmoji(null);
       onEmojiSelect?.(selection);
 
       if (resolvedRecentConfig.enabled) {
@@ -824,6 +859,7 @@ export function useEmojiPickerState({
       resolvedRecentConfig.limit,
       resolvedRecentStore,
       skinTone,
+      flushHoveredEmoji,
     ],
   );
 

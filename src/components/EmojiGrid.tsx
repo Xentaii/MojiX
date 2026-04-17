@@ -6,7 +6,6 @@ import {
   useEffect,
   useImperativeHandle,
   useRef,
-  useState,
 } from 'react';
 import { getLocalizedEmojiName } from '../core/i18n';
 import type {
@@ -32,7 +31,10 @@ import {
 } from './utils';
 
 export interface EmojiGridHandle {
-  scrollToCategory: (id: EmojiCategoryId) => void;
+  scrollToCategory: (
+    id: EmojiCategoryId,
+    options?: { behavior?: 'instant' | 'smooth' },
+  ) => void;
 }
 
 export interface EmojiGridProps {
@@ -72,7 +74,11 @@ function getContainerPaddingTop(container: HTMLDivElement) {
   return Number.parseFloat(window.getComputedStyle(container).paddingTop) || 0;
 }
 
-function getScrollBehavior() {
+function getScrollBehavior(mode: 'instant' | 'smooth' = 'smooth') {
+  if (mode === 'instant') {
+    return 'auto' as const;
+  }
+
   if (
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -81,6 +87,27 @@ function getScrollBehavior() {
   }
 
   return 'smooth' as const;
+}
+
+function setContainerScrollTop(
+  container: HTMLDivElement,
+  top: number,
+  behavior: 'instant' | 'smooth',
+) {
+  if (behavior === 'instant') {
+    const previousInlineBehavior = container.style.scrollBehavior;
+    container.style.scrollBehavior = 'auto';
+    container.scrollTop = top;
+
+    if (previousInlineBehavior) {
+      container.style.scrollBehavior = previousInlineBehavior;
+    } else {
+      container.style.removeProperty('scroll-behavior');
+    }
+    return;
+  }
+
+  container.scrollTo({ top, behavior: getScrollBehavior('smooth') });
 }
 
 function getSectionScrollTop(
@@ -123,7 +150,6 @@ export function EmojiGrid({
 }: EmojiGridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const pendingCategoryScrollRef = useRef<{
     id: EmojiCategoryId;
     top: number;
@@ -139,20 +165,24 @@ export function EmojiGrid({
   const onActiveCategoryChangeRef = useRef(onActiveCategoryChange);
   onActiveCategoryChangeRef.current = onActiveCategoryChange;
 
-  const scrollToCategory = useCallback((id: EmojiCategoryId) => {
+  const scrollToCategory = useCallback((
+    id: EmojiCategoryId,
+    options?: { behavior?: 'instant' | 'smooth' },
+  ) => {
     const container = scrollRef.current;
     const target = sectionRefs.current[id];
     if (!container || !target) {
       return;
     }
 
+    const behavior = options?.behavior ?? 'smooth';
+
     const nextTop = getSectionScrollTop(container, target);
     pendingCategoryScrollRef.current = {
       id,
       top: nextTop,
     };
-    const behavior = getScrollBehavior();
-    container.scrollTo({ top: nextTop, behavior });
+    setContainerScrollTop(container, nextTop, behavior);
 
     requestAnimationFrame(() => {
       const nextContainer = scrollRef.current;
@@ -170,7 +200,7 @@ export function EmojiGrid({
         id,
         top: settledTop,
       };
-      nextContainer.scrollTo({ top: settledTop, behavior });
+      setContainerScrollTop(nextContainer, settledTop, behavior);
     });
   }, []);
 
@@ -191,6 +221,7 @@ export function EmojiGrid({
 
     const activeContainer = container;
     const initialCategory = firstSection.id;
+    let rafId = 0;
 
     function updateActiveCategory() {
       const pendingScroll = pendingCategoryScrollRef.current;
@@ -228,15 +259,29 @@ export function EmojiGrid({
       onActiveCategoryChangeRef.current(nextCategory);
     }
 
+    function scheduleActiveCategoryUpdate() {
+      if (rafId !== 0) {
+        return;
+      }
+
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        updateActiveCategory();
+      });
+    }
+
     updateActiveCategory();
-    activeContainer.addEventListener('scroll', updateActiveCategory, {
+    activeContainer.addEventListener('scroll', scheduleActiveCategoryUpdate, {
       passive: true,
     });
-    window.addEventListener('resize', updateActiveCategory);
+    window.addEventListener('resize', scheduleActiveCategoryUpdate);
 
     return () => {
-      activeContainer.removeEventListener('scroll', updateActiveCategory);
-      window.removeEventListener('resize', updateActiveCategory);
+      if (rafId !== 0) {
+        cancelAnimationFrame(rafId);
+      }
+      activeContainer.removeEventListener('scroll', scheduleActiveCategoryUpdate);
+      window.removeEventListener('resize', scheduleActiveCategoryUpdate);
     };
   }, [sections]);
 
@@ -437,10 +482,7 @@ export function EmojiGrid({
               const isFirstEmoji =
                 sectionIndex === firstFocusableSectionIndex &&
                 emojiIndex === 0;
-              const emojiKey = `${section.id}:${emoji.id}`;
-              const active = hoveredKey
-                ? hoveredKey === emojiKey
-                : hoveredEmojiId === emoji.id;
+              const active = hoveredEmojiId === emoji.id;
               const renderState: EmojiRenderState = {
                 active,
                 selected,
@@ -477,26 +519,12 @@ export function EmojiGrid({
                   data-selected={selected ? 'true' : undefined}
                   tabIndex={isFirstEmoji ? 0 : -1}
                   onClick={() => onEmojiSelect(emoji)}
-                  onMouseEnter={() => {
-                    setHoveredKey(emojiKey);
-                    onEmojiHover(emoji);
-                  }}
-                  onMouseLeave={() => {
-                    setHoveredKey((current) =>
-                      current === emojiKey ? null : current,
-                    );
-                    onEmojiHover(null);
-                  }}
+                  onMouseEnter={() => onEmojiHover(emoji)}
+                  onMouseLeave={() => onEmojiHover(null)}
                   onFocus={(event) => {
-                    setHoveredKey(emojiKey);
                     handleEmojiFocus(event, emoji);
                   }}
-                  onBlur={() => {
-                    setHoveredKey((current) =>
-                      current === emojiKey ? null : current,
-                    );
-                    onEmojiHover(null);
-                  }}
+                  onBlur={() => onEmojiHover(null)}
                   title={displayName}
                   aria-label={displayName}
                 >
