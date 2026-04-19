@@ -46,6 +46,7 @@ describe('public API surface', () => {
     expect(api.resolveEmojiSelection).toBeTypeOf('function');
     expect(api.createRecentEmojiStore).toBeTypeOf('function');
     expect(api.createSkinToneStore).toBeTypeOf('function');
+    expect(api.useEmojiAssets).toBeTypeOf('function');
   });
 
   it('createEmojiIndex search returns ranked results', () => {

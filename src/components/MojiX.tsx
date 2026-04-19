@@ -1,11 +1,15 @@
 import type { HTMLAttributes, ReactNode } from 'react';
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import { SKIN_TONE_OPTIONS } from '../core/constants';
+import { resolveEmojiAsset } from '../core/assets';
 import type {
+  EmojiAssetRenderContext,
+  EmojiAssetSource,
   EmojiCategoryId,
   EmojiPickerColors,
   EmojiPickerProps,
   EmojiRenderable,
+  EmojiResolvedAsset,
   EmojiSelection,
   EmojiSkinTone,
 } from '../core/types';
@@ -95,9 +99,13 @@ export function MojiXRoot({
   searchQuery,
   defaultSearchQuery,
   onSearchQueryChange,
+  searchConfig,
   activeCategory,
   defaultActiveCategory,
   onActiveCategoryChange,
+  activeEmojiId,
+  defaultActiveEmojiId,
+  onActiveEmojiChange,
   emojiSize,
   columns,
   loading,
@@ -143,9 +151,13 @@ export function MojiXRoot({
     searchQuery,
     defaultSearchQuery,
     onSearchQueryChange,
+    searchConfig,
     activeCategory,
     defaultActiveCategory,
     onActiveCategoryChange,
+    activeEmojiId,
+    defaultActiveEmojiId,
+    onActiveEmojiChange,
     emojiSize,
     columns,
     loading,
@@ -245,7 +257,57 @@ export function useActiveEmoji() {
     selection: context.previewSelection,
     hoveredEmoji: context.hoveredEmoji,
     setHoveredEmoji: context.setHoveredEmoji,
+    activeEmojiId: context.activeEmojiId,
+    setActiveEmojiId: context.setActiveEmojiId,
   };
+}
+
+export interface UseEmojiAssetsResult {
+  spriteSheet: ReturnType<typeof useMojiXContext>['activeSpriteSheet'];
+  gridAssetSource: EmojiAssetSource | undefined;
+  previewAssetSource: EmojiAssetSource | undefined;
+  resolve: (
+    emoji: EmojiRenderable,
+    options?: {
+      skinTone?: EmojiSkinTone;
+      context?: EmojiAssetRenderContext;
+      assetSource?: EmojiAssetSource;
+    },
+  ) => EmojiResolvedAsset | null;
+}
+
+export function useEmojiAssets(): UseEmojiAssetsResult {
+  const context = useMojiXContext();
+
+  return useMemo(
+    () => ({
+      spriteSheet: context.activeSpriteSheet,
+      gridAssetSource: context.gridAssetSource,
+      previewAssetSource: context.previewAssetSource,
+      resolve(emoji, options = {}) {
+        const renderContext = options.context ?? 'grid';
+        const source =
+          options.assetSource ??
+          (renderContext === 'preview'
+            ? context.previewAssetSource
+            : context.gridAssetSource);
+
+        return resolveEmojiAsset({
+          emoji,
+          skinTone: options.skinTone ?? context.skinTone,
+          context: renderContext,
+          spriteSheet: context.activeSpriteSheet,
+          assetSource: source,
+        });
+      },
+    }),
+    [
+      context.activeSpriteSheet,
+      context.gridAssetSource,
+      context.previewAssetSource,
+      context.skinTone,
+    ],
+  );
 }
 
 export function useSkinTone() {

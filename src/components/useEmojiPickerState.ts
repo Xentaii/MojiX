@@ -25,13 +25,12 @@ import {
 } from '../core/constants';
 import {
   createEmojiSelection,
-  filterEmoji,
-  getLocalizedSearchTokens,
   getUnicodeEmojiByCategory,
   getUnicodeEmojiById,
   getUnicodeEmojiByNative,
   prepareCustomEmojis,
 } from '../core/data';
+import { filterEmojiWithSearchConfig } from '../core/search';
 import {
   getLocalizedCategoryLabel,
   resolveLocaleDefinition,
@@ -64,6 +63,7 @@ import type {
   EmojiPickerProps,
   EmojiRenderable,
   EmojiRenderState,
+  EmojiSearchConfigLike,
   EmojiSection,
   EmojiSelection,
   EmojiSkinTone,
@@ -209,10 +209,13 @@ export interface EmojiPickerState {
   searchId: string;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  searchConfig: EmojiSearchConfigLike | undefined;
   skinTone: EmojiSkinTone;
   setSkinTone: (tone: EmojiSkinTone) => void;
   activeCategory: EmojiCategoryId;
   setActiveCategory: (categoryId: EmojiCategoryId) => void;
+  activeEmojiId: string | null;
+  setActiveEmojiId: (emojiId: string | null) => void;
   hoveredEmoji: EmojiRenderable | null;
   setHoveredEmoji: (emoji: EmojiRenderable | null) => void;
   sections: EmojiSection[];
@@ -277,9 +280,13 @@ export function useEmojiPickerState({
   searchQuery: controlledSearchQuery,
   defaultSearchQuery = '',
   onSearchQueryChange,
+  searchConfig,
   activeCategory: controlledActiveCategory,
   defaultActiveCategory,
   onActiveCategoryChange,
+  activeEmojiId: controlledActiveEmojiId,
+  defaultActiveEmojiId,
+  onActiveEmojiChange,
   emojiSize = DEFAULT_EMOJI_SIZE,
   columns = DEFAULT_COLUMNS,
   loading = false,
@@ -320,6 +327,7 @@ export function useEmojiPickerState({
   const isSearchControlled = controlledSearchQuery !== undefined;
   const isSkinToneControlled = controlledSkinTone !== undefined;
   const isActiveCategoryControlled = controlledActiveCategory !== undefined;
+  const isActiveEmojiControlled = controlledActiveEmojiId !== undefined;
 
   const resolvedSpriteSheet = useMemo(
     () => resolveSpriteSheetConfig(spriteSheetProp ?? defaultSpriteSheet),
@@ -394,6 +402,8 @@ export function useEmojiPickerState({
     );
   const [uncontrolledActiveCategory, setUncontrolledActiveCategory] =
     useState<EmojiCategoryId>(resolvedDefaultActiveCategory);
+  const [uncontrolledActiveEmojiId, setUncontrolledActiveEmojiId] =
+    useState<string | null>(defaultActiveEmojiId ?? null);
   const [hoveredEmoji, setHoveredEmoji] = useState<EmojiRenderable | null>(
     null,
   );
@@ -413,6 +423,9 @@ export function useEmojiPickerState({
   const activeCategory = isActiveCategoryControlled
     ? controlledActiveCategory
     : uncontrolledActiveCategory;
+  const activeEmojiId = isActiveEmojiControlled
+    ? controlledActiveEmojiId
+    : uncontrolledActiveEmojiId;
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const searchId = useId();
   const gridRef = useRef<EmojiGridHandle>(null);
@@ -590,13 +603,11 @@ export function useEmojiPickerState({
     };
 
     if (resolvedRecentConfig.enabled) {
-      const filteredRecent = filterEmoji(
+      const filteredRecent = filterEmojiWithSearchConfig(
         recentSectionEmojis,
         deferredSearchQuery,
-        (emoji) =>
-          emoji.kind === 'custom'
-            ? []
-            : getLocalizedSearchTokens(emoji, localeDefinition),
+        localeDefinition,
+        searchConfig,
       );
 
       if (
@@ -622,13 +633,11 @@ export function useEmojiPickerState({
         ...getUnicodeEmojiByCategory(categoryId),
         ...(customEmojiByCategory.get(categoryId) ?? []),
       ];
-      const visibleEmoji = filterEmoji(
+      const visibleEmoji = filterEmojiWithSearchConfig(
         categoryEmoji,
         deferredSearchQuery,
-        (emoji) =>
-          emoji.kind === 'custom'
-            ? []
-            : getLocalizedSearchTokens(emoji, localeDefinition),
+        localeDefinition,
+        searchConfig,
       );
 
       if (visibleEmoji.length === 0) {
@@ -653,9 +662,11 @@ export function useEmojiPickerState({
         continue;
       }
 
-      const visibleEmoji = filterEmoji(
+      const visibleEmoji = filterEmojiWithSearchConfig(
         groupedEmoji,
         deferredSearchQuery,
+        localeDefinition,
+        searchConfig,
       );
 
       if (visibleEmoji.length === 0) {
@@ -782,11 +793,23 @@ export function useEmojiPickerState({
     [setActiveCategory],
   );
 
+  const setActiveEmojiId = useCallback(
+    (emojiId: string | null) => {
+      if (!isActiveEmojiControlled) {
+        setUncontrolledActiveEmojiId(emojiId);
+      }
+
+      onActiveEmojiChange?.(emojiId);
+    },
+    [isActiveEmojiControlled, onActiveEmojiChange],
+  );
+
   const handleEmojiHover = useCallback(
     (emoji: EmojiRenderable | null) => {
       setHoveredEmoji(emoji);
+      setActiveEmojiId(emoji?.id ?? null);
     },
-    [],
+    [setActiveEmojiId],
   );
 
   const handleSelectEmoji = useCallback(
@@ -834,7 +857,23 @@ export function useEmojiPickerState({
 
   const firstVisibleEmoji =
     sections.find((section) => section.emojis.length > 0)?.emojis[0] ?? null;
+
+  const activeEmojiFromId = activeEmojiId
+    ? (() => {
+        for (const section of sections) {
+          for (const emoji of section.emojis) {
+            if (emoji.id === activeEmojiId) {
+              return emoji;
+            }
+          }
+        }
+
+        return null;
+      })()
+    : null;
+
   const previewEmoji =
+    activeEmojiFromId ??
     hoveredEmoji ??
     sections.find(
       (section) =>
@@ -852,10 +891,13 @@ export function useEmojiPickerState({
     searchId,
     searchQuery,
     setSearchQuery,
+    searchConfig,
     skinTone,
     setSkinTone,
     activeCategory,
     setActiveCategory,
+    activeEmojiId,
+    setActiveEmojiId,
     hoveredEmoji,
     setHoveredEmoji,
     sections,

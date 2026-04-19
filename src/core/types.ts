@@ -473,9 +473,13 @@ export interface EmojiPickerProps
   searchQuery?: string;
   defaultSearchQuery?: string;
   onSearchQueryChange?: (query: string) => void;
+  searchConfig?: EmojiSearchConfigLike;
   activeCategory?: EmojiCategoryId;
   defaultActiveCategory?: EmojiCategoryId;
   onActiveCategoryChange?: (categoryId: EmojiCategoryId) => void;
+  activeEmojiId?: string | null;
+  defaultActiveEmojiId?: string | null;
+  onActiveEmojiChange?: (emojiId: string | null) => void;
   emojiSize?: number;
   columns?: number;
   loading?: boolean;

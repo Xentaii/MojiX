@@ -24,6 +24,7 @@ export {
   MojiXSkinToneButton,
   MojiXViewport,
   useActiveEmoji,
+  useEmojiAssets,
   useEmojiCategories,
   useEmojiSearch,
   useEmojiSelection,
