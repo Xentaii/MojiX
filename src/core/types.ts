@@ -7,7 +7,16 @@ export type EmojiVendor =
   | 'facebook'
   | (string & {});
 
-export type EmojiLocaleCode = 'en' | 'ru' | (string & {});
+export type EmojiLocaleCode =
+  | 'de'
+  | 'en'
+  | 'es'
+  | 'fr'
+  | 'ja'
+  | 'pt'
+  | 'ru'
+  | 'uk'
+  | (string & {});
 
 export type EmojiSkinTone =
   | 'default'
@@ -465,9 +474,15 @@ export interface EmojiPickerColors {
   scrollbarThumbHover?: string;
 }
 
+export interface EmojiPickerVirtualization {
+  enabled?: boolean;
+  overscanRows?: number;
+}
+
 export interface EmojiPickerProps
   extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> {
   colors?: EmojiPickerColors;
+  virtualization?: boolean | EmojiPickerVirtualization;
   autoScrollCategoriesOnHover?: boolean;
   value?: string;
   searchQuery?: string;

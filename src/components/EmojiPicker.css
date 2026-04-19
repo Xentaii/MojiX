@@ -340,20 +340,23 @@
   min-height: 0;
   overflow: auto;
   padding: 2px 6px 14px 6px;
+  contain: layout paint;
+  scrollbar-gutter: stable;
   scroll-padding-top: 2px;
   scroll-behavior: smooth;
   overscroll-behavior: contain;
+  will-change: scroll-position;
 }
 
 .mx-picker__section {
   padding: 8px 6px 0;
   contain: layout style;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 400px;
 }
 
 .mx-picker__grid-placeholder {
+  grid-column: 1 / -1;
   min-height: 1px;
+  pointer-events: none;
 }
 
 .mx-picker__section-header {
@@ -408,6 +411,7 @@
   align-items: center;
   justify-content: center;
   aspect-ratio: 1;
+  line-height: 0;
   border-radius: 14px;
   contain: layout style paint;
   transition:
@@ -535,6 +539,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.mx-emoji-sprite {
+  flex-shrink: 0;
 }
 
 .mx-picker__category-icon {

@@ -1,44 +1,48 @@
 import { describe, expect, it } from 'vitest';
-import {
-  createEmojiSpriteSheet,
-  createEmojiCdnUrl,
-  createEmojiLocalSpriteSheet,
-} from '../src/core/sprites';
+import { getSpriteStyle } from '../src/core/sprites';
 
-describe('sprite presets', () => {
-  it('builds a CDN spritesheet config with the expected vendor + variant', () => {
-    const sheet = createEmojiSpriteSheet({
-      source: 'cdn',
-      vendor: 'twitter',
-      sheetSize: 64,
-      variant: 'indexed-256',
+describe('sprite style helpers', () => {
+  it('renders scaled sprite tiles with percentage-based sprite positioning', () => {
+    expect(
+      getSpriteStyle({
+        sheetX: 2,
+        sheetY: 3,
+        renderSize: 22,
+        spriteSheet: {
+          sheetSize: 64,
+          padding: 1,
+          gridSize: 64,
+          source: 'custom',
+          url: 'https://example.com/emoji.png',
+        },
+      }),
+    ).toMatchObject({
+      width: '22px',
+      height: '22px',
+      backgroundSize: '6600% 6600%',
+      backgroundPosition:
+        '3.1971153846153846% 4.783653846153846%',
     });
-
-    expect(sheet.vendor).toBe('twitter');
-    expect(sheet.sheetSize).toBe(64);
-    expect(sheet.variant).toBe('indexed-256');
   });
 
-  it('builds a local spritesheet config pointing at a file', () => {
-    const sheet = createEmojiLocalSpriteSheet('/sprites/twitter/sheets-256/64.png', {
-      vendor: 'twitter',
-      sheetSize: 64,
-      variant: 'indexed-256',
+  it('matches emoji-mart style math when the spritesheet has no padding', () => {
+    expect(
+      getSpriteStyle({
+        sheetX: 2,
+        sheetY: 3,
+        renderSize: 22,
+        spriteSheet: {
+          sheetSize: 64,
+          padding: 0,
+          gridSize: 64,
+          source: 'custom',
+          url: 'https://example.com/emoji.png',
+        },
+      }),
+    ).toMatchObject({
+      backgroundSize: '6400% 6400%',
+      backgroundPosition:
+        '3.1746031746031744% 4.761904761904762%',
     });
-
-    expect(sheet.vendor).toBe('twitter');
-    expect(sheet.sheetSize).toBe(64);
-  });
-
-  it('createEmojiCdnUrl returns a jsdelivr URL', () => {
-    const url = createEmojiCdnUrl({
-      vendor: 'twitter',
-      sheetSize: 64,
-      variant: 'indexed-256',
-    });
-
-    expect(url).toMatch(/^https:\/\/cdn\.jsdelivr\.net\//);
-    expect(url).toContain('emoji-datasource-twitter');
-    expect(url).toContain('64.png');
   });
 });

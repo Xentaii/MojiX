@@ -244,6 +244,7 @@ export interface EmojiPickerState {
   classNames: EmojiPickerProps['classNames'];
   styles: EmojiPickerProps['styles'];
   colors: EmojiPickerColors | undefined;
+  virtualization: EmojiPickerProps['virtualization'];
   assetSource: EmojiPickerProps['assetSource'];
   gridAssetSource: EmojiPickerProps['gridAssetSource'];
   previewAssetSource: EmojiPickerProps['previewAssetSource'];
@@ -307,6 +308,7 @@ export function useEmojiPickerState({
   onSkinToneChange,
   labels,
   colors,
+  virtualization,
   autoScrollCategoriesOnHover = true,
   categories,
   categoryIcons,
@@ -964,6 +966,7 @@ export function useEmojiPickerState({
     classNames,
     styles,
     colors,
+    virtualization,
     assetSource,
     gridAssetSource: resolvedGridAssetSource,
     previewAssetSource: resolvedPreviewAssetSource,

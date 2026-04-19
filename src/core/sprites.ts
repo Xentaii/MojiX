@@ -241,9 +241,17 @@ export function getSpriteStyle(options: {
   const sheetSize = options.overrideSheetSize ?? resolved.sheetSize;
   const padding = options.overridePadding ?? resolved.padding;
   const gridSize = options.overrideGridSize ?? resolved.gridSize;
-  const scale = options.renderSize / sheetSize;
-  const tileSize = (sheetSize + padding * 2) * scale;
-  const offset = padding * scale;
+  const cellSize = sheetSize + padding * 2;
+  const backgroundScalePercent =
+    (gridSize * cellSize * 100) / Math.max(1, sheetSize);
+  const backgroundTravel = Math.max(
+    1,
+    gridSize * cellSize - sheetSize,
+  );
+  const backgroundPositionXPercent =
+    ((options.sheetX * cellSize + padding) * 100) / backgroundTravel;
+  const backgroundPositionYPercent =
+    ((options.sheetY * cellSize + padding) * 100) / backgroundTravel;
   const sheetUrl = resolveSpriteSheetUrl(resolved, options.overrideUrl);
 
   return {
@@ -251,8 +259,8 @@ export function getSpriteStyle(options: {
     height: `${options.renderSize}px`,
     backgroundImage: `url("${sheetUrl}")`,
     backgroundRepeat: 'no-repeat',
-    backgroundSize: `${gridSize * tileSize}px ${gridSize * tileSize}px`,
-    backgroundPosition: `${-(options.sheetX * tileSize + offset)}px ${-(options.sheetY * tileSize + offset)}px`,
+    backgroundSize: `${backgroundScalePercent}% ${backgroundScalePercent}%`,
+    backgroundPosition: `${backgroundPositionXPercent}% ${backgroundPositionYPercent}%`,
     borderRadius: `${Math.max(4, options.renderSize * 0.22)}px`,
     flexShrink: 0,
   };

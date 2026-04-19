@@ -413,6 +413,7 @@ export function MojiXList({
       onEmojiHover={context.handleEmojiHover}
       onActiveCategoryChange={context.handleActiveCategoryChange}
       hoveredEmojiId={context.hoveredEmoji?.id ?? null}
+      virtualization={context.virtualization}
       emptyState={emptyState ?? context.emptyState}
       hideEmptyState={!showEmptyState}
       labels={context.labelSet}
