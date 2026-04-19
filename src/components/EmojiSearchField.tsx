@@ -51,6 +51,7 @@ export function EmojiSearchField({
         style={getSlotStyle('searchInput', slotOptions)}
         type="search"
         value={searchQuery}
+        aria-label={labels.searchPlaceholder}
         placeholder={labels.searchPlaceholder}
         onChange={(event) => {
           const nextValue = event.currentTarget.value;
