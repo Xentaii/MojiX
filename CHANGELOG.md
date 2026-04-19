@@ -6,8 +6,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.5.0]
+
+### Backward compatibility
+
+- **No breaking changes.** All APIs and props shipped in `0.1.0` remain available with identical behavior: `EmojiPicker`, every prop on it, every `MojiX.*` primitive, every asset source factory, `createLocalStorageRecentStore`, all slot names, all CSS variables. The v0.5 surface is purely additive.
+- `EmojiRecentStore.push`'s `limit` parameter is now optional. Existing implementations that accept `(entry, limit: number)` continue to satisfy the interface.
+
 ### Added
 
+- **Engine layer, framework-agnostic.** New exports `createEmojiIndex`, `searchEmoji`, `resolveEmojiSelection`, `createRecentEmojiStore`, `createSkinToneStore` make the search/selection/persistence pipeline usable outside React.
+- **Pluggable search.** `searchConfig` prop on `MojiX.Root` / `EmojiPicker` and on `createEmojiIndex({ searchConfig })` accepts `{ tokenize, normalize, rank }`. Each function is optional; missing pieces fall back to the default pipeline.
+- **Controlled active emoji.** `activeEmojiId` / `defaultActiveEmojiId` / `onActiveEmojiChange` let host apps drive the preview state externally. `useActiveEmoji()` now returns `activeEmojiId` and `setActiveEmojiId`.
+- **`useEmojiAssets()` hook** exposing the active sprite sheet, grid/preview sources, and a `resolve(emoji, { context, skinTone, assetSource })` helper for rendering emoji consistently outside the grid.
+- **`CompactPicker` preset** under the new subpath export `mojix-picker/presets` — sidebarless, preview-less layout built on the public primitives.
+- **Migration guide** at `docs/MIGRATION.md` covering monolith → composable, controlled state, search pipeline, and engine usage.
 - `registerEmojiLocalePack(locale, pack)` for registering translation packs at runtime (extends built-in locales or creates new ones).
 - Subpath exports `mojix-picker/locales/en` and `mojix-picker/locales/ru` that side-effect-register the corresponding emoji translation pack.
 - CI workflow (`typecheck`, `test`, `build:package`, `pack:check`) on push and PR.
@@ -21,11 +34,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- `EmojiPicker` and the new `CompactPicker` both compose the public `MojiX.*` primitives — they share the same reference implementation.
+- Default search inside the picker flows through the new `filterEmojiWithSearchConfig` pipeline. Results are identical when no `searchConfig` is provided.
 - `tsconfig.lib.json` now explicitly narrows `include` to the library surface and excludes test files.
 - Built-in locale modules (`en`, `ru`) import their own generated JSON instead of a shared bundle. The generator now emits per-locale files (`emoji-locale.<code>.json`) so consumers who lazy-load locale modules no longer pull every translation into the main chunk.
 - **Russian emoji translations are no longer in the default bundle.** The built-in `ru` locale still ships labels, categories, and skin-tone names. Consumers who need translated emoji names/keywords import the opt-in subpath `mojix-picker/locales/ru` (side-effect registers the pack) or pass it to the new `registerEmojiLocalePack` API. This drops the default ESM bundle from ~1,524 kB to ~874 kB (gzip ~198 kB → ~90 kB).
 - Renamed `src/lib/` to `src/core/` so published type declarations no longer have the double `dist/lib/lib/...` nesting; the public `dist/lib/index.d.ts` entry is unchanged.
-- Added `./locales/en` and `./locales/ru` subpath exports to `package.json`.
+- Added `./locales/en`, `./locales/ru`, and `./presets` subpath exports to `package.json`.
 
 ## [0.1.0] - Initial release
 
