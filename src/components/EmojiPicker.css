@@ -20,33 +20,25 @@
   --mx-emoji-size: 24px;
   --mx-columns: 8;
   --mx-placeholder: #92857d;
-  --mx-root-bg:
-    radial-gradient(circle at top right, rgba(255, 190, 141, 0.22), transparent 28%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 246, 240, 0.96)),
-    var(--mx-bg);
-  --mx-sidebar-bg:
-    linear-gradient(180deg, rgba(255, 250, 245, 0.92), rgba(255, 248, 243, 0.98));
-  --mx-toolbar-bg: rgba(255, 255, 255, 0.42);
+  --mx-root-bg: var(--mx-bg);
+  --mx-sidebar-bg: rgba(255, 249, 244, 0.95);
+  --mx-toolbar-bg: rgba(255, 255, 255, 0.54);
   --mx-search-bg: rgba(255, 255, 255, 0.8);
   --mx-tone-button-bg: rgba(255, 255, 255, 0.82);
   --mx-tone-menu-bg: rgba(255, 255, 255, 0.98);
-  --mx-section-header-bg:
-    linear-gradient(180deg, rgba(255, 251, 247, 0.97), rgba(255, 251, 247, 0.88));
-  --mx-preview-bg: rgba(255, 255, 255, 0.38);
+  --mx-section-header-bg: rgba(255, 251, 247, 0.94);
+  --mx-preview-bg: rgba(255, 255, 255, 0.5);
   --mx-chip-bg: color-mix(in srgb, var(--mx-accent) 8%, transparent);
   --mx-chip-border: color-mix(in srgb, var(--mx-accent) 16%, transparent);
   --mx-chip-muted-bg: rgba(32, 24, 18, 0.04);
   --mx-emoji-hover: var(--mx-hover);
   --mx-category-hover: var(--mx-accent-soft);
-  --mx-category-active-bg:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--mx-accent) 18%, transparent),
-      color-mix(in srgb, var(--mx-accent) 10%, transparent)
-    );
+  --mx-category-active-bg: color-mix(in srgb, var(--mx-accent) 14%, transparent);
   --mx-category-active-color: var(--mx-accent);
-  --mx-scrollbar-thumb: rgba(32, 24, 18, 0.18);
-  --mx-scrollbar-thumb-hover: rgba(32, 24, 18, 0.32);
+  --mx-scrollbar-size: 4px;
+  --mx-scrollbar-thumb: var(--mx-muted);
+  --mx-scrollbar-thumb-hover:
+    color-mix(in srgb, var(--mx-scrollbar-thumb) 78%, var(--mx-text) 22%);
   display: flex;
   flex-direction: column;
   width: min(100%, 428px);
@@ -77,6 +69,7 @@
 }
 
 .mx-picker__sidebar {
+  --mx-scrollbar-track: var(--mx-sidebar-bg);
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
@@ -89,28 +82,59 @@
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: var(--mx-scrollbar-thumb) transparent;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
 }
 
-.mx-picker__sidebar::-webkit-scrollbar {
-  height: 6px;
-  background: transparent;
+@supports (-moz-appearance: none) {
+  .mx-picker__sidebar,
+  .mx-picker__content {
+    scrollbar-width: thin;
+    scrollbar-color: var(--mx-scrollbar-thumb) var(--mx-scrollbar-track);
+  }
 }
 
-.mx-picker__sidebar::-webkit-scrollbar-track {
-  background: transparent;
-}
+@supports selector(::-webkit-scrollbar) {
+  .mx-picker__sidebar::-webkit-scrollbar,
+  .mx-picker__content::-webkit-scrollbar {
+    width: var(--mx-scrollbar-size);
+    height: var(--mx-scrollbar-size);
+    background: transparent;
+  }
 
-.mx-picker__sidebar::-webkit-scrollbar-thumb {
-  background: var(--mx-scrollbar-thumb);
-  border-radius: 999px;
-}
+  .mx-picker__sidebar::-webkit-scrollbar-track,
+  .mx-picker__content::-webkit-scrollbar-track {
+    background: transparent;
+    box-shadow: none;
+  }
 
-.mx-picker__sidebar::-webkit-scrollbar-thumb:hover {
-  background: var(--mx-scrollbar-thumb-hover);
+  .mx-picker__sidebar::-webkit-scrollbar-thumb,
+  .mx-picker__content::-webkit-scrollbar-thumb {
+    border: 0;
+    border-radius: 999px;
+    background-color: var(--mx-scrollbar-thumb);
+    background-image: none;
+    box-shadow: none;
+    opacity: 1;
+  }
+
+  .mx-picker__sidebar::-webkit-scrollbar-thumb:hover,
+  .mx-picker__content::-webkit-scrollbar-thumb:hover {
+    background-color: var(--mx-scrollbar-thumb-hover);
+  }
+
+  .mx-picker__sidebar::-webkit-scrollbar-thumb:window-inactive,
+  .mx-picker__content::-webkit-scrollbar-thumb:window-inactive {
+    background-color: var(--mx-scrollbar-thumb);
+    background-image: none;
+    box-shadow: none;
+    opacity: 1;
+  }
+
+  .mx-picker__sidebar::-webkit-scrollbar-corner,
+  .mx-picker__content::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 }
 
 .mx-picker__nav-button,
@@ -301,12 +325,12 @@
 }
 
 .mx-picker__content {
+  --mx-scrollbar-track: var(--mx-root-bg);
   min-height: 0;
   overflow: auto;
   padding: 2px 6px 14px 6px;
   scroll-padding-top: 2px;
   scroll-behavior: smooth;
-  scrollbar-width: thin;
 }
 
 .mx-picker__section {
@@ -369,7 +393,9 @@
   justify-content: center;
   aspect-ratio: 1;
   border-radius: 14px;
-  transition: background-color 160ms ease;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
 }
 
 .mx-picker__emoji.is-selected,

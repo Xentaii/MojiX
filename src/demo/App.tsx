@@ -242,6 +242,19 @@ function readStoredCustomThemes() {
             text: palette.text,
             muted: palette.muted,
             radius: palette.radius,
+            accentMix:
+              typeof palette.accentMix === 'number' &&
+              Number.isFinite(palette.accentMix)
+                ? palette.accentMix
+                : palette.mode === 'dark'
+                  ? 22
+                  : 14,
+            scrollbar:
+              typeof palette.scrollbar === 'string'
+                ? palette.scrollbar
+                : palette.mode === 'dark'
+                  ? '#5a4d44'
+                  : '#7b6e66',
           },
         },
       ];
@@ -763,23 +776,6 @@ export function App() {
                     </label>
 
                     <label className="dev-field">
-                      <span className="dev-field__label">Accent color</span>
-                      <div className="dev-color-row">
-                        <input
-                          className="dev-color__picker"
-                          type="color"
-                          value={themeDraft.accent}
-                          onChange={(event) =>
-                            updateThemeDraft('accent', event.target.value)
-                          }
-                        />
-                        <span className="dev-color__value">
-                          {themeDraft.accent}
-                        </span>
-                      </div>
-                    </label>
-
-                    <label className="dev-field">
                       <span className="dev-field__label">Background</span>
                       <div className="dev-color-row">
                         <input
@@ -790,14 +786,21 @@ export function App() {
                             updateThemeDraft('bg', event.target.value)
                           }
                         />
-                        <span className="dev-color__value">
-                          {themeDraft.bg}
-                        </span>
+                        <input
+                          className="dev-color__hex"
+                          type="text"
+                          value={themeDraft.bg}
+                          onChange={(event) =>
+                            updateThemeDraft('bg', event.target.value)
+                          }
+                        />
                       </div>
                     </label>
 
                     <label className="dev-field">
-                      <span className="dev-field__label">Panel</span>
+                      <span className="dev-field__label">
+                        Category background
+                      </span>
                       <div className="dev-color-row">
                         <input
                           className="dev-color__picker"
@@ -807,14 +810,19 @@ export function App() {
                             updateThemeDraft('panel', event.target.value)
                           }
                         />
-                        <span className="dev-color__value">
-                          {themeDraft.panel}
-                        </span>
+                        <input
+                          className="dev-color__hex"
+                          type="text"
+                          value={themeDraft.panel}
+                          onChange={(event) =>
+                            updateThemeDraft('panel', event.target.value)
+                          }
+                        />
                       </div>
                     </label>
 
                     <label className="dev-field">
-                      <span className="dev-field__label">Text</span>
+                      <span className="dev-field__label">Text color</span>
                       <div className="dev-color-row">
                         <input
                           className="dev-color__picker"
@@ -824,14 +832,19 @@ export function App() {
                             updateThemeDraft('text', event.target.value)
                           }
                         />
-                        <span className="dev-color__value">
-                          {themeDraft.text}
-                        </span>
+                        <input
+                          className="dev-color__hex"
+                          type="text"
+                          value={themeDraft.text}
+                          onChange={(event) =>
+                            updateThemeDraft('text', event.target.value)
+                          }
+                        />
                       </div>
                     </label>
 
                     <label className="dev-field">
-                      <span className="dev-field__label">Muted text</span>
+                      <span className="dev-field__label">Secondary text</span>
                       <div className="dev-color-row">
                         <input
                           className="dev-color__picker"
@@ -841,14 +854,84 @@ export function App() {
                             updateThemeDraft('muted', event.target.value)
                           }
                         />
-                        <span className="dev-color__value">
-                          {themeDraft.muted}
-                        </span>
+                        <input
+                          className="dev-color__hex"
+                          type="text"
+                          value={themeDraft.muted}
+                          onChange={(event) =>
+                            updateThemeDraft('muted', event.target.value)
+                          }
+                        />
                       </div>
                     </label>
 
                     <label className="dev-field">
-                      <span className="dev-field__label">Corner radius</span>
+                      <span className="dev-field__label">Accent color</span>
+                      <div className="dev-color-row">
+                        <input
+                          className="dev-color__picker"
+                          type="color"
+                          value={themeDraft.accent}
+                          onChange={(event) =>
+                            updateThemeDraft('accent', event.target.value)
+                          }
+                        />
+                        <input
+                          className="dev-color__hex"
+                          type="text"
+                          value={themeDraft.accent}
+                          onChange={(event) =>
+                            updateThemeDraft('accent', event.target.value)
+                          }
+                        />
+                      </div>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Accent mix</span>
+                      <div className="dev-range">
+                        <input
+                          className="dev-range__input"
+                          type="range"
+                          min="4"
+                          max="40"
+                          step="1"
+                          value={themeDraft.accentMix}
+                          onChange={(event) =>
+                            updateThemeDraft(
+                              'accentMix',
+                              Number.parseInt(event.target.value, 10),
+                            )
+                          }
+                        />
+                        <strong>{themeDraft.accentMix}%</strong>
+                      </div>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Scrollbar color</span>
+                      <div className="dev-color-row">
+                        <input
+                          className="dev-color__picker"
+                          type="color"
+                          value={themeDraft.scrollbar}
+                          onChange={(event) =>
+                            updateThemeDraft('scrollbar', event.target.value)
+                          }
+                        />
+                        <input
+                          className="dev-color__hex"
+                          type="text"
+                          value={themeDraft.scrollbar}
+                          onChange={(event) =>
+                            updateThemeDraft('scrollbar', event.target.value)
+                          }
+                        />
+                      </div>
+                    </label>
+
+                    <label className="dev-field">
+                      <span className="dev-field__label">Picker corner radius</span>
                       <div className="dev-range">
                         <input
                           className="dev-range__input"
