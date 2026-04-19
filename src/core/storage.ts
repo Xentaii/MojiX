@@ -1,3 +1,4 @@
+import { DEFAULT_RECENT_LIMIT } from './constants';
 import type {
   EmojiRecentStore,
   EmojiSkinTone,
@@ -45,7 +46,7 @@ export function writeRecentEmoji(storageKey: string, entries: RecentEmojiRecord[
 export function pushRecentEmoji(
   storageKey: string,
   entry: Pick<RecentEmojiRecord, 'id' | 'custom' | 'skinTone'>,
-  limit: number,
+  limit: number = DEFAULT_RECENT_LIMIT,
 ) {
   const next = [...readRecentEmoji(storageKey)];
   const existingIndex = next.findIndex(

@@ -60,6 +60,29 @@ export {
   writeStoredSkinTone,
 } from './core/storage';
 export {
+  createEmojiIndex,
+  filterEmojiWithSearchConfig,
+  searchEmoji,
+} from './core/search';
+export type {
+  CreateEmojiIndexOptions,
+  EmojiIndex,
+  EmojiSearchConfig,
+  EmojiSearchOptions,
+} from './core/search';
+export { resolveEmojiSelection } from './core/engine';
+export type { ResolveEmojiSelectionOptions } from './core/engine';
+export {
+  createRecentEmojiStore,
+  createSkinToneStore,
+} from './core/stores';
+export type {
+  CreateRecentEmojiStoreOptions,
+  CreateSkinToneStoreOptions,
+  EmojiRecentStoreAdapter,
+  EmojiSkinToneStore,
+} from './core/stores';
+export {
   emojiPickerLocales,
   getLocalizedCategoryLabel,
   getLocalizedEmojiKeywords,
@@ -101,6 +124,9 @@ export type {
   EmojiRenderState,
   EmojiRenderable,
   EmojiRecentCategoryConfig,
+  EmojiSearchConfigLike,
+  EmojiSearchRankContext,
+  EmojiSearchTokenizeContext,
   EmojiSelection,
   EmojiSkinTone,
   EmojiSpriteAsset,

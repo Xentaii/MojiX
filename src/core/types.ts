@@ -278,8 +278,27 @@ export interface EmojiRecentStore {
   read: () => RecentEmojiRecord[];
   push: (
     entry: Pick<RecentEmojiRecord, 'id' | 'custom' | 'skinTone'>,
-    limit: number,
+    limit?: number,
   ) => RecentEmojiRecord[];
+}
+
+export interface EmojiSearchTokenizeContext {
+  emoji: EmojiRenderable;
+  localeDefinition: EmojiLocaleDefinition;
+}
+
+export interface EmojiSearchRankContext {
+  emoji: EmojiRenderable;
+  query: string;
+  queryTerms: string[];
+  tokens: string[];
+  localeDefinition: EmojiLocaleDefinition;
+}
+
+export interface EmojiSearchConfigLike {
+  tokenize?: (context: EmojiSearchTokenizeContext) => string[];
+  normalize?: (value: string) => string;
+  rank?: (context: EmojiSearchRankContext) => number;
 }
 
 export interface EmojiCategoryConfig {

@@ -39,4 +39,34 @@ describe('public API surface', () => {
     expect(api.emojiPickerLocales).toBeDefined();
     expect(api.resolveLocaleDefinition).toBeTypeOf('function');
   });
+
+  it('exports the engine layer', () => {
+    expect(api.createEmojiIndex).toBeTypeOf('function');
+    expect(api.searchEmoji).toBeTypeOf('function');
+    expect(api.resolveEmojiSelection).toBeTypeOf('function');
+    expect(api.createRecentEmojiStore).toBeTypeOf('function');
+    expect(api.createSkinToneStore).toBeTypeOf('function');
+  });
+
+  it('createEmojiIndex search returns ranked results', () => {
+    const index = api.createEmojiIndex();
+    const hits = index.search('smile');
+    expect(Array.isArray(hits)).toBe(true);
+    expect(hits.length).toBeGreaterThan(0);
+  });
+
+  it('createRecentEmojiStore works without DOM (memory adapter fallback)', () => {
+    const recents = api.createRecentEmojiStore({
+      adapter: {
+        read: () => [],
+        write: () => undefined,
+      },
+    });
+    const pushed = recents.push(
+      { id: 'abc', custom: false, skinTone: 'default' },
+      5,
+    );
+    expect(pushed).toHaveLength(1);
+    expect(pushed[0]?.id).toBe('abc');
+  });
 });
