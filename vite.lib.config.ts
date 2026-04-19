@@ -17,6 +17,7 @@ export default defineConfig({
         index: resolve(__dirname, 'src/index.ts'),
         'locales/en': resolve(__dirname, 'src/entries/locales/en.ts'),
         'locales/ru': resolve(__dirname, 'src/entries/locales/ru.ts'),
+        'presets/index': resolve(__dirname, 'src/entries/presets/index.ts'),
       },
       name: 'MojiX',
       formats: ['es', 'cjs'],

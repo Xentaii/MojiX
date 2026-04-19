@@ -22,6 +22,11 @@
       "import": "./dist/lib/locales/ru.js",
       "require": "./dist/lib/locales/ru.cjs"
     },
+    "./presets": {
+      "types": "./dist/lib/entries/presets/index.d.ts",
+      "import": "./dist/lib/presets/index.js",
+      "require": "./dist/lib/presets/index.cjs"
+    },
     "./style.css": "./dist/lib/style.css"
   },
   "files": [
