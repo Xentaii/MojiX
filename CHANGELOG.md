@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-04-19
+
+### Fixed
+
+- Reduced Chrome hover work in the emoji grid by memoizing emoji cells and adding layout/paint containment to the scrolling sections and grid.
+- Hid Chrome/WebKit's built-in search clear control so the picker shows only the custom clear button.
+
 ## [0.5.0]
 
 ### Backward compatibility

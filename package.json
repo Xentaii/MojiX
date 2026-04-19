@@ -1,6 +1,6 @@
 {
   "name": "mojix-picker",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Universal React emoji picker with spritesheet support, CDN/local sources, headless primitives, and a minimal modern UI.",
   "type": "module",
   "main": "./dist/lib/index.cjs",
