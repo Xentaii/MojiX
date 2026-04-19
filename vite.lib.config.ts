@@ -15,8 +15,15 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
+        style: resolve(__dirname, 'src/entries/style.ts'),
+        'locales/de': resolve(__dirname, 'src/entries/locales/de.ts'),
         'locales/en': resolve(__dirname, 'src/entries/locales/en.ts'),
+        'locales/es': resolve(__dirname, 'src/entries/locales/es.ts'),
+        'locales/fr': resolve(__dirname, 'src/entries/locales/fr.ts'),
+        'locales/ja': resolve(__dirname, 'src/entries/locales/ja.ts'),
+        'locales/pt': resolve(__dirname, 'src/entries/locales/pt.ts'),
         'locales/ru': resolve(__dirname, 'src/entries/locales/ru.ts'),
+        'locales/uk': resolve(__dirname, 'src/entries/locales/uk.ts'),
         'presets/index': resolve(__dirname, 'src/entries/presets/index.ts'),
       },
       name: 'MojiX',
