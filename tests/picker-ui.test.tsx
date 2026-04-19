@@ -1,6 +1,18 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { render } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, waitFor } from '@testing-library/react';
 import { EmojiPicker } from '../src/index';
+
+const hiddenSystemCategories = {
+  smileys: { hidden: true },
+  people: { hidden: true },
+  animals: { hidden: true },
+  food: { hidden: true },
+  activities: { hidden: true },
+  travel: { hidden: true },
+  objects: { hidden: true },
+  symbols: { hidden: true },
+  flags: { hidden: true },
+} as const;
 
 describe('picker UI theming hooks', () => {
   beforeEach(() => {
@@ -60,5 +72,62 @@ describe('picker UI theming hooks', () => {
     expect(
       firstCategoryButton?.style.getPropertyValue('--mx-category-hover'),
     ).toBe('rgb(40, 50, 60)');
+  });
+
+  it('re-renders only the affected emoji cells when hover changes', async () => {
+    const renderCounts = new Map<string, number>();
+    const renderEmoji = vi.fn((emoji: { id: string; name: string }) => {
+      renderCounts.set(
+        emoji.id,
+        (renderCounts.get(emoji.id) ?? 0) + 1,
+      );
+
+      return <span>{emoji.name}</span>;
+    });
+
+    const { container } = render(
+      <EmojiPicker
+        showPreview={false}
+        showRecents={false}
+        showSkinTones={false}
+        categories={hiddenSystemCategories}
+        customEmojis={[
+          { id: 'wave', name: 'Wave' },
+          { id: 'party', name: 'Party' },
+          { id: 'rocket', name: 'Rocket' },
+        ]}
+        renderEmoji={renderEmoji}
+      />,
+    );
+
+    const emojis = Array.from(
+      container.querySelectorAll('[data-mx-slot="emoji"]'),
+    ) as HTMLButtonElement[];
+    const initialWaveRenders = renderCounts.get('wave') ?? 0;
+    const initialPartyRenders = renderCounts.get('party') ?? 0;
+    const initialRocketRenders = renderCounts.get('rocket') ?? 0;
+
+    expect(emojis).toHaveLength(3);
+    expect(initialWaveRenders).toBeGreaterThan(0);
+    expect(initialPartyRenders).toBeGreaterThan(0);
+    expect(initialRocketRenders).toBeGreaterThan(0);
+
+    fireEvent.mouseEnter(emojis[0]!);
+
+    await waitFor(() => {
+      expect(renderCounts.get('wave')).toBe(initialWaveRenders + 1);
+    });
+
+    expect(renderCounts.get('party')).toBe(initialPartyRenders);
+    expect(renderCounts.get('rocket')).toBe(initialRocketRenders);
+
+    fireEvent.mouseEnter(emojis[1]!);
+
+    await waitFor(() => {
+      expect(renderCounts.get('wave')).toBe(initialWaveRenders + 2);
+      expect(renderCounts.get('party')).toBe(initialPartyRenders + 1);
+    });
+
+    expect(renderCounts.get('rocket')).toBe(initialRocketRenders);
   });
 });

@@ -331,10 +331,14 @@
   padding: 2px 6px 14px 6px;
   scroll-padding-top: 2px;
   scroll-behavior: smooth;
+  overscroll-behavior: contain;
 }
 
 .mx-picker__section {
   padding: 8px 6px 0;
+  contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 400px;
 }
 
 .mx-picker__grid-placeholder {
@@ -385,6 +389,7 @@
   display: grid;
   grid-template-columns: repeat(var(--mx-columns), minmax(0, 1fr));
   gap: 4px;
+  contain: layout style;
 }
 
 .mx-picker__emoji {
@@ -393,6 +398,7 @@
   justify-content: center;
   aspect-ratio: 1;
   border-radius: 14px;
+  contain: layout style paint;
   transition:
     background-color 160ms ease,
     color 160ms ease;

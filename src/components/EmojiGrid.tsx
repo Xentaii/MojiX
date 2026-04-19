@@ -1,10 +1,12 @@
 import {
+  memo,
   type CSSProperties,
   type ReactNode,
   type Ref,
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
 } from 'react';
 import { getLocalizedEmojiName } from '../core/i18n';
@@ -124,6 +126,142 @@ function getSectionScrollTop(
   );
 }
 
+interface EmojiCellProps {
+  emoji: EmojiRenderable;
+  emojiSize: number;
+  skinTone: EmojiSkinTone;
+  selected: boolean;
+  active: boolean;
+  sectionId: EmojiCategoryId;
+  sectionIndex: number;
+  emojiIndex: number;
+  initiallyFocusable: boolean;
+  spriteSheet: EmojiSpriteSheetConfig;
+  assetSource?: EmojiAssetSource;
+  localeDefinition: EmojiLocaleDefinition;
+  renderEmoji?: (
+    emoji: EmojiRenderable,
+    state: EmojiRenderState,
+  ) => ReactNode;
+  onEmojiSelect: (emoji: EmojiRenderable) => void;
+  onEmojiHover: (emoji: EmojiRenderable | null) => void;
+  onEmojiFocus: (
+    event: React.FocusEvent<HTMLButtonElement>,
+    emoji: EmojiRenderable,
+  ) => void;
+  slotOptions: {
+    unstyled?: boolean;
+    classNames?: EmojiPickerClassNames;
+    styles?: EmojiPickerStyles;
+  };
+  resolveEmojiHoverColor?: (
+    emoji: EmojiRenderable,
+    state: EmojiRenderState,
+  ) => string | undefined;
+}
+
+function EmojiCell({
+  emoji,
+  emojiSize,
+  skinTone,
+  selected,
+  active,
+  sectionId,
+  sectionIndex,
+  emojiIndex,
+  initiallyFocusable,
+  spriteSheet,
+  assetSource,
+  localeDefinition,
+  renderEmoji,
+  onEmojiSelect,
+  onEmojiHover,
+  onEmojiFocus,
+  slotOptions,
+  resolveEmojiHoverColor,
+}: EmojiCellProps) {
+  const renderState: EmojiRenderState = {
+    active,
+    selected,
+    skinTone,
+    size: emojiSize,
+  };
+  const displayName = formatEmojiName(
+    getLocalizedEmojiName(emoji, localeDefinition),
+  );
+  const hoverColor = resolveEmojiHoverColor?.(emoji, renderState);
+  const buttonStyle = getSlotStyle(
+    'emoji',
+    slotOptions,
+    hoverColor
+      ? ({ ['--mx-emoji-hover']: hoverColor } as CSSProperties)
+      : undefined,
+  );
+
+  return (
+    <button
+      type="button"
+      role="gridcell"
+      className={getSlotClassName('emoji', slotOptions)}
+      style={buttonStyle}
+      data-section={sectionIndex}
+      data-index={emojiIndex}
+      data-category-id={sectionId}
+      data-mx-slot="emoji"
+      data-active={active ? 'true' : undefined}
+      data-selected={selected ? 'true' : undefined}
+      tabIndex={initiallyFocusable ? 0 : -1}
+      onClick={() => onEmojiSelect(emoji)}
+      onMouseEnter={() => onEmojiHover(emoji)}
+      onMouseLeave={() => onEmojiHover(null)}
+      onFocus={(event) => {
+        onEmojiFocus(event, emoji);
+      }}
+      onBlur={() => onEmojiHover(null)}
+      title={displayName}
+      aria-label={displayName}
+    >
+      {renderEmoji?.(emoji, renderState) ?? (
+        <EmojiSprite
+          emoji={emoji}
+          size={emojiSize}
+          skinTone={skinTone}
+          spriteSheet={spriteSheet}
+          assetSource={assetSource}
+          assetContext="grid"
+          title={displayName}
+          alt={displayName}
+        />
+      )}
+    </button>
+  );
+}
+
+const MemoEmojiCell = memo(
+  EmojiCell,
+  (previousProps, nextProps) =>
+    previousProps.emoji === nextProps.emoji &&
+    previousProps.emojiSize === nextProps.emojiSize &&
+    previousProps.skinTone === nextProps.skinTone &&
+    previousProps.selected === nextProps.selected &&
+    previousProps.active === nextProps.active &&
+    previousProps.sectionId === nextProps.sectionId &&
+    previousProps.sectionIndex === nextProps.sectionIndex &&
+    previousProps.emojiIndex === nextProps.emojiIndex &&
+    previousProps.initiallyFocusable ===
+      nextProps.initiallyFocusable &&
+    previousProps.spriteSheet === nextProps.spriteSheet &&
+    previousProps.assetSource === nextProps.assetSource &&
+    previousProps.localeDefinition === nextProps.localeDefinition &&
+    previousProps.renderEmoji === nextProps.renderEmoji &&
+    previousProps.onEmojiSelect === nextProps.onEmojiSelect &&
+    previousProps.onEmojiHover === nextProps.onEmojiHover &&
+    previousProps.onEmojiFocus === nextProps.onEmojiFocus &&
+    previousProps.slotOptions === nextProps.slotOptions &&
+    previousProps.resolveEmojiHoverColor ===
+      nextProps.resolveEmojiHoverColor,
+);
+
 export function EmojiGrid({
   ref,
   sections,
@@ -154,7 +292,10 @@ export function EmojiGrid({
     id: EmojiCategoryId;
     top: number;
   } | null>(null);
-  const slotOptions = { unstyled, classNames, styles };
+  const slotOptions = useMemo(
+    () => ({ unstyled, classNames, styles }),
+    [classNames, styles, unstyled],
+  );
   const hasRenderableEmoji = sections.some(
     (section) => section.emojis.length > 0,
   );
@@ -387,10 +528,10 @@ export function EmojiGrid({
     }
   }
 
-  function handleEmojiFocus(
+  const handleEmojiFocus = useCallback((
     event: React.FocusEvent<HTMLButtonElement>,
     emoji: EmojiRenderable,
-  ) {
+  ) => {
     const container = scrollRef.current;
     if (!container) return;
 
@@ -402,7 +543,7 @@ export function EmojiGrid({
     }
     event.currentTarget.setAttribute('tabindex', '0');
     onEmojiHover(emoji);
-  }
+  }, [onEmojiHover]);
 
   return (
     <div
@@ -478,69 +619,31 @@ export function EmojiGrid({
             data-mx-slot="grid"
           >
             {section.emojis.map((emoji, emojiIndex) => {
-              const selected = value === emoji.id;
-              const isFirstEmoji =
-                sectionIndex === firstFocusableSectionIndex &&
-                emojiIndex === 0;
-              const active = hoveredEmojiId === emoji.id;
-              const renderState: EmojiRenderState = {
-                active,
-                selected,
-                skinTone,
-                size: emojiSize,
-              };
-              const displayName = formatEmojiName(
-                getLocalizedEmojiName(emoji, localeDefinition),
-              );
-              const hoverColor = resolveEmojiHoverColor?.(
-                emoji,
-                renderState,
-              );
-              const buttonStyle = getSlotStyle(
-                'emoji',
-                slotOptions,
-                hoverColor
-                  ? ({ ['--mx-emoji-hover']: hoverColor } as CSSProperties)
-                  : undefined,
-              );
-
               return (
-                <button
+                <MemoEmojiCell
                   key={`${section.id}:${emoji.id}`}
-                  type="button"
-                  role="gridcell"
-                  className={getSlotClassName('emoji', slotOptions)}
-                  style={buttonStyle}
-                  data-section={sectionIndex}
-                  data-index={emojiIndex}
-                  data-category-id={section.id}
-                  data-mx-slot="emoji"
-                  data-active={active ? 'true' : undefined}
-                  data-selected={selected ? 'true' : undefined}
-                  tabIndex={isFirstEmoji ? 0 : -1}
-                  onClick={() => onEmojiSelect(emoji)}
-                  onMouseEnter={() => onEmojiHover(emoji)}
-                  onMouseLeave={() => onEmojiHover(null)}
-                  onFocus={(event) => {
-                    handleEmojiFocus(event, emoji);
-                  }}
-                  onBlur={() => onEmojiHover(null)}
-                  title={displayName}
-                  aria-label={displayName}
-                >
-                  {renderEmoji?.(emoji, renderState) ?? (
-                    <EmojiSprite
-                      emoji={emoji}
-                      size={emojiSize}
-                      skinTone={skinTone}
-                      spriteSheet={spriteSheet}
-                      assetSource={assetSource}
-                      assetContext="grid"
-                      title={displayName}
-                      alt={displayName}
-                    />
-                  )}
-                </button>
+                  emoji={emoji}
+                  emojiSize={emojiSize}
+                  skinTone={skinTone}
+                  selected={value === emoji.id}
+                  active={hoveredEmojiId === emoji.id}
+                  sectionId={section.id}
+                  sectionIndex={sectionIndex}
+                  emojiIndex={emojiIndex}
+                  initiallyFocusable={
+                    sectionIndex === firstFocusableSectionIndex &&
+                    emojiIndex === 0
+                  }
+                  spriteSheet={spriteSheet}
+                  assetSource={assetSource}
+                  localeDefinition={localeDefinition}
+                  renderEmoji={renderEmoji}
+                  onEmojiSelect={onEmojiSelect}
+                  onEmojiHover={onEmojiHover}
+                  onEmojiFocus={handleEmojiFocus}
+                  slotOptions={slotOptions}
+                  resolveEmojiHoverColor={resolveEmojiHoverColor}
+                />
               );
             })}
           </div>
