@@ -232,10 +232,21 @@
   background: transparent;
   color: var(--mx-text);
   font: inherit;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .mx-picker__search-input::placeholder {
   color: var(--mx-placeholder);
+}
+
+.mx-picker__search-input::-webkit-search-decoration,
+.mx-picker__search-input::-webkit-search-cancel-button,
+.mx-picker__search-input::-webkit-search-results-button,
+.mx-picker__search-input::-webkit-search-results-decoration {
+  appearance: none;
+  -webkit-appearance: none;
+  display: none;
 }
 
 .mx-picker__search-input:focus {
