@@ -25,25 +25,27 @@ The goal is to make the picker usable in three ways:
 
 ## Current Status
 
-Today MojiX already supports:
+As of v0.5, MojiX supports:
 
 - configurable sprite delivery and asset providers
-- localized UI and emoji names
-- locale fallback chains
+- localized UI and emoji names, locale fallback chains
 - custom emoji
 - custom preview and emoji cell rendering
 - runtime cache warming for remote sheets
 - `unstyled`, slot-level `classNames`, and `styles`
-- controlled search, skin tone, and active category
+- controlled search, skin tone, active category, and active emoji
 - headless primitives and hooks through `MojiX.*`
 - recent store injection for host-managed persistence
+- pluggable search pipeline (`searchConfig` with `tokenize` / `normalize` / `rank`)
+- framework-agnostic engine (`createEmojiIndex`, `searchEmoji`, `resolveEmojiSelection`, `createRecentEmojiStore`, `createSkinToneStore`)
+- `useEmojiAssets` hook for consistent off-grid rendering
+- `CompactPicker` preset at `mojix-picker/presets`
+- migration guide at `docs/MIGRATION.md`
 
 Current limitations:
 
-- `EmojiPicker` is now composed from public primitives, but preset variations are still thin
 - list row/header/body replacement is still coarse-grained
-- search tokenizer/normalizer/ranker is not public yet
-- preset packages and migration docs still need polish
+- only one official preset ships so far (`CompactPicker`)
 
 ## Target Public API
 
