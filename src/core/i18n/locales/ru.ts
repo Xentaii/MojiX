@@ -5,6 +5,7 @@ import type {
   EmojiPickerLabels,
   EmojiSkinTone,
 } from '../../types';
+import { createChromeLocaleDefinition } from './createChromeLocale';
 
 export const russianLabels: EmojiPickerLabels = {
   searchPlaceholder: 'Найти эмодзи, алиас или смайлик',
@@ -48,9 +49,11 @@ export const russianEmojiTranslations: Record<
 > = {};
 
 export const russianLocale: EmojiLocaleDefinition = {
-  code: 'ru',
-  labels: russianLabels,
-  categories: russianCategories,
-  skinTones: russianSkinTones,
+  ...createChromeLocaleDefinition({
+    code: 'ru',
+    labels: russianLabels,
+    categories: russianCategories,
+    skinTones: russianSkinTones,
+  }),
   emoji: russianEmojiTranslations,
 };

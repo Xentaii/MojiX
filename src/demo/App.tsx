@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AccessibilityFixture } from './AccessibilityFixture';
 import {
   EmojiPicker,
   createNativeAssetSource,
@@ -76,8 +77,14 @@ const LOCALE_OPTIONS: Array<{
   label: string;
   value: EmojiLocaleCode;
 }> = [
+  { label: 'Deutsch', value: 'de' },
   { label: 'English', value: 'en' },
+  { label: 'Español', value: 'es' },
+  { label: 'Français', value: 'fr' },
+  { label: '日本語', value: 'ja' },
+  { label: 'Português', value: 'pt' },
   { label: 'Russian', value: 'ru' },
+  { label: 'Українська', value: 'uk' },
 ];
 
 const CATEGORY_ICON_STYLE_OPTIONS: Array<{
@@ -344,6 +351,13 @@ function buildPlaygroundSnippet(options: {
 }
 
 export function App() {
+  if (
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('fixture') === 'a11y'
+  ) {
+    return <AccessibilityFixture />;
+  }
+
   const [lastEmoji, setLastEmoji] = useState<EmojiSelection | null>(null);
   const [spriteWarmed, setSpriteWarmed] = useState(false);
   const [vendor, setVendor] = useState<EmojiVendor>('twitter');

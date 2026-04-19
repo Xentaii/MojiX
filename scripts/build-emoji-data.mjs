@@ -7,7 +7,7 @@ const LOCALE_OUTPUT_PATH = resolve('src/core/generated/emoji-locales.json');
 const META_OUTPUT_PATH = resolve('src/core/generated/emoji-meta.json');
 const CLDR_BASE_PATH = resolve('node_modules/cldr-annotations-full/annotations');
 const PACKAGE_PATH = resolve('node_modules/emoji-datasource/package.json');
-const SUPPORTED_LOCALES = ['en', 'ru'];
+const SUPPORTED_LOCALES = ['de', 'en', 'es', 'fr', 'ja', 'pt', 'ru', 'uk'];
 
 const CATEGORY_IDS = {
   'Smileys & Emotion': 'smileys',
@@ -28,6 +28,20 @@ const SKIN_TONES = {
   '1F3FE': 'medium-dark',
   '1F3FF': 'dark',
 };
+
+const FLAG_LABEL_BY_LOCALE = {
+  de: 'Flagge',
+  en: 'Flag',
+  es: 'Bandera',
+  fr: 'Drapeau',
+  ja: '旗',
+  pt: 'Bandeira',
+  ru: 'Флаг',
+  uk: 'Прапор',
+};
+
+const REGIONAL_INDICATOR_BASE = 0x1f1e6;
+const REGIONAL_INDICATOR_LAST = 0x1f1ff;
 
 function unicodeToNative(unified) {
   return unified
@@ -68,14 +82,6 @@ function normalizeKeywords(keywords) {
 
   return result;
 }
-
-const FLAG_LABEL_BY_LOCALE = {
-  en: 'Flag',
-  ru: 'Флаг',
-};
-
-const REGIONAL_INDICATOR_BASE = 0x1f1e6;
-const REGIONAL_INDICATOR_LAST = 0x1f1ff;
 
 function parseRegionalIndicatorCode(unified) {
   const parts = unified.split('-').map((segment) => Number.parseInt(segment, 16));
@@ -127,6 +133,14 @@ function buildFlagNameResolver(locale) {
 
     return `${flagLabel}: ${regionName}`;
   };
+}
+
+function lookupAnnotation(annotations, native) {
+  return (
+    annotations[native] ??
+    annotations[native.replace(/\uFE0F/g, '')] ??
+    null
+  );
 }
 
 const rawData = JSON.parse(await readFile(INPUT_PATH, 'utf8'));
@@ -194,14 +208,6 @@ const emojiMeta = {
   version: packageJson.version,
   gridSize,
 };
-
-function lookupAnnotation(annotations, native) {
-  return (
-    annotations[native] ??
-    annotations[native.replace(/\uFE0F/g, '')] ??
-    null
-  );
-}
 
 const localeData = Object.fromEntries(
   await Promise.all(
