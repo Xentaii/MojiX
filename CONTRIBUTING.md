@@ -7,7 +7,8 @@ Thanks for your interest. This document covers how to get set up, the convention
 ```bash
 git clone https://github.com/Xentaii/MojiX
 cd MojiX
-npm install   # also runs scripts/build-emoji-data.mjs via `prepare`
+npm install
+npm run emoji:data
 npm run dev   # launch the playground at http://localhost:5173
 ```
 
@@ -22,7 +23,7 @@ npm run dev   # launch the playground at http://localhost:5173
 | `npm run test` | Vitest (jsdom) |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run build:demo` | Build the playground |
-| `npm run build:lib` | Build the publishable library (ESM + CJS + types) |
+| `npm run build:lib` | Build the publishable library (ESM + types) |
 | `npm run build:package` | Regenerate data and build only the npm package artifacts |
 | `npm run pack:check` | `npm pack --dry-run` against the current package layout |
 
@@ -52,9 +53,9 @@ See [`scripts/README.md`](./scripts/README.md) for CLDR conventions, the generat
 
 ## Release process
 
-1. Bump the version in `package.json` and move `Unreleased` entries under a new heading in `CHANGELOG.md`.
-2. Tag the commit: `git tag v0.1.1 && git push --tags`.
-3. The `Publish to npm` workflow runs on the tag with provenance.
+1. Finalize the version, move `Unreleased` notes into a versioned heading in `CHANGELOG.md`, and update `docs/MIGRATION.md` plus `docs/releases/<version>.md` when the release changes public behavior.
+2. Run the `Create GitHub Release` workflow. It can create the missing `v<version>` tag from a target commit and uses `docs/releases/<version>.md` as the release body so the release shows up properly on the GitHub Releases page.
+3. Publish the package with the existing `Publish to npm` workflow if you want an npm release alongside the GitHub release.
 
 ## Reporting bugs
 

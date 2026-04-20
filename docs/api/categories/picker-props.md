@@ -25,7 +25,7 @@ These props are accepted by both `EmojiPicker` and `MojiX.Root`.
 | --- | --- | --- |
 | `emojiSize` | `number` | Render size for emoji cells. |
 | `columns` | `number` | Number of emoji columns in the grid. |
-| `loading` | `boolean` | Shows the loading state. |
+| `loading` | `boolean` | Forces the loading UI on, in addition to the built-in async data loading state. |
 | `showPreview` | `boolean` | Shows or hides the default bottom preview area. |
 | `showRecents` | `boolean` | Legacy switch for the recent category. Still supported. |
 | `showSkinTones` | `boolean` | Shows or hides the skin tone control. |
@@ -80,6 +80,7 @@ These props are accepted by both `EmojiPicker` and `MojiX.Root`.
 | `renderEmoji` | `(emoji, state) => ReactNode` | Custom emoji cell renderer. |
 | `renderPreview` | `(emoji, selection) => ReactNode` | Custom bottom preview renderer. |
 | `renderCategoryIcon` | `(props) => ReactNode` | Custom category icon renderer for sidebar and section headers. |
+| `onDataError` | `(error) => void` | Fired when CDN data loading fails. |
 | `onEmojiSelect` | `(emoji) => void` | Fired when an emoji is selected. Returns normalized `EmojiSelection`. |
 
 ## Related Types

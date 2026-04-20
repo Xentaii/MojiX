@@ -73,6 +73,23 @@ import { MojiX } from 'mojix-picker';
 />
 ```
 
+### 5. Offline bootstrap
+
+```tsx
+import emojiData from 'mojix-picker/data';
+import ruLocale from 'mojix-picker/locales/ru';
+import {
+  EmojiPicker,
+  preloadEmojiData,
+  registerEmojiLocalePack,
+} from 'mojix-picker';
+
+preloadEmojiData(emojiData);
+registerEmojiLocalePack('ru', ruLocale);
+
+<EmojiPicker locale="ru" />;
+```
+
 ## Categories
 
 - [Picker Props](./categories/picker-props.md)

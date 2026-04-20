@@ -6,6 +6,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-04-20
+
+> Major release. Migration is required before upgrading apps that depend on
+> synchronous data access, implicit locale registration, or CommonJS. Review
+> [docs/MIGRATION.md](./docs/MIGRATION.md) before rolling this out.
+
+### Added
+
+- CDN-first unicode emoji data loading via `loadEmojiData()` and offline preload via `preloadEmojiData(...)`.
+- Async locale pack loading via `loadLocale()` plus offline locale subpaths `mojix-picker/locales/<code>`.
+- Offline data subpath `mojix-picker/data` and vendor sprite preset subpaths `mojix-picker/sprites/<vendor>`.
+- `onDataError` on `EmojiPicker` / `MojiX.Root`.
+- Browser-side caching for CDN JSON assets through the shared asset cache adapter.
+- Playwright coverage for CDN default, CDN failure, and offline bootstrap flows.
+
+### Changed
+
+- Main package entry is now ESM-only and no longer includes emoji JSON payloads.
+- `emojiPickerLocales` now reflects only locale packs explicitly registered at runtime.
+- Package publish layout now ships `dist/lib/` plus `dist/data/`, with jsDelivr serving the mirrored JSON assets.
+- Default package size dropped from about `1.0 MB` to about `505 KB` tarball and from about `5.7 MB` to about `2.67 MB` unpacked.
+
 ## [0.5.1] - 2026-04-19
 
 ### Fixed
