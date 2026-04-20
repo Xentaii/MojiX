@@ -4,6 +4,7 @@
 
 - [API Reference](./api/README.md)
 - [Headless API Roadmap](./HEADLESS_API_ROADMAP.md)
+- [Bundle Size Roadmap](./BUNDLE_SIZE_ROADMAP.md)
 
 ## Notes
 
