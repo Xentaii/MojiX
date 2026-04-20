@@ -1,0 +1,135 @@
+name: Create GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version, with or without the v prefix
+        required: true
+        type: string
+      target:
+        description: Branch or commit to tag when the tag does not exist yet
+        required: false
+        default: main
+        type: string
+      notes_path:
+        description: Markdown file used as the release body. Leave empty to use docs/releases/<version>.md
+        required: false
+        default: ''
+        type: string
+      draft:
+        description: Create the release as a draft
+        required: false
+        default: true
+        type: boolean
+      prerelease:
+        description: Mark the release as a prerelease
+        required: false
+        default: false
+        type: boolean
+      create_tag_if_missing:
+        description: Create and push the tag when it does not exist yet
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event_name == 'push' && github.ref_name || github.event.inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            tag="${GITHUB_REF_NAME}"
+            version="${tag#v}"
+            notes_path="docs/releases/${version}.md"
+            draft="false"
+            prerelease="false"
+          else
+            raw_version="${{ github.event.inputs.version }}"
+            version="${raw_version#v}"
+            tag="v${version}"
+            notes_path="${{ github.event.inputs.notes_path }}"
+            if [ -z "${notes_path}" ]; then
+              notes_path="docs/releases/${version}.md"
+            fi
+            draft="${{ github.event.inputs.draft }}"
+            prerelease="${{ github.event.inputs.prerelease }}"
+          fi
+
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "notes_path=${notes_path}" >> "${GITHUB_OUTPUT}"
+          echo "draft=${draft}" >> "${GITHUB_OUTPUT}"
+          echo "prerelease=${prerelease}" >> "${GITHUB_OUTPUT}"
+
+      - name: Validate release notes file
+        shell: bash
+        run: |
+          test -f "${{ steps.meta.outputs.notes_path }}" || {
+            echo "::error::Missing release notes file: ${{ steps.meta.outputs.notes_path }}"
+            exit 1
+          }
+
+      - name: Ensure release tag exists
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag="${{ steps.meta.outputs.tag }}"
+          target="${{ github.event.inputs.target }}"
+
+          git fetch --force --tags origin
+
+          if git rev-parse "refs/tags/${tag}" >/dev/null 2>&1 || git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
+            echo "Tag ${tag} already exists."
+            exit 0
+          fi
+
+          if [ "${{ github.event.inputs.create_tag_if_missing }}" != "true" ]; then
+            echo "::error::Tag ${tag} does not exist and create_tag_if_missing is false."
+            exit 1
+          fi
+
+          if git rev-parse "${target}^{commit}" >/dev/null 2>&1; then
+            target_sha="$(git rev-parse "${target}^{commit}")"
+          elif git rev-parse "origin/${target}^{commit}" >/dev/null 2>&1; then
+            target_sha="$(git rev-parse "origin/${target}^{commit}")"
+          else
+            git fetch origin "${target}" --depth=1
+            target_sha="$(git rev-parse FETCH_HEAD^{commit})"
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "${tag}" "${target_sha}"
+          git push origin "refs/tags/${tag}"
+
+      - name: Create or update release page
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: MojiX ${{ steps.meta.outputs.version }}
+          body_path: ${{ steps.meta.outputs.notes_path }}
+          draft: ${{ steps.meta.outputs.draft }}
+          prerelease: ${{ steps.meta.outputs.prerelease }}
+          generate_release_notes: false
