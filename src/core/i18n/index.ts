@@ -1,3 +1,5 @@
+import { DEFAULT_LABELS } from '../constants';
+import { loadEmojiLocalePackFromCdn } from '../data-source';
 import type {
   EmojiCategoryId,
   EmojiLocaleCategoryLabels,
@@ -8,10 +10,76 @@ import type {
   EmojiRenderable,
   EmojiSkinTone,
 } from '../types';
-import {
-  builtinLocales,
-  fallbackLocaleDefinition,
-} from './locales';
+import { getBuiltinLocaleDefinition } from './locales';
+
+const localeRegistryListeners = new Set<() => void>();
+const registeredLocaleDefinitions = new Map<string, EmojiLocaleDefinition>();
+const pendingLocaleLoads = new Map<string, Promise<EmojiLocaleDefinition>>();
+let localeRegistryVersion = 0;
+
+export const fallbackLocaleDefinition: EmojiLocaleDefinition = {
+  code: 'en',
+  labels: { ...DEFAULT_LABELS },
+  categories: {
+    recent: 'Recent',
+    smileys: 'Smileys',
+    people: 'People',
+    animals: 'Animals',
+    food: 'Food',
+    activities: 'Activities',
+    travel: 'Travel',
+    objects: 'Objects',
+    symbols: 'Symbols',
+    flags: 'Flags',
+    custom: 'Custom',
+  },
+  skinTones: {
+    default: 'Default',
+    light: 'Light',
+    'medium-light': 'Medium light',
+    medium: 'Medium',
+    'medium-dark': 'Medium dark',
+    dark: 'Dark',
+  },
+  emoji: {},
+};
+
+export const emojiPickerLocales: Partial<
+  Record<string, EmojiLocaleDefinition>
+> = {};
+
+function emitLocaleRegistryChange() {
+  localeRegistryVersion += 1;
+
+  for (const listener of localeRegistryListeners) {
+    listener();
+  }
+}
+
+function cloneLocaleDefinition(
+  locale: Partial<EmojiLocaleDefinition> & {
+    code: EmojiLocaleCode;
+  },
+): EmojiLocaleDefinition {
+  return {
+    code: locale.code,
+    labels: {
+      ...fallbackLocaleDefinition.labels,
+      ...(locale.labels ?? {}),
+    },
+    categories: {
+      ...fallbackLocaleDefinition.categories,
+      ...(locale.categories ?? {}),
+    },
+    skinTones: {
+      ...fallbackLocaleDefinition.skinTones,
+      ...(locale.skinTones ?? {}),
+    },
+    emoji: {
+      ...(locale.emoji ?? {}),
+    },
+  };
+}
 
 function createLocaleCandidates(locale?: EmojiLocaleCode) {
   if (!locale) {
@@ -30,11 +98,22 @@ function createLocaleCandidates(locale?: EmojiLocaleCode) {
   );
 }
 
+function getRegisteredLocaleDefinition(locale: string) {
+  return registeredLocaleDefinitions.get(locale);
+}
+
+function getLocaleDefinition(locale: string) {
+  return (
+    getRegisteredLocaleDefinition(locale) ??
+    getBuiltinLocaleDefinition(locale)
+  );
+}
+
 function localeExists(
   locale: string,
   locales?: Partial<Record<string, Partial<EmojiLocaleDefinition>>>,
 ) {
-  return Boolean(locales?.[locale] || builtinLocales[locale]);
+  return Boolean(locales?.[locale] || getLocaleDefinition(locale));
 }
 
 function normalizeFallbackLocales(
@@ -122,6 +201,39 @@ function mergeEmojiTranslations(
   };
 }
 
+function createRegisteredLocaleDefinition(locale: string) {
+  return cloneLocaleDefinition(
+    getLocaleDefinition(locale) ?? {
+      ...fallbackLocaleDefinition,
+      code: locale,
+    },
+  );
+}
+
+function isLocaleDefinitionPack(
+  pack:
+    | Record<string, EmojiLocaleEmojiTranslation>
+    | Partial<EmojiLocaleDefinition>,
+): pack is Partial<EmojiLocaleDefinition> {
+  return (
+    typeof pack === 'object' &&
+    pack !== null &&
+    ('labels' in pack || 'categories' in pack || 'skinTones' in pack || 'emoji' in pack)
+  );
+}
+
+export function subscribeEmojiLocaleRegistry(listener: () => void) {
+  localeRegistryListeners.add(listener);
+
+  return () => {
+    localeRegistryListeners.delete(listener);
+  };
+}
+
+export function getEmojiLocaleRegistrySnapshot() {
+  return localeRegistryVersion;
+}
+
 export function resolveLocaleDefinition(
   locale?: EmojiLocaleCode,
   locales?: Partial<Record<string, Partial<EmojiLocaleDefinition>>>,
@@ -148,7 +260,7 @@ export function resolveLocaleDefinition(
 
   for (const localeCode of [...localeChain].reverse()) {
     const baseLocale =
-      (builtinLocales[localeCode] as EmojiLocaleDefinition | undefined) ??
+      getLocaleDefinition(localeCode) ??
       fallbackLocaleDefinition;
     const override = locales?.[localeCode];
 
@@ -245,25 +357,79 @@ export function getLocalizedSkinToneLabel(
   return localeDefinition.skinTones[skinTone] ?? fallbackLocaleDefinition.skinTones[skinTone];
 }
 
-export const emojiPickerLocales = builtinLocales;
-
 export function registerEmojiLocalePack(
   locale: EmojiLocaleCode,
-  pack: Record<string, EmojiLocaleEmojiTranslation>,
+  pack:
+    | Record<string, EmojiLocaleEmojiTranslation>
+    | Partial<EmojiLocaleDefinition>,
 ) {
-  const existing = builtinLocales[locale];
-  if (!existing) {
-    builtinLocales[locale] = {
-      code: locale,
-      labels: { ...fallbackLocaleDefinition.labels },
-      categories: { ...fallbackLocaleDefinition.categories },
-      skinTones: { ...fallbackLocaleDefinition.skinTones },
-      emoji: { ...pack },
-    };
-    return;
+  const normalizedLocale = locale.toLowerCase();
+  const existing = getRegisteredLocaleDefinition(normalizedLocale) ??
+    createRegisteredLocaleDefinition(normalizedLocale);
+
+  if (isLocaleDefinitionPack(pack)) {
+    existing.labels = mergeLabels(
+      existing.labels,
+      pack.labels,
+    );
+    existing.categories = mergeCategories(
+      existing.categories,
+      pack.categories,
+    );
+    existing.skinTones = mergeSkinTones(
+      existing.skinTones,
+      pack.skinTones,
+    );
+    existing.emoji = mergeEmojiTranslations(
+      existing.emoji,
+      pack.emoji,
+    );
+  } else {
+    existing.emoji = mergeEmojiTranslations(existing.emoji, pack);
   }
 
-  for (const [id, translation] of Object.entries(pack)) {
-    existing.emoji[id] = translation;
+  registeredLocaleDefinitions.set(normalizedLocale, existing);
+  emojiPickerLocales[normalizedLocale] = existing;
+  emitLocaleRegistryChange();
+
+  return existing;
+}
+
+export async function loadLocale(locale: EmojiLocaleCode) {
+  for (const candidate of createLocaleCandidates(locale)) {
+    if (candidate === 'en') {
+      return resolveLocaleDefinition('en');
+    }
+
+    const existing = getRegisteredLocaleDefinition(candidate);
+
+    if (existing && Object.keys(existing.emoji).length > 0) {
+      return resolveLocaleDefinition(candidate);
+    }
+
+    const pendingLoad = pendingLocaleLoads.get(candidate);
+
+    if (pendingLoad) {
+      return pendingLoad;
+    }
+
+    const loadPromise = loadEmojiLocalePackFromCdn(candidate)
+      .then((pack) => {
+        registerEmojiLocalePack(candidate, pack);
+        return resolveLocaleDefinition(candidate);
+      })
+      .finally(() => {
+        pendingLocaleLoads.delete(candidate);
+      });
+
+    pendingLocaleLoads.set(candidate, loadPromise);
+
+    try {
+      return await loadPromise;
+    } catch {
+      continue;
+    }
   }
+
+  throw new Error(`Unable to load locale pack for "${locale}".`);
 }

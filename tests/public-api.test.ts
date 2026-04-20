@@ -37,10 +37,13 @@ describe('public API surface', () => {
 
   it('exports i18n helpers', () => {
     expect(api.emojiPickerLocales).toBeDefined();
+    expect(api.loadLocale).toBeTypeOf('function');
     expect(api.resolveLocaleDefinition).toBeTypeOf('function');
   });
 
   it('exports the engine layer', () => {
+    expect(api.preloadEmojiData).toBeTypeOf('function');
+    expect(api.loadEmojiData).toBeTypeOf('function');
     expect(api.createEmojiIndex).toBeTypeOf('function');
     expect(api.searchEmoji).toBeTypeOf('function');
     expect(api.resolveEmojiSelection).toBeTypeOf('function');

@@ -7,15 +7,16 @@ import {
 
 describe('registerEmojiLocalePack', () => {
   it('seeds an empty built-in locale with a translation pack', () => {
-    expect(emojiPickerLocales.ru).toBeDefined();
-    expect(Object.keys(emojiPickerLocales.ru.emoji)).toHaveLength(0);
+    expect(emojiPickerLocales.ru).toBeUndefined();
 
     registerEmojiLocalePack('ru', {
-      '1f600': { name: 'Улыбающееся лицо', keywords: ['смайл'] },
+      '1f600': { name: 'РЈР»С‹Р±Р°СЋС‰РµРµСЃСЏ Р»РёС†Рѕ', keywords: ['СЃРјР°Р№Р»'] },
     });
 
+    expect(emojiPickerLocales.ru).toBeDefined();
+
     const definition = resolveLocaleDefinition('ru');
-    expect(definition.emoji['1f600']?.name).toBe('Улыбающееся лицо');
+    expect(definition.emoji['1f600']?.name).toBe('РЈР»С‹Р±Р°СЋС‰РµРµСЃСЏ Р»РёС†Рѕ');
   });
 
   it('creates a new locale entry when the code is unknown', () => {
@@ -24,6 +25,6 @@ describe('registerEmojiLocalePack', () => {
     });
 
     expect(emojiPickerLocales.de).toBeDefined();
-    expect(emojiPickerLocales.de.emoji['1f600']?.name).toBe('Grinsendes Gesicht');
+    expect(emojiPickerLocales.de?.emoji['1f600']?.name).toBe('Grinsendes Gesicht');
   });
 });

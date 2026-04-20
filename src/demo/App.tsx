@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AccessibilityFixture } from './AccessibilityFixture';
+import { CdnDefaultFixture } from './CdnDefaultFixture';
+import { OfflinePresetFixture } from './OfflinePresetFixture';
 import {
   EmojiPicker,
   createNativeAssetSource,
@@ -351,11 +353,21 @@ function buildPlaygroundSnippet(options: {
 }
 
 export function App() {
-  if (
-    typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).get('fixture') === 'a11y'
-  ) {
+  const activeFixture =
+    typeof window === 'undefined'
+      ? null
+      : new URLSearchParams(window.location.search).get('fixture');
+
+  if (activeFixture === 'a11y') {
     return <AccessibilityFixture />;
+  }
+
+  if (activeFixture === 'cdn-default' || activeFixture === 'cdn-failure') {
+    return <CdnDefaultFixture />;
+  }
+
+  if (activeFixture === 'offline-preset') {
+    return <OfflinePresetFixture />;
   }
 
   const [lastEmoji, setLastEmoji] = useState<EmojiSelection | null>(null);

@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import '../src/entries/locales/de';
-import '../src/entries/locales/es';
-import '../src/entries/locales/fr';
-import '../src/entries/locales/ja';
-import '../src/entries/locales/pt';
-import '../src/entries/locales/uk';
-import { emojiPickerLocales, resolveLocaleDefinition } from '../src/index';
+import deLocale from '../src/entries/locales/de';
+import esLocale from '../src/entries/locales/es';
+import frLocale from '../src/entries/locales/fr';
+import jaLocale from '../src/entries/locales/ja';
+import ptLocale from '../src/entries/locales/pt';
+import ukLocale from '../src/entries/locales/uk';
+import {
+  emojiPickerLocales,
+  registerEmojiLocalePack,
+  resolveLocaleDefinition,
+} from '../src/index';
 
 describe('expanded locales', () => {
   it('ships additional chrome locales out of the box', () => {
@@ -20,6 +24,13 @@ describe('expanded locales', () => {
   });
 
   it('registers generated emoji translation packs for the new locales', () => {
+    registerEmojiLocalePack('de', deLocale);
+    registerEmojiLocalePack('es', esLocale);
+    registerEmojiLocalePack('fr', frLocale);
+    registerEmojiLocalePack('ja', jaLocale);
+    registerEmojiLocalePack('pt', ptLocale);
+    registerEmojiLocalePack('uk', ukLocale);
+
     expect(emojiPickerLocales.de?.emoji['1f600']?.name).toBeTruthy();
     expect(emojiPickerLocales.es?.emoji['1f600']?.name).toBeTruthy();
     expect(emojiPickerLocales.fr?.emoji['1f600']?.name).toBeTruthy();

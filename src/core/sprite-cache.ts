@@ -20,7 +20,11 @@ const pendingSpriteSheetWarmups = new Map<
   Promise<EmojiSpriteSheetCachedAsset>
 >();
 
-function canUseBrowserSpriteCache() {
+interface BrowserAssetCacheRequest {
+  key: string;
+}
+
+function canUseBrowserAssetCache() {
   return (
     typeof window !== 'undefined' &&
     typeof window.caches !== 'undefined' &&
@@ -32,6 +36,32 @@ function canUseBrowserSpriteCache() {
 
 function createBrowserCacheRequest(key: string) {
   return new Request(`https://cache.mojix.invalid/${encodeURIComponent(key)}`);
+}
+
+export function createBrowserAssetCacheAdapter(options: {
+  cacheName?: string;
+} = {}) {
+  const cacheName = options.cacheName ?? DEFAULT_SPRITE_CACHE_NAME;
+
+  return {
+    async load(request: BrowserAssetCacheRequest) {
+      if (!canUseBrowserAssetCache()) {
+        return null;
+      }
+
+      const cache = await window.caches.open(cacheName);
+      return cache.match(createBrowserCacheRequest(request.key));
+    },
+    async save(request: BrowserAssetCacheRequest, response: Response) {
+      if (!canUseBrowserAssetCache()) {
+        return response;
+      }
+
+      const cache = await window.caches.open(cacheName);
+      await cache.put(createBrowserCacheRequest(request.key), response.clone());
+      return response;
+    },
+  };
 }
 
 async function createCachedAssetFromResponse(
@@ -95,16 +125,13 @@ function storeSharedSpriteSheetAsset(
 export function createBrowserSpriteSheetCacheAdapter(options: {
   cacheName?: string;
 } = {}): EmojiSpriteSheetCacheAdapter {
-  const cacheName = options.cacheName ?? DEFAULT_SPRITE_CACHE_NAME;
+  const assetCache = createBrowserAssetCacheAdapter({
+    cacheName: options.cacheName ?? DEFAULT_SPRITE_CACHE_NAME,
+  });
 
   return {
     async load(request) {
-      if (!canUseBrowserSpriteCache()) {
-        return null;
-      }
-
-      const cache = await window.caches.open(cacheName);
-      const cached = await cache.match(createBrowserCacheRequest(request.key));
+      const cached = await assetCache.load(request);
 
       if (!cached) {
         return null;
@@ -113,17 +140,9 @@ export function createBrowserSpriteSheetCacheAdapter(options: {
       return createCachedAssetFromResponse(cached);
     },
     async save(request, response) {
-      if (!canUseBrowserSpriteCache()) {
-        return {
-          url: request.url,
-          cached: false,
-        };
-      }
-
-      const cache = await window.caches.open(cacheName);
-      await cache.put(createBrowserCacheRequest(request.key), response.clone());
-
-      return createCachedAssetFromResponse(response);
+      return createCachedAssetFromResponse(
+        await assetCache.save(request, response),
+      );
     },
   };
 }

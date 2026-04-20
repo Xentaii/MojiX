@@ -1,78 +1,103 @@
 {
   "name": "mojix-picker",
-  "version": "0.5.1",
+  "version": "1.0.0",
   "description": "Universal React emoji picker with spritesheet support, CDN/local sources, headless primitives, and a minimal modern UI.",
   "type": "module",
-  "main": "./dist/lib/index.cjs",
   "module": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/lib/index.d.ts",
-      "import": "./dist/lib/index.js",
-      "require": "./dist/lib/index.cjs"
+      "import": "./dist/lib/index.js"
+    },
+    "./data": {
+      "types": "./dist/lib/entries/data.d.ts",
+      "node": "./dist/lib/node/data.js",
+      "import": "./dist/data/emoji-data.json",
+      "default": "./dist/data/emoji-data.json"
     },
     "./locales/de": {
       "types": "./dist/lib/entries/locales/de.d.ts",
-      "import": "./dist/lib/locales/de.js",
-      "require": "./dist/lib/locales/de.cjs"
+      "node": "./dist/lib/node/locales/de.js",
+      "import": "./dist/data/locales/de.json",
+      "default": "./dist/data/locales/de.json"
     },
     "./locales/en": {
       "types": "./dist/lib/entries/locales/en.d.ts",
-      "import": "./dist/lib/locales/en.js",
-      "require": "./dist/lib/locales/en.cjs"
+      "node": "./dist/lib/node/locales/en.js",
+      "import": "./dist/data/locales/en.json",
+      "default": "./dist/data/locales/en.json"
     },
     "./locales/es": {
       "types": "./dist/lib/entries/locales/es.d.ts",
-      "import": "./dist/lib/locales/es.js",
-      "require": "./dist/lib/locales/es.cjs"
+      "node": "./dist/lib/node/locales/es.js",
+      "import": "./dist/data/locales/es.json",
+      "default": "./dist/data/locales/es.json"
     },
     "./locales/fr": {
       "types": "./dist/lib/entries/locales/fr.d.ts",
-      "import": "./dist/lib/locales/fr.js",
-      "require": "./dist/lib/locales/fr.cjs"
+      "node": "./dist/lib/node/locales/fr.js",
+      "import": "./dist/data/locales/fr.json",
+      "default": "./dist/data/locales/fr.json"
     },
     "./locales/ja": {
       "types": "./dist/lib/entries/locales/ja.d.ts",
-      "import": "./dist/lib/locales/ja.js",
-      "require": "./dist/lib/locales/ja.cjs"
+      "node": "./dist/lib/node/locales/ja.js",
+      "import": "./dist/data/locales/ja.json",
+      "default": "./dist/data/locales/ja.json"
     },
     "./locales/pt": {
       "types": "./dist/lib/entries/locales/pt.d.ts",
-      "import": "./dist/lib/locales/pt.js",
-      "require": "./dist/lib/locales/pt.cjs"
+      "node": "./dist/lib/node/locales/pt.js",
+      "import": "./dist/data/locales/pt.json",
+      "default": "./dist/data/locales/pt.json"
     },
     "./locales/ru": {
       "types": "./dist/lib/entries/locales/ru.d.ts",
-      "import": "./dist/lib/locales/ru.js",
-      "require": "./dist/lib/locales/ru.cjs"
+      "node": "./dist/lib/node/locales/ru.js",
+      "import": "./dist/data/locales/ru.json",
+      "default": "./dist/data/locales/ru.json"
     },
     "./locales/uk": {
       "types": "./dist/lib/entries/locales/uk.d.ts",
-      "import": "./dist/lib/locales/uk.js",
-      "require": "./dist/lib/locales/uk.cjs"
+      "node": "./dist/lib/node/locales/uk.js",
+      "import": "./dist/data/locales/uk.json",
+      "default": "./dist/data/locales/uk.json"
+    },
+    "./sprites/apple": {
+      "types": "./dist/lib/entries/sprites/apple.d.ts",
+      "import": "./dist/lib/sprites/apple.js"
+    },
+    "./sprites/facebook": {
+      "types": "./dist/lib/entries/sprites/facebook.d.ts",
+      "import": "./dist/lib/sprites/facebook.js"
+    },
+    "./sprites/google": {
+      "types": "./dist/lib/entries/sprites/google.d.ts",
+      "import": "./dist/lib/sprites/google.js"
+    },
+    "./sprites/twitter": {
+      "types": "./dist/lib/entries/sprites/twitter.d.ts",
+      "import": "./dist/lib/sprites/twitter.js"
     },
     "./presets": {
       "types": "./dist/lib/entries/presets/index.d.ts",
-      "import": "./dist/lib/presets/index.js",
-      "require": "./dist/lib/presets/index.cjs"
+      "import": "./dist/lib/presets/index.js"
     },
     "./style.css": "./dist/lib/style.css"
   },
   "files": [
-    "dist/lib"
+    "dist/lib",
+    "dist/data"
   ],
   "sideEffects": [
-    "**/*.css",
-    "./dist/lib/locales/*.js",
-    "./dist/lib/locales/*.cjs"
+    "**/*.css"
   ],
   "engines": {
     "node": ">=18.17"
   },
   "scripts": {
     "dev": "vite",
-    "prepare": "node ./scripts/build-emoji-data.mjs",
     "emoji:data": "node ./scripts/build-emoji-data.mjs",
     "build:demo": "vite build",
     "build:lib": "vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json",

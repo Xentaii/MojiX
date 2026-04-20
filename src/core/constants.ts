@@ -15,6 +15,7 @@ export const EMOJI_SHEET_PADDING = 1;
 export const DEFAULT_SPRITE_BASE_PATH = '/sprites';
 export const DEFAULT_SPRITE_CACHE_MODE: EmojiSpriteSheetCacheMode = 'browser';
 export const DEFAULT_SPRITE_CACHE_NAME = 'mojix:sprite-sheets';
+export const DEFAULT_DATA_CACHE_NAME = 'mojix:data';
 
 export const DEFAULT_EMOJI_SIZE = 24;
 export const DEFAULT_COLUMNS = 8;

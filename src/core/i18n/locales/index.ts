@@ -17,15 +17,17 @@ export { portugueseLocale } from './pt';
 export { russianLocale } from './ru';
 export { ukrainianLocale } from './uk';
 
-export const builtinLocales: Record<string, EmojiLocaleDefinition> = {
-  de: germanLocale,
-  en: englishLocale,
-  es: spanishLocale,
-  fr: frenchLocale,
-  ja: japaneseLocale,
-  pt: portugueseLocale,
-  ru: russianLocale,
-  uk: ukrainianLocale,
-};
+const builtinLocaleDefinitions = new Map<string, EmojiLocaleDefinition>([
+  ['de', germanLocale],
+  ['en', englishLocale],
+  ['es', spanishLocale],
+  ['fr', frenchLocale],
+  ['ja', japaneseLocale],
+  ['pt', portugueseLocale],
+  ['ru', russianLocale],
+  ['uk', ukrainianLocale],
+]);
 
-export const fallbackLocaleDefinition: EmojiLocaleDefinition = englishLocale;
+export function getBuiltinLocaleDefinition(locale: string) {
+  return builtinLocaleDefinitions.get(locale);
+}

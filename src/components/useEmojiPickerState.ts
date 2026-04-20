@@ -8,6 +8,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
 import {
   CATEGORY_GLYPH_META,
@@ -26,15 +27,21 @@ import {
 } from '../core/constants';
 import {
   createEmojiSelection,
-  getUnicodeEmojiByCategory,
-  getUnicodeEmojiById,
-  getUnicodeEmojiByNative,
+  getEmojiDataStoreSnapshot,
+  loadEmojiData,
+  peekUnicodeEmojiByCategory,
+  peekUnicodeEmojiById,
+  peekUnicodeEmojiByNative,
   prepareCustomEmojis,
+  subscribeEmojiDataStore,
 } from '../core/data';
 import { filterEmojiWithSearchConfig } from '../core/search';
 import {
+  getEmojiLocaleRegistrySnapshot,
   getLocalizedCategoryLabel,
+  loadLocale,
   resolveLocaleDefinition,
+  subscribeEmojiLocaleRegistry,
 } from '../core/i18n';
 import { createNativeAssetSource } from '../core/assets';
 import { warmEmojiSpriteSheet } from '../core/sprite-cache';
@@ -84,7 +91,7 @@ function resolveRecentEmoji(
     return customEmojiById.get(recent.id) ?? null;
   }
 
-  return getUnicodeEmojiById(recent.id) ?? null;
+  return peekUnicodeEmojiById(recent.id) ?? null;
 }
 
 const CATEGORY_ICON_GLYPH_SET = new Set<string>(CATEGORY_ICON_GLYPHS);
@@ -165,8 +172,8 @@ function resolveCategoryIconRenderable(
 
   return (
     customEmojiById.get(iconLookup) ??
-    getUnicodeEmojiById(iconLookup) ??
-    getUnicodeEmojiByNative(iconLookup) ??
+    peekUnicodeEmojiById(iconLookup) ??
+    peekUnicodeEmojiByNative(iconLookup) ??
     null
   );
 }
@@ -225,6 +232,7 @@ export interface EmojiPickerState {
   localeDefinition: ReturnType<typeof resolveLocaleDefinition>;
   labelSet: EmojiPickerLabels;
   activeSpriteSheet: ReturnType<typeof resolveSpriteSheetConfig>;
+  ready: boolean;
   handleSelectEmoji: (emoji: EmojiRenderable) => void;
   handleCategoryClick: (categoryId: EmojiCategoryId) => void;
   handleActiveCategoryChange: (id: EmojiCategoryId) => void;
@@ -292,6 +300,7 @@ export function useEmojiPickerState({
   emojiSize = DEFAULT_EMOJI_SIZE,
   columns = DEFAULT_COLUMNS,
   loading = false,
+  onDataError,
   showPreview = true,
   showRecents = true,
   showSkinTones = true,
@@ -331,6 +340,16 @@ export function useEmojiPickerState({
   const isSkinToneControlled = controlledSkinTone !== undefined;
   const isActiveCategoryControlled = controlledActiveCategory !== undefined;
   const isActiveEmojiControlled = controlledActiveEmojiId !== undefined;
+  const emojiDataSnapshot = useSyncExternalStore(
+    subscribeEmojiDataStore,
+    getEmojiDataStoreSnapshot,
+    getEmojiDataStoreSnapshot,
+  );
+  const localeRegistryVersion = useSyncExternalStore(
+    subscribeEmojiLocaleRegistry,
+    getEmojiLocaleRegistrySnapshot,
+    getEmojiLocaleRegistrySnapshot,
+  );
 
   const resolvedSpriteSheet = useMemo(
     () => resolveSpriteSheetConfig(spriteSheetProp ?? defaultSpriteSheet),
@@ -342,7 +361,7 @@ export function useEmojiPickerState({
   );
   const localeDefinition = useMemo(
     () => resolveLocaleDefinition(locale, locales, fallbackLocale),
-    [fallbackLocale, locale, locales],
+    [fallbackLocale, locale, localeRegistryVersion, locales],
   );
   const labelSet = useMemo(
     () => ({ ...localeDefinition.labels, ...labels }),
@@ -418,10 +437,13 @@ export function useEmojiPickerState({
   } | null>(
     () => resolveRuntimeSpriteAsset(resolvedSpriteSheet, spriteSheetCacheKey),
   );
+  const lastDataErrorRef = useRef<unknown>(null);
+  const didRequestEmojiDataRef = useRef(false);
 
   const searchQuery = isSearchControlled
     ? controlledSearchQuery
     : uncontrolledSearchQuery;
+  const ready = emojiDataSnapshot.ready;
   const skinTone = isSkinToneControlled
     ? controlledSkinTone
     : uncontrolledSkinTone;
@@ -444,6 +466,58 @@ export function useEmojiPickerState({
   useEffect(() => {
     setRecentEmoji(resolvedRecentStore.read());
   }, [resolvedRecentStore]);
+
+  useEffect(() => {
+    if (emojiDataSnapshot.ready) {
+      didRequestEmojiDataRef.current = false;
+      return;
+    }
+
+    if (
+      emojiDataSnapshot.status === 'loading' ||
+      didRequestEmojiDataRef.current
+    ) {
+      return;
+    }
+
+    didRequestEmojiDataRef.current = true;
+    loadEmojiData().catch(() => {
+      return;
+    });
+  }, [emojiDataSnapshot.ready, emojiDataSnapshot.status]);
+
+  useEffect(() => {
+    if (
+      emojiDataSnapshot.error === null ||
+      lastDataErrorRef.current === emojiDataSnapshot.error
+    ) {
+      return;
+    }
+
+    lastDataErrorRef.current = emojiDataSnapshot.error;
+    onDataError?.(emojiDataSnapshot.error);
+  }, [emojiDataSnapshot.error, onDataError]);
+
+  useEffect(() => {
+    const requestedLocales = Array.from(
+      new Set(
+        [
+          locale,
+          ...(Array.isArray(fallbackLocale)
+            ? fallbackLocale
+            : fallbackLocale
+              ? [fallbackLocale]
+              : []),
+        ].filter((value): value is string => Boolean(value) && value !== 'en'),
+      ),
+    );
+
+    for (const localeCode of requestedLocales) {
+      loadLocale(localeCode).catch(() => {
+        return;
+      });
+    }
+  }, [fallbackLocale, locale]);
 
   useEffect(() => {
     if (!isSearchControlled) {
@@ -543,13 +617,14 @@ export function useEmojiPickerState({
       .map(
         (emojiId) =>
           customEmojiById.get(emojiId) ??
-          getUnicodeEmojiById(emojiId) ??
-          getUnicodeEmojiByNative(emojiId) ??
+          peekUnicodeEmojiById(emojiId) ??
+          peekUnicodeEmojiByNative(emojiId) ??
           null,
       )
       .filter((emoji): emoji is EmojiRenderable => Boolean(emoji));
   }, [
     customEmojiById,
+    emojiDataSnapshot.version,
     recentEmoji,
     resolvedRecentConfig.emptyEmojiIds,
     resolvedRecentConfig.enabled,
@@ -635,7 +710,7 @@ export function useEmojiPickerState({
       }
 
       const categoryEmoji = [
-        ...getUnicodeEmojiByCategory(categoryId),
+        ...peekUnicodeEmojiByCategory(categoryId),
         ...(customEmojiByCategory.get(categoryId) ?? []),
       ];
       const visibleEmoji = filterEmojiWithSearchConfig(
@@ -710,6 +785,7 @@ export function useEmojiPickerState({
     customEmojiByCategory,
     customEmojiById,
     deferredSearchQuery,
+    emojiDataSnapshot.version,
     labelSet.custom,
     labelSet.recents,
     localeDefinition,
@@ -947,6 +1023,7 @@ export function useEmojiPickerState({
     localeDefinition,
     labelSet,
     activeSpriteSheet,
+    ready,
     handleSelectEmoji,
     handleCategoryClick,
     handleActiveCategoryChange,
@@ -973,7 +1050,7 @@ export function useEmojiPickerState({
     resolveEmojiHoverColor,
     resolveCategoryHoverColor,
     autoScrollCategoriesOnHover,
-    loading,
+    loading: loading || !ready,
     recentStore: resolvedRecentStore,
   };
 }

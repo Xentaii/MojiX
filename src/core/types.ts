@@ -498,6 +498,7 @@ export interface EmojiPickerProps
   emojiSize?: number;
   columns?: number;
   loading?: boolean;
+  onDataError?: (error: unknown) => void;
   showPreview?: boolean;
   showRecents?: boolean;
   showSkinTones?: boolean;

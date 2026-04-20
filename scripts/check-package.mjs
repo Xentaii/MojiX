@@ -78,8 +78,34 @@ function ensureTarballContainsExports(packEntries) {
   }
 }
 
+function ensureTarballContainsDataAssets(packEntries) {
+  const files = new Set(
+    (packEntries[0]?.files ?? []).map((entry) =>
+      normalizeTarballPath(entry.path),
+    ),
+  );
+
+  if (!files.has('dist/data/emoji-data.json')) {
+    throw new Error('Tarball is missing dist/data/emoji-data.json');
+  }
+}
+
+function ensureTarballHasNoCjs(packEntries) {
+  const cjsFiles = (packEntries[0]?.files ?? [])
+    .map((entry) => normalizeTarballPath(entry.path))
+    .filter((filePath) => filePath.endsWith('.cjs'));
+
+  if (cjsFiles.length > 0) {
+    throw new Error(
+      `Tarball unexpectedly contains CJS files:\n${cjsFiles.join('\n')}`,
+    );
+  }
+}
+
 ensureExportTargetsExist();
 const packEntries = runPackDryRun();
 ensureTarballContainsExports(packEntries);
+ensureTarballContainsDataAssets(packEntries);
+ensureTarballHasNoCjs(packEntries);
 
 console.log('Package export verification passed.');

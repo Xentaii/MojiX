@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { SKIN_TONE_OPTIONS } from '../core/constants';
 import {
-  getUnicodeEmojiById,
+  peekUnicodeEmojiById,
   resolveUnicodeEmojiVariant,
 } from '../core/data';
 import { getLocalizedSkinToneLabel } from '../core/i18n';
@@ -45,7 +45,7 @@ export function EmojiSkinToneButton({
   const [toneMenuOpen, setToneMenuOpen] = useState(false);
   const toneMenuRef = useRef<HTMLDivElement>(null);
   const slotOptions = { unstyled, classNames, styles };
-  const handEmoji = getUnicodeEmojiById(SKIN_TONE_PREVIEW_EMOJI_ID);
+  const handEmoji = peekUnicodeEmojiById(SKIN_TONE_PREVIEW_EMOJI_ID);
 
   useEffect(() => {
     function handleDocumentPointerDown(event: MouseEvent) {

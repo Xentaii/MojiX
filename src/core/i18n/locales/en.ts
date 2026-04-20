@@ -1,16 +1,10 @@
-import generatedEnglishEmoji from '../../generated/emoji-locale.en.json';
 import type {
   EmojiLocaleCategoryLabels,
   EmojiLocaleDefinition,
-  EmojiLocaleEmojiTranslation,
   EmojiPickerLabels,
   EmojiSkinTone,
 } from '../../types';
-
-const englishEmojiTranslations = generatedEnglishEmoji as Record<
-  string,
-  EmojiLocaleEmojiTranslation
->;
+import { createChromeLocaleDefinition } from './createChromeLocale';
 
 export const englishLabels: EmojiPickerLabels = {
   searchPlaceholder: 'Search emoji, aliases, emoticons',
@@ -45,10 +39,9 @@ export const englishSkinTones: Record<EmojiSkinTone, string> = {
   dark: 'Dark',
 };
 
-export const englishLocale: EmojiLocaleDefinition = {
+export const englishLocale: EmojiLocaleDefinition = createChromeLocaleDefinition({
   code: 'en',
   labels: englishLabels,
   categories: englishCategories,
   skinTones: englishSkinTones,
-  emoji: englishEmojiTranslations,
-};
+});

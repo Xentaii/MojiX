@@ -89,10 +89,15 @@ export {
   getLocalizedEmojiKeywords,
   getLocalizedEmojiName,
   getLocalizedSkinToneLabel,
+  loadLocale,
   registerEmojiLocalePack,
   resolveLocaleDefinition,
 } from './core/i18n';
-export { getUnicodeEmojiData } from './core/data';
+export {
+  getUnicodeEmojiData,
+  loadEmojiData,
+  preloadEmojiData,
+} from './core/data';
 export type {
   CustomEmoji,
   EmojiCategoryConfig,
