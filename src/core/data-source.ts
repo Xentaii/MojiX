@@ -1,11 +1,10 @@
 import { DEFAULT_DATA_CACHE_NAME } from './constants';
 import { createBrowserAssetCacheAdapter } from './sprite-cache';
-import type { EmojiLocaleEmojiTranslation, UnicodeEmoji } from './types';
-
-type UnicodeEmojiRecord = Omit<
-  UnicodeEmoji,
-  'kind' | 'searchTokens' | 'categoryLabel'
->;
+import type {
+  EmojiLocaleEmojiTranslation,
+  EmojiLocaleSearchIndex,
+} from './types';
+import type { EmojiDataPayload } from './data';
 
 function createPackageDataUrl(path: string) {
   return `https://cdn.jsdelivr.net/npm/mojix-picker@${__MOJIX_VERSION__}/data/${path.replace(/^\//, '')}`;
@@ -45,7 +44,7 @@ async function fetchJsonAsset<T>(options: {
 }
 
 export function loadEmojiDataFromCdn() {
-  return fetchJsonAsset<UnicodeEmojiRecord[]>({
+  return fetchJsonAsset<EmojiDataPayload>({
     key: 'emoji-data',
     path: 'emoji-data.json',
   });
@@ -55,5 +54,12 @@ export function loadEmojiLocalePackFromCdn(locale: string) {
   return fetchJsonAsset<Record<string, EmojiLocaleEmojiTranslation>>({
     key: `locale:${locale}`,
     path: `locales/${locale}.json`,
+  });
+}
+
+export function loadEmojiLocaleSearchFromCdn(locale: string) {
+  return fetchJsonAsset<EmojiLocaleSearchIndex>({
+    key: `locale-search:${locale}`,
+    path: `locales/${locale}.search.json`,
   });
 }

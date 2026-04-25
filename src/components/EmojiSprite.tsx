@@ -46,13 +46,20 @@ export function EmojiSprite({
     return null;
   }
 
+  // Empty-string title/alt are treated as "decorative" — render no DOM
+  // attribute so the closest ancestor's tooltip / a11y label can take over.
+  const ariaLabelAttr = alt === '' ? undefined : (alt ?? emoji.name);
+
   if (asset.kind === 'image' || asset.kind === 'svg') {
+      const imgTitle =
+        title === '' ? undefined : (title ?? alt ?? asset.alt ?? emoji.name);
+
       return (
         <img
           className={createClassName('mx-emoji-sprite', className)}
           src={asset.src}
-          alt={alt ?? asset.alt ?? emoji.name}
-          title={title ?? alt ?? asset.alt ?? emoji.name}
+          alt={alt === '' ? '' : (alt ?? asset.alt ?? emoji.name)}
+          title={imgTitle}
           width={size}
           height={size}
           loading="lazy"
@@ -67,12 +74,15 @@ export function EmojiSprite({
       );
   }
 
+  const spanTitle =
+    title === '' ? undefined : (title ?? alt ?? emoji.name);
+
   if (asset.kind === 'native') {
     return (
       <span
         role="img"
-        aria-label={alt ?? emoji.name}
-        title={title ?? alt ?? emoji.name}
+        aria-label={ariaLabelAttr}
+        title={spanTitle}
         className={createClassName('mx-emoji-native', className)}
         style={{ fontSize: `${size}px`, lineHeight: 1 }}
       >
@@ -86,8 +96,8 @@ export function EmojiSprite({
   return (
     <span
       role="img"
-      aria-label={alt ?? emoji.name}
-      title={title ?? alt ?? emoji.name}
+      aria-label={ariaLabelAttr}
+      title={spanTitle}
       className={createClassName('mx-emoji-sprite', className)}
       style={getSpriteStyle({
         sheetX: asset.sheetX,

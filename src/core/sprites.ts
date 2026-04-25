@@ -10,8 +10,10 @@ import type {
   EmojiSpriteSheetCacheConfig,
   EmojiSpriteSheetConfig,
   EmojiSpriteSheetContext,
+  EmojiSpriteSheetSource,
   EmojiSpriteSheetVariant,
   EmojiVendor,
+  UnicodeEmojiAvailability,
 } from './types';
 
 const VENDOR_PACKAGES: Partial<Record<EmojiVendor, string>> = {
@@ -53,29 +55,35 @@ export function resolveVendorPackageName(vendor: EmojiVendor) {
   return VENDOR_PACKAGES[vendor] ?? 'emoji-datasource';
 }
 
-export function createEmojiCdnUrl(
+function createSpriteSheetUrl(
   options: Partial<EmojiSpriteSheetContext> = {},
+  source: Extract<EmojiSpriteSheetSource, 'cdn' | 'local'>,
 ) {
   const vendor = options.vendor ?? 'twitter';
   const sheetSize = options.sheetSize ?? 64;
   const variant = options.variant ?? 'indexed-256';
-  const version = options.version ?? EMOJI_DATASET_VERSION;
-  const packageName = options.packageName ?? resolveVendorPackageName(vendor);
   const folder = getSpritesheetFolder(variant);
 
+  if (source === 'local') {
+    const basePath = options.basePath ?? DEFAULT_SPRITE_BASE_PATH;
+    return `${basePath.replace(/\/$/, '')}/${vendor}/${folder}/${sheetSize}.png`;
+  }
+
+  const version = options.version ?? EMOJI_DATASET_VERSION;
+  const packageName = options.packageName ?? resolveVendorPackageName(vendor);
   return `https://cdn.jsdelivr.net/npm/${packageName}@${version}/img/${vendor}/${folder}/${sheetSize}.png`;
+}
+
+export function createEmojiCdnUrl(
+  options: Partial<EmojiSpriteSheetContext> = {},
+) {
+  return createSpriteSheetUrl(options, 'cdn');
 }
 
 export function createEmojiLocalUrl(
   options: Partial<EmojiSpriteSheetContext> = {},
 ) {
-  const vendor = options.vendor ?? 'twitter';
-  const sheetSize = options.sheetSize ?? 64;
-  const variant = options.variant ?? 'indexed-256';
-  const basePath = options.basePath ?? DEFAULT_SPRITE_BASE_PATH;
-  const folder = getSpritesheetFolder(variant);
-
-  return `${basePath.replace(/\/$/, '')}/${vendor}/${folder}/${sheetSize}.png`;
+  return createSpriteSheetUrl(options, 'local');
 }
 
 export function createEmojiSpriteSheet(
@@ -91,23 +99,18 @@ export function createEmojiSpriteSheet(
 
   let url = options.url;
 
-  if (!url) {
-    if (source === 'local') {
-      url = createEmojiLocalUrl({
-        vendor,
-        sheetSize,
-        variant,
-        basePath,
-      });
-    } else if (source === 'cdn') {
-      url = createEmojiCdnUrl({
+  if (!url && (source === 'local' || source === 'cdn')) {
+    url = createSpriteSheetUrl(
+      {
         vendor,
         sheetSize,
         variant,
         version,
         packageName,
-      });
-    }
+        basePath,
+      },
+      source,
+    );
   }
 
   return {
@@ -268,12 +271,7 @@ export function getSpriteStyle(options: {
 
 export function vendorCanRenderEmoji(
   vendor: EmojiVendor,
-  availability: {
-    apple: boolean;
-    google: boolean;
-    twitter: boolean;
-    facebook: boolean;
-  },
+  availability: UnicodeEmojiAvailability,
 ) {
   switch (vendor) {
     case 'apple':

@@ -105,6 +105,13 @@ export interface EmojiSkinVariant {
   sheetY: number;
 }
 
+export interface UnicodeEmojiAvailability {
+  apple: boolean;
+  google: boolean;
+  twitter: boolean;
+  facebook: boolean;
+}
+
 export interface UnicodeEmoji {
   kind: 'unicode';
   id: string;
@@ -119,12 +126,7 @@ export interface UnicodeEmoji {
   subcategory: string;
   sheetX: number;
   sheetY: number;
-  availability: {
-    apple: boolean;
-    google: boolean;
-    twitter: boolean;
-    facebook: boolean;
-  };
+  availability: UnicodeEmojiAvailability;
   skins: EmojiSkinVariant[];
 }
 
@@ -268,8 +270,10 @@ export interface EmojiPickerLabels {
 
 export interface EmojiLocaleEmojiTranslation {
   name: string;
-  keywords: string[];
+  keywords?: string[];
 }
+
+export type EmojiLocaleSearchIndex = Record<string, string[]>;
 
 export type EmojiLocaleCategoryLabels =
   Record<EmojiSystemCategoryId, string> &
@@ -549,7 +553,6 @@ export interface EmojiSection {
 }
 
 export interface EmojiCategoryMeta {
-  id: EmojiCategoryId;
   label: string;
   icon: EmojiCategoryIconConfig;
 }

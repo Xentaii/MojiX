@@ -73,4 +73,75 @@ describe('public API surface', () => {
     expect(pushed).toHaveLength(1);
     expect(pushed[0]?.id).toBe('abc');
   });
+
+  it('preloadEmojiData accepts compact data records', () => {
+    const [emoji] = api.preloadEmojiData([
+      {
+        id: '1f600',
+        native: '\u{1F600}',
+        name: 'Grinning face',
+        aliases: ['grinning'],
+        emoticons: [],
+        categoryId: 'smileys',
+        sheetX: 32,
+        sheetY: 47,
+        availability: 4,
+        skins: [],
+      },
+    ]);
+
+    expect(emoji?.unified).toBe('1F600');
+    expect(emoji?.availability).toEqual({
+      apple: false,
+      google: false,
+      twitter: true,
+      facebook: false,
+    });
+  });
+
+  it('preloadEmojiData accepts column-oriented data records', () => {
+    const [emoji] = api.preloadEmojiData({
+      version: 1,
+      fields: [
+        'id',
+        'native',
+        'name',
+        'aliases',
+        'emoticons',
+        'categoryId',
+        'subcategory',
+        'sheetX',
+        'sheetY',
+        'availability',
+        'skins',
+      ],
+      categories: ['people'],
+      subcategories: ['hand-fingers-open'],
+      skinTones: ['light'],
+      rows: [
+        [
+          '1f44b',
+          '\u{1F44B}',
+          'Waving hand',
+          ['wave'],
+          null,
+          0,
+          0,
+          4,
+          55,
+          15,
+          [[0, '1F44B-1F3FB', '\u{1F44B}\u{1F3FB}', 4, 56]],
+        ],
+      ],
+    });
+
+    expect(emoji?.categoryId).toBe('people');
+    expect(emoji?.subcategory).toBe('hand-fingers-open');
+    expect(emoji?.skins[0]).toMatchObject({
+      tone: 'light',
+      unified: '1F44B-1F3FB',
+      sheetX: 4,
+      sheetY: 56,
+    });
+  });
 });

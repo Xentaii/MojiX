@@ -86,6 +86,8 @@ export function EmojiSkinToneButton({
             spriteSheet={spriteSheet}
             assetSource={assetSource}
             assetContext="grid"
+            title=""
+            alt=""
           />
         </span>
       </span>

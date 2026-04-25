@@ -11,9 +11,10 @@ import type {
   EmojiSpriteSheetConfig,
   ResolvedEmojiCategoryIcon,
 } from '../core/types';
-import { LUCIDE_CATEGORY_ICON_BODIES } from './icons/lucideCategoryIconBodies';
+import { getLucideCategoryIconDefinition } from './icons/lucideCategoryIconBodies';
 import { EmojiSprite } from './EmojiSprite';
 import { createClassName } from './utils';
+import type { CSSProperties } from 'react';
 
 const NATIVE_SOURCE = createNativeAssetSource();
 const FILLED_CATEGORY_ICON_BODIES: Partial<Record<string, string>> = {
@@ -83,9 +84,11 @@ function renderMonochromeGlyph(
   filled: boolean,
 ) {
   const filledBody = FILLED_CATEGORY_ICON_BODIES[icon.glyph];
-  const definition =
-    LUCIDE_CATEGORY_ICON_BODIES[icon.glyph] ??
-    LUCIDE_CATEGORY_ICON_BODIES.sparkles;
+  const definition = getLucideCategoryIconDefinition(icon.glyph);
+
+  if (!definition) {
+    return null;
+  }
 
   if (filled && filledBody) {
     return (
@@ -139,6 +142,61 @@ function renderMonochromeGlyph(
   );
 }
 
+function renderNativeCategoryIcon(options: {
+  icon: ResolvedEmojiCategoryIcon;
+  label: string;
+  size: number;
+  className?: string;
+  iconSizeStyle: CSSProperties;
+}) {
+  const { icon, label, size, className, iconSizeStyle } = options;
+
+  if (icon.renderable?.kind === 'unicode') {
+    return (
+      <EmojiSprite
+        emoji={icon.renderable}
+        size={size}
+        assetSource={NATIVE_SOURCE}
+        className={createClassName(
+          'mx-picker__category-icon',
+          className,
+        )}
+        title={label}
+      />
+    );
+  }
+
+  if (icon.renderable) {
+    return (
+      <EmojiSprite
+        emoji={icon.renderable}
+        size={size}
+        className={createClassName(
+          'mx-picker__category-icon',
+          className,
+        )}
+        title={label}
+      />
+    );
+  }
+
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      title={label}
+      className={createClassName(
+        'mx-picker__category-icon',
+        'mx-picker__category-native',
+        className,
+      )}
+      style={iconSizeStyle}
+    >
+      {icon.emoji}
+    </span>
+  );
+}
+
 export function EmojiCategoryIcon({
   icon,
   label,
@@ -154,62 +212,40 @@ export function EmojiCategoryIcon({
   };
 
   if (resolvedStyle === 'outline' || resolvedStyle === 'solid') {
+    const monochromeGlyph = renderMonochromeGlyph(
+      icon,
+      resolvedStyle === 'solid',
+    );
+
+    if (!monochromeGlyph) {
+      return renderNativeCategoryIcon({
+        icon,
+        label,
+        size,
+        className,
+        iconSizeStyle,
+      });
+    }
+
     return (
       <span
         aria-hidden="true"
         className={createClassName('mx-picker__category-icon', className)}
         style={iconSizeStyle}
       >
-        {renderMonochromeGlyph(icon, resolvedStyle === 'solid')}
+        {monochromeGlyph}
       </span>
     );
   }
 
   if (resolvedStyle === 'native') {
-    if (icon.renderable?.kind === 'unicode') {
-      return (
-        <EmojiSprite
-          emoji={icon.renderable}
-          size={size}
-          assetSource={NATIVE_SOURCE}
-          className={createClassName(
-            'mx-picker__category-icon',
-            className,
-          )}
-          title={label}
-        />
-      );
-    }
-
-    if (icon.renderable) {
-      return (
-        <EmojiSprite
-          emoji={icon.renderable}
-          size={size}
-          className={createClassName(
-            'mx-picker__category-icon',
-            className,
-          )}
-          title={label}
-        />
-      );
-    }
-
-    return (
-      <span
-        role="img"
-        aria-label={label}
-        title={label}
-        className={createClassName(
-          'mx-picker__category-icon',
-          'mx-picker__category-native',
-          className,
-        )}
-        style={iconSizeStyle}
-      >
-        {icon.emoji}
-      </span>
-    );
+    return renderNativeCategoryIcon({
+      icon,
+      label,
+      size,
+      className,
+      iconSizeStyle,
+    });
   }
 
   if (icon.renderable?.kind === 'unicode') {

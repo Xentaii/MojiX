@@ -1,11 +1,6 @@
 import rawEmojiData from '../core/generated/emoji-data.json';
-import type { UnicodeEmoji } from '../core/types';
+import type { EmojiDataPayload } from '../core/data';
 
-type UnicodeEmojiRecord = Omit<
-  UnicodeEmoji,
-  'kind' | 'searchTokens' | 'categoryLabel'
->;
-
-const emojiData = rawEmojiData as UnicodeEmojiRecord[];
+const emojiData = rawEmojiData as EmojiDataPayload;
 
 export default emojiData;

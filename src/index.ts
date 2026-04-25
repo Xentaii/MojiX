@@ -89,14 +89,24 @@ export {
   getLocalizedEmojiKeywords,
   getLocalizedEmojiName,
   getLocalizedSkinToneLabel,
+  loadEmojiLocaleSearchIndex,
   loadLocale,
+  preloadEmojiLocaleSearchIndex,
   registerEmojiLocalePack,
+  registerEmojiLocaleSearchIndex,
   resolveLocaleDefinition,
 } from './core/i18n';
 export {
   getUnicodeEmojiData,
   loadEmojiData,
   preloadEmojiData,
+} from './core/data';
+export type {
+  EmojiDataInput,
+  EmojiDataPayload,
+  EmojiSkinVariantColumnRow,
+  UnicodeEmojiColumnData,
+  UnicodeEmojiDataRecord,
 } from './core/data';
 export type {
   CustomEmoji,
@@ -117,6 +127,7 @@ export type {
   EmojiLocaleCategoryLabels,
   EmojiLocaleDefinition,
   EmojiLocaleEmojiTranslation,
+  EmojiLocaleSearchIndex,
   EmojiMixedAssetSource,
   EmojiNativeAsset,
   EmojiNativeAssetSource,
@@ -152,4 +163,5 @@ export type {
   EmojiSvgAsset,
   EmojiSvgAssetSource,
   UnicodeEmoji,
+  UnicodeEmojiAvailability,
 } from './core/types';

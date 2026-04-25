@@ -10,6 +10,10 @@
       "types": "./dist/lib/index.d.ts",
       "import": "./dist/lib/index.js"
     },
+    "./headless": {
+      "types": "./dist/lib/entries/headless.d.ts",
+      "import": "./dist/lib/headless.js"
+    },
     "./data": {
       "types": "./dist/lib/entries/data.d.ts",
       "node": "./dist/lib/node/data.js",
@@ -22,11 +26,23 @@
       "import": "./dist/data/locales/de.json",
       "default": "./dist/data/locales/de.json"
     },
+    "./locales/de/search": {
+      "types": "./dist/lib/entries/locales/de.search.d.ts",
+      "node": "./dist/lib/node/locales/de/search.js",
+      "import": "./dist/data/locales/de.search.json",
+      "default": "./dist/data/locales/de.search.json"
+    },
     "./locales/en": {
       "types": "./dist/lib/entries/locales/en.d.ts",
       "node": "./dist/lib/node/locales/en.js",
       "import": "./dist/data/locales/en.json",
       "default": "./dist/data/locales/en.json"
+    },
+    "./locales/en/search": {
+      "types": "./dist/lib/entries/locales/en.search.d.ts",
+      "node": "./dist/lib/node/locales/en/search.js",
+      "import": "./dist/data/locales/en.search.json",
+      "default": "./dist/data/locales/en.search.json"
     },
     "./locales/es": {
       "types": "./dist/lib/entries/locales/es.d.ts",
@@ -34,11 +50,23 @@
       "import": "./dist/data/locales/es.json",
       "default": "./dist/data/locales/es.json"
     },
+    "./locales/es/search": {
+      "types": "./dist/lib/entries/locales/es.search.d.ts",
+      "node": "./dist/lib/node/locales/es/search.js",
+      "import": "./dist/data/locales/es.search.json",
+      "default": "./dist/data/locales/es.search.json"
+    },
     "./locales/fr": {
       "types": "./dist/lib/entries/locales/fr.d.ts",
       "node": "./dist/lib/node/locales/fr.js",
       "import": "./dist/data/locales/fr.json",
       "default": "./dist/data/locales/fr.json"
+    },
+    "./locales/fr/search": {
+      "types": "./dist/lib/entries/locales/fr.search.d.ts",
+      "node": "./dist/lib/node/locales/fr/search.js",
+      "import": "./dist/data/locales/fr.search.json",
+      "default": "./dist/data/locales/fr.search.json"
     },
     "./locales/ja": {
       "types": "./dist/lib/entries/locales/ja.d.ts",
@@ -46,11 +74,23 @@
       "import": "./dist/data/locales/ja.json",
       "default": "./dist/data/locales/ja.json"
     },
+    "./locales/ja/search": {
+      "types": "./dist/lib/entries/locales/ja.search.d.ts",
+      "node": "./dist/lib/node/locales/ja/search.js",
+      "import": "./dist/data/locales/ja.search.json",
+      "default": "./dist/data/locales/ja.search.json"
+    },
     "./locales/pt": {
       "types": "./dist/lib/entries/locales/pt.d.ts",
       "node": "./dist/lib/node/locales/pt.js",
       "import": "./dist/data/locales/pt.json",
       "default": "./dist/data/locales/pt.json"
+    },
+    "./locales/pt/search": {
+      "types": "./dist/lib/entries/locales/pt.search.d.ts",
+      "node": "./dist/lib/node/locales/pt/search.js",
+      "import": "./dist/data/locales/pt.search.json",
+      "default": "./dist/data/locales/pt.search.json"
     },
     "./locales/ru": {
       "types": "./dist/lib/entries/locales/ru.d.ts",
@@ -58,11 +98,23 @@
       "import": "./dist/data/locales/ru.json",
       "default": "./dist/data/locales/ru.json"
     },
+    "./locales/ru/search": {
+      "types": "./dist/lib/entries/locales/ru.search.d.ts",
+      "node": "./dist/lib/node/locales/ru/search.js",
+      "import": "./dist/data/locales/ru.search.json",
+      "default": "./dist/data/locales/ru.search.json"
+    },
     "./locales/uk": {
       "types": "./dist/lib/entries/locales/uk.d.ts",
       "node": "./dist/lib/node/locales/uk.js",
       "import": "./dist/data/locales/uk.json",
       "default": "./dist/data/locales/uk.json"
+    },
+    "./locales/uk/search": {
+      "types": "./dist/lib/entries/locales/uk.search.d.ts",
+      "node": "./dist/lib/node/locales/uk/search.js",
+      "import": "./dist/data/locales/uk.search.json",
+      "default": "./dist/data/locales/uk.search.json"
     },
     "./sprites/apple": {
       "types": "./dist/lib/entries/sprites/apple.d.ts",
@@ -80,6 +132,10 @@
       "types": "./dist/lib/entries/sprites/twitter.d.ts",
       "import": "./dist/lib/sprites/twitter.js"
     },
+    "./icons/extra": {
+      "types": "./dist/lib/entries/icons/extra.d.ts",
+      "import": "./dist/lib/icons/extra.js"
+    },
     "./presets": {
       "types": "./dist/lib/entries/presets/index.d.ts",
       "import": "./dist/lib/presets/index.js"
@@ -91,7 +147,8 @@
     "dist/data"
   ],
   "sideEffects": [
-    "**/*.css"
+    "**/*.css",
+    "dist/lib/icons/extra.js"
   ],
   "engines": {
     "node": ">=18.17"

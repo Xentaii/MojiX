@@ -98,57 +98,46 @@ export const CATEGORY_GLYPH_META: Record<
 
 export const CATEGORY_META: Record<EmojiSystemCategoryId, EmojiCategoryMeta> = {
   recent: {
-    id: 'recent',
     label: 'Recent',
     icon: CATEGORY_GLYPH_META.recent,
   },
   smileys: {
-    id: 'smileys',
     label: 'Smileys',
     icon: CATEGORY_GLYPH_META.smileys,
   },
   people: {
-    id: 'people',
     label: 'People',
     icon: CATEGORY_GLYPH_META.people,
   },
   animals: {
-    id: 'animals',
     label: 'Animals',
     icon: CATEGORY_GLYPH_META.animals,
   },
   food: {
-    id: 'food',
     label: 'Food',
     icon: CATEGORY_GLYPH_META.food,
   },
   activities: {
-    id: 'activities',
     label: 'Activities',
     icon: CATEGORY_GLYPH_META.activities,
   },
   travel: {
-    id: 'travel',
     label: 'Travel',
     icon: CATEGORY_GLYPH_META.travel,
   },
   objects: {
-    id: 'objects',
     label: 'Objects',
     icon: CATEGORY_GLYPH_META.objects,
   },
   symbols: {
-    id: 'symbols',
     label: 'Symbols',
     icon: CATEGORY_GLYPH_META.symbols,
   },
   flags: {
-    id: 'flags',
     label: 'Flags',
     icon: CATEGORY_GLYPH_META.flags,
   },
   custom: {
-    id: 'custom',
     label: 'Custom',
     icon: CATEGORY_GLYPH_META.custom,
   },

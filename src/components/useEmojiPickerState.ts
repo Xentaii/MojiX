@@ -39,6 +39,7 @@ import { filterEmojiWithSearchConfig } from '../core/search';
 import {
   getEmojiLocaleRegistrySnapshot,
   getLocalizedCategoryLabel,
+  loadEmojiLocaleSearchIndex,
   loadLocale,
   resolveLocaleDefinition,
   subscribeEmojiLocaleRegistry,
@@ -518,6 +519,38 @@ export function useEmojiPickerState({
       });
     }
   }, [fallbackLocale, locale]);
+
+  const requestedSearchLocalesRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (deferredSearchQuery.trim().length === 0) {
+      return;
+    }
+
+    const requestedLocales = Array.from(
+      new Set(
+        [
+          locale,
+          ...(Array.isArray(fallbackLocale)
+            ? fallbackLocale
+            : fallbackLocale
+              ? [fallbackLocale]
+              : []),
+        ].filter((value): value is string => Boolean(value)),
+      ),
+    );
+
+    for (const localeCode of requestedLocales) {
+      if (requestedSearchLocalesRef.current.has(localeCode)) {
+        continue;
+      }
+
+      requestedSearchLocalesRef.current.add(localeCode);
+      loadEmojiLocaleSearchIndex(localeCode).catch(() => {
+        requestedSearchLocalesRef.current.delete(localeCode);
+      });
+    }
+  }, [deferredSearchQuery, fallbackLocale, locale]);
 
   useEffect(() => {
     if (!isSearchControlled) {

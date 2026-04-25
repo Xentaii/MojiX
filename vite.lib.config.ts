@@ -3,9 +3,15 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, extname, resolve } from 'node:path';
+import {
+  brotliCompressSync,
+  constants as zlibConstants,
+  gzipSync,
+} from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -16,6 +22,54 @@ const packageJson = JSON.parse(
 ) as {
   version: string;
 };
+
+const PRECOMPRESS_EXTENSIONS = new Set(['.js', '.json', '.css']);
+const PRECOMPRESS_MIN_BYTES = 1024;
+
+function precompressDirectory(dir: string) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = resolve(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      precompressDirectory(fullPath);
+      continue;
+    }
+
+    if (!entry.isFile()) {
+      continue;
+    }
+
+    if (entry.name.endsWith('.br') || entry.name.endsWith('.gz')) {
+      continue;
+    }
+
+    if (!PRECOMPRESS_EXTENSIONS.has(extname(entry.name))) {
+      continue;
+    }
+
+    const { size } = statSync(fullPath);
+
+    if (size < PRECOMPRESS_MIN_BYTES) {
+      continue;
+    }
+
+    const buffer = readFileSync(fullPath);
+
+    writeFileSync(
+      `${fullPath}.br`,
+      brotliCompressSync(buffer, {
+        params: {
+          [zlibConstants.BROTLI_PARAM_QUALITY]: zlibConstants.BROTLI_MAX_QUALITY,
+          [zlibConstants.BROTLI_PARAM_SIZE_HINT]: size,
+        },
+      }),
+    );
+    writeFileSync(
+      `${fullPath}.gz`,
+      gzipSync(buffer, { level: zlibConstants.Z_BEST_COMPRESSION }),
+    );
+  }
+}
 
 function copyBundleDataPlugin() {
   const jsonModuleLoaderSource = [
@@ -57,6 +111,33 @@ function copyBundleDataPlugin() {
       );
 
       for (const fileName of readdirSync(generatedDir)) {
+        const searchMatch = /^emoji-locale\.([^.]+)\.search\.json$/u.exec(
+          fileName,
+        );
+
+        if (searchMatch?.[1]) {
+          const code = searchMatch[1];
+          const localeNodeDir = resolve(distLibNodeLocaleDir, code);
+
+          cpSync(
+            resolve(generatedDir, fileName),
+            resolve(distLocaleDir, `${code}.search.json`),
+          );
+          mkdirSync(localeNodeDir, { recursive: true });
+          writeFileSync(
+            resolve(localeNodeDir, 'search.js'),
+            [
+              jsonModuleLoaderSource,
+              `const searchIndex = await importJsonModule(new URL('../../../../data/locales/${code}.search.json', import.meta.url));`,
+              '',
+              'export default searchIndex;',
+              '',
+            ].join('\n'),
+            'utf8',
+          );
+          continue;
+        }
+
         const match = /^emoji-locale\.([^.]+)\.json$/u.exec(fileName);
 
         if (!match) {
@@ -79,6 +160,9 @@ function copyBundleDataPlugin() {
           'utf8',
         );
       }
+
+      precompressDirectory(resolve(__dirname, 'dist/lib'));
+      precompressDirectory(distDataDir);
     },
   };
 }
@@ -101,11 +185,13 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
+        headless: resolve(__dirname, 'src/entries/headless.ts'),
         style: resolve(__dirname, 'src/entries/style.ts'),
         'sprites/apple': resolve(__dirname, 'src/entries/sprites/apple.ts'),
         'sprites/facebook': resolve(__dirname, 'src/entries/sprites/facebook.ts'),
         'sprites/google': resolve(__dirname, 'src/entries/sprites/google.ts'),
         'sprites/twitter': resolve(__dirname, 'src/entries/sprites/twitter.ts'),
+        'icons/extra': resolve(__dirname, 'src/entries/icons/extra.ts'),
         'presets/index': resolve(__dirname, 'src/entries/presets/index.ts'),
       },
       name: 'MojiX',

@@ -29,19 +29,35 @@ const SKIN_TONES = {
   '1F3FF': 'dark',
 };
 
-const FLAG_LABEL_BY_LOCALE = {
-  de: 'Flagge',
-  en: 'Flag',
-  es: 'Bandera',
-  fr: 'Drapeau',
-  ja: '旗',
-  pt: 'Bandeira',
-  ru: 'Флаг',
-  uk: 'Прапор',
-};
-
 const REGIONAL_INDICATOR_BASE = 0x1f1e6;
 const REGIONAL_INDICATOR_LAST = 0x1f1ff;
+const AVAILABILITY_BITS = {
+  apple: 1,
+  google: 2,
+  twitter: 4,
+  facebook: 8,
+};
+const CATEGORY_ID_ORDER = Object.values(CATEGORY_IDS);
+const SKIN_TONE_ORDER = [
+  'light',
+  'medium-light',
+  'medium',
+  'medium-dark',
+  'dark',
+];
+const EMOJI_DATA_FIELDS = [
+  'id',
+  'native',
+  'name',
+  'aliases',
+  'emoticons',
+  'categoryId',
+  'subcategory',
+  'sheetX',
+  'sheetY',
+  'availability',
+  'skins',
+];
 
 function unicodeToNative(unified) {
   return unified
@@ -107,31 +123,70 @@ function parseRegionalIndicatorCode(unified) {
   );
 }
 
-function buildFlagNameResolver(locale) {
-  const regionNames = new Intl.DisplayNames([locale, 'en'], {
-    type: 'region',
-    fallback: 'none',
-  });
-  const flagLabel = FLAG_LABEL_BY_LOCALE[locale] ?? FLAG_LABEL_BY_LOCALE.en;
+function isRegionalFlagEmoji(emoji) {
+  return (
+    emoji.categoryId === 'flags' &&
+    parseRegionalIndicatorCode(emoji.id) !== null
+  );
+}
 
-  return (emoji) => {
-    if (emoji.categoryId !== 'flags') {
-      return null;
-    }
+function encodeAvailability(entry) {
+  return (
+    (entry.has_img_apple ? AVAILABILITY_BITS.apple : 0) |
+    (entry.has_img_google ? AVAILABILITY_BITS.google : 0) |
+    (entry.has_img_twitter ? AVAILABILITY_BITS.twitter : 0) |
+    (entry.has_img_facebook ? AVAILABILITY_BITS.facebook : 0)
+  );
+}
 
-    const regionCode = parseRegionalIndicatorCode(emoji.unified);
+function compactStringArray(values) {
+  return values.length > 0 ? values : null;
+}
 
-    if (!regionCode) {
-      return null;
-    }
+function compactSkins(skins) {
+  if (skins.length === 0) {
+    return null;
+  }
 
-    const regionName = regionNames.of(regionCode);
+  return skins.map((skin) => [
+    SKIN_TONE_ORDER.indexOf(skin.tone),
+    skin.unified,
+    skin.native,
+    skin.sheetX,
+    skin.sheetY,
+  ]);
+}
 
-    if (!regionName) {
-      return null;
-    }
+function toColumnEmojiData(records) {
+  const categoryIndexes = new Map(
+    CATEGORY_ID_ORDER.map((categoryId, index) => [categoryId, index]),
+  );
+  const subcategories = Array.from(
+    new Set(records.map((emoji) => emoji.subcategory ?? '')),
+  );
+  const subcategoryIndexes = new Map(
+    subcategories.map((subcategory, index) => [subcategory, index]),
+  );
 
-    return `${flagLabel}: ${regionName}`;
+  return {
+    version: 1,
+    fields: EMOJI_DATA_FIELDS,
+    categories: CATEGORY_ID_ORDER,
+    subcategories,
+    skinTones: SKIN_TONE_ORDER,
+    rows: records.map((emoji) => [
+      emoji.id,
+      emoji.native,
+      emoji.name,
+      compactStringArray(emoji.aliases),
+      compactStringArray(emoji.emoticons),
+      categoryIndexes.get(emoji.categoryId),
+      subcategoryIndexes.get(emoji.subcategory ?? ''),
+      emoji.sheetX,
+      emoji.sheetY,
+      emoji.availability,
+      compactSkins(emoji.skins),
+    ]),
   };
 }
 
@@ -177,7 +232,6 @@ const emojiData = rawData
 
     return {
       id: entry.unified.toLowerCase(),
-      unified: entry.unified,
       native: unicodeToNative(entry.unified),
       name: toSentenceCase(entry.name),
       aliases,
@@ -186,12 +240,7 @@ const emojiData = rawData
       subcategory: entry.subcategory,
       sheetX: entry.sheet_x,
       sheetY: entry.sheet_y,
-      availability: {
-        apple: entry.has_img_apple,
-        google: entry.has_img_google,
-        twitter: entry.has_img_twitter,
-        facebook: entry.has_img_facebook,
-      },
+      availability: encodeAvailability(entry),
       skins,
     };
   });
@@ -215,39 +264,62 @@ const localeData = Object.fromEntries(
       const annotationPath = resolve(CLDR_BASE_PATH, locale, 'annotations.json');
       const annotationJson = JSON.parse(await readFile(annotationPath, 'utf8'));
       const annotations = annotationJson.annotations.annotations;
-      const resolveFlagName = buildFlagNameResolver(locale);
 
-      const translations = Object.fromEntries(
-        emojiData.map((emoji) => {
-          const annotation = lookupAnnotation(annotations, emoji.native);
-          const ttsName = annotation?.tts?.[0];
-          const flagName = resolveFlagName(emoji);
-          const resolvedName = ttsName ?? flagName ?? emoji.name;
+      const namesEntries = [];
+      const keywordsEntries = [];
 
-          return [
+      for (const emoji of emojiData) {
+        const annotation = lookupAnnotation(annotations, emoji.native);
+        const ttsName = annotation?.tts?.[0];
+        const keywords = normalizeKeywords(annotation?.default ?? []);
+
+        if (!isRegionalFlagEmoji(emoji)) {
+          namesEntries.push([
             emoji.id,
-            {
-              name: toSentenceCase(resolvedName),
-              keywords: normalizeKeywords(annotation?.default ?? []),
-            },
-          ];
-        }),
-      );
+            { name: toSentenceCase(ttsName ?? emoji.name) },
+          ]);
+        }
 
-      return [locale, translations];
+        if (keywords.length > 0) {
+          keywordsEntries.push([emoji.id, keywords]);
+        }
+      }
+
+      return [
+        locale,
+        {
+          names: Object.fromEntries(namesEntries),
+          keywords: Object.fromEntries(keywordsEntries),
+        },
+      ];
     }),
   ),
 );
 
 await mkdir(resolve('src/core/generated'), { recursive: true });
-await writeFile(OUTPUT_PATH, JSON.stringify(emojiData));
-await writeFile(LOCALE_OUTPUT_PATH, JSON.stringify(localeData));
+await writeFile(OUTPUT_PATH, JSON.stringify(toColumnEmojiData(emojiData)));
+await writeFile(
+  LOCALE_OUTPUT_PATH,
+  JSON.stringify(
+    Object.fromEntries(
+      Object.entries(localeData).map(([code, pack]) => [code, pack.names]),
+    ),
+  ),
+);
 await writeFile(META_OUTPUT_PATH, JSON.stringify(emojiMeta));
 
-for (const [locale, translations] of Object.entries(localeData)) {
+for (const [locale, pack] of Object.entries(localeData)) {
   const perLocalePath = resolve(`src/core/generated/emoji-locale.${locale}.json`);
-  await writeFile(perLocalePath, JSON.stringify(translations));
+  const perLocaleSearchPath = resolve(
+    `src/core/generated/emoji-locale.${locale}.search.json`,
+  );
+
+  await writeFile(perLocalePath, JSON.stringify(pack.names));
+  await writeFile(perLocaleSearchPath, JSON.stringify(pack.keywords));
   console.log(`Generated '${locale}' locale pack to ${perLocalePath}`);
+  console.log(
+    `Generated '${locale}' search index to ${perLocaleSearchPath}`,
+  );
 }
 
 console.log(`Generated ${emojiData.length} emoji records to ${OUTPUT_PATH}`);

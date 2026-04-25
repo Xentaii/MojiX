@@ -102,10 +102,36 @@ function ensureTarballHasNoCjs(packEntries) {
   }
 }
 
+const PRECOMPRESSION_REQUIRED = [
+  'dist/data/emoji-data.json',
+  'dist/lib/style.css',
+];
+
+function ensurePrecompressedAssets(packEntries) {
+  const files = new Set(
+    (packEntries[0]?.files ?? []).map((entry) =>
+      normalizeTarballPath(entry.path),
+    ),
+  );
+
+  for (const original of PRECOMPRESSION_REQUIRED) {
+    for (const suffix of ['.br', '.gz']) {
+      const variant = `${original}${suffix}`;
+
+      if (!files.has(variant)) {
+        throw new Error(
+          `Tarball is missing pre-compressed asset: ${variant}`,
+        );
+      }
+    }
+  }
+}
+
 ensureExportTargetsExist();
 const packEntries = runPackDryRun();
 ensureTarballContainsExports(packEntries);
 ensureTarballContainsDataAssets(packEntries);
 ensureTarballHasNoCjs(packEntries);
+ensurePrecompressedAssets(packEntries);
 
 console.log('Package export verification passed.');
