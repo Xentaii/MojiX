@@ -1,12 +1,15 @@
 import {
+  lazy,
   memo,
+  Suspense,
   type CSSProperties,
+  type FocusEvent as ReactFocusEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
-  type Ref,
+  type RefObject,
   useCallback,
   useEffect,
   useImperativeHandle,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -28,97 +31,78 @@ import type {
 } from '../core/types';
 import { EmojiCategoryIcon } from './EmojiCategoryIcon';
 import { EmojiSprite } from './EmojiSprite';
-import {
-  computeEmojiGridPlaceholderHeight,
-  computeEmojiGridVirtualWindow,
-  createFullEmojiGridVirtualWindow,
-  estimateEmojiGridRowHeight,
-  expandEmojiGridVirtualWindow,
-  findEmojiGridActiveSectionId,
-  getEmojiGridRowCount,
-  resolveEmojiGridVirtualization,
-  type EmojiGridVirtualWindow,
-} from './gridVirtualization';
+import type {
+  EmojiGridHandle,
+  EmojiGridProps,
+} from './VirtualizedEmojiGrid';
 import {
   formatEmojiName,
   getSlotClassName,
   getSlotStyle,
 } from './utils';
 
-export interface EmojiGridHandle {
-  scrollToCategory: (
-    id: EmojiCategoryId,
-    options?: { behavior?: 'instant' | 'smooth' },
-  ) => void;
-}
+export type {
+  EmojiGridHandle,
+  EmojiGridProps,
+} from './VirtualizedEmojiGrid';
 
-export interface EmojiGridProps {
-  ref?: Ref<EmojiGridHandle>;
-  sections: EmojiSection[];
-  emojiSize: number;
-  columns: number;
-  skinTone: EmojiSkinTone;
-  value?: string;
-  spriteSheet: EmojiSpriteSheetConfig;
-  assetSource?: EmojiAssetSource;
-  localeDefinition: EmojiLocaleDefinition;
-  renderEmoji?: (
-    emoji: EmojiRenderable,
-    state: EmojiRenderState,
-  ) => ReactNode;
-  renderCategoryIcon?: (
-    props: EmojiCategoryIconRenderProps,
-  ) => ReactNode;
-  onEmojiSelect: (emoji: EmojiRenderable) => void;
-  onEmojiHover: (emoji: EmojiRenderable | null) => void;
-  onActiveCategoryChange: (id: EmojiCategoryId) => void;
-  hoveredEmojiId: string | null;
-  virtualization?: boolean | EmojiPickerVirtualization;
-  emptyState?: ReactNode;
-  hideEmptyState?: boolean;
-  labels: {
-    noResultsTitle: string;
-    noResultsBody: string;
+export const VIRTUALIZE_EMOJI_THRESHOLD = 200;
+
+const LazyVirtualizedEmojiGrid = lazy(async () => {
+  const module = await import('./VirtualizedEmojiGrid');
+
+  return {
+    default: module.VirtualizedEmojiGrid,
   };
-  unstyled?: boolean;
-  classNames?: EmojiPickerClassNames;
-  styles?: EmojiPickerStyles;
-  resolveEmojiHoverColor?: (
-    emoji: EmojiRenderable,
-    state: EmojiRenderState,
-  ) => string | undefined;
-}
+});
 
 interface TabStop {
   sectionIndex: number;
   emojiIndex: number;
 }
 
-interface PreparedSection {
-  section: EmojiSection;
-  sectionIndex: number;
-  rowCount: number;
-}
-
-interface MeasuredSectionLayout {
+interface SectionTop {
   id: EmojiCategoryId;
   sectionTop: number;
-  gridTop: number;
-  rowHeight: number;
-  rowGap: number;
 }
 
-interface EmojiGridLayoutMetrics {
-  paddingTop: number;
-  sections: MeasuredSectionLayout[];
-  byId: Record<string, MeasuredSectionLayout>;
+interface NaiveEmojiGridProps extends EmojiGridProps {
+  renderLimit?: number;
 }
 
-const EMPTY_LAYOUT_METRICS: EmojiGridLayoutMetrics = {
-  paddingTop: 0,
-  sections: [],
-  byId: {},
-};
+function getRenderableEmojiCount(sections: EmojiSection[]) {
+  return sections.reduce(
+    (count, section) => count + section.emojis.length,
+    0,
+  );
+}
+
+function isVirtualizationEnabled(
+  virtualization?: boolean | EmojiPickerVirtualization,
+) {
+  if (virtualization === false) {
+    return false;
+  }
+
+  if (
+    typeof virtualization === 'object' &&
+    virtualization.enabled === false
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function shouldUseVirtualizedGrid({
+  sections,
+  virtualization,
+}: Pick<EmojiGridProps, 'sections' | 'virtualization'>) {
+  return (
+    isVirtualizationEnabled(virtualization) &&
+    getRenderableEmojiCount(sections) > VIRTUALIZE_EMOJI_THRESHOLD
+  );
+}
 
 function getContainerPaddingTop(container: HTMLDivElement) {
   return Number.parseFloat(window.getComputedStyle(container).paddingTop) || 0;
@@ -196,134 +180,64 @@ function isSameTabStop(left: TabStop | null, right: TabStop | null) {
   );
 }
 
-function areVirtualWindowsEqual(
-  left: Record<string, EmojiGridVirtualWindow>,
-  right: Record<string, EmojiGridVirtualWindow>,
-) {
-  const leftEntries = Object.entries(left);
-  const rightEntries = Object.entries(right);
-
-  if (leftEntries.length !== rightEntries.length) {
-    return false;
-  }
-
-  return leftEntries.every(([key, leftWindow]) => {
-    const rightWindow = right[key];
-
-    if (!rightWindow) {
-      return false;
-    }
-
-    return (
-      leftWindow.startRow === rightWindow.startRow &&
-      leftWindow.endRow === rightWindow.endRow &&
-      leftWindow.beforeRows === rightWindow.beforeRows &&
-      leftWindow.afterRows === rightWindow.afterRows &&
-      leftWindow.rowHeight === rightWindow.rowHeight &&
-      leftWindow.rowGap === rightWindow.rowGap
-    );
-  });
-}
-
-function areLayoutMetricsEqual(
-  left: EmojiGridLayoutMetrics,
-  right: EmojiGridLayoutMetrics,
-) {
-  if (
-    left.paddingTop !== right.paddingTop ||
-    left.sections.length !== right.sections.length
-  ) {
-    return false;
-  }
-
-  return left.sections.every((leftSection, index) => {
-    const rightSection = right.sections[index];
-
-    if (!rightSection) {
-      return false;
-    }
-
-    return (
-      leftSection.id === rightSection.id &&
-      leftSection.sectionTop === rightSection.sectionTop &&
-      leftSection.gridTop === rightSection.gridTop &&
-      leftSection.rowHeight === rightSection.rowHeight &&
-      leftSection.rowGap === rightSection.rowGap
-    );
-  });
-}
-
-function createLayoutMetrics(
-  paddingTop: number,
-  sections: MeasuredSectionLayout[],
-) {
-  return {
-    paddingTop,
-    sections,
-    byId: Object.fromEntries(
-      sections.map((section) => [section.id, section]),
-    ),
-  } satisfies EmojiGridLayoutMetrics;
-}
-
-function getGridGap(
-  grid: HTMLDivElement,
-  property: 'rowGap' | 'columnGap',
-) {
-  const computed = window.getComputedStyle(grid);
-  const value = computed[property] || computed.gap;
-
-  return Number.parseFloat(value) || 0;
-}
-
-function getMeasuredRowHeight(
-  grid: HTMLDivElement,
-  columns: number,
-  fallbackRowHeight: number,
-) {
-  return estimateEmojiGridRowHeight({
-    gridWidth: grid.clientWidth,
-    columns,
-    columnGap: getGridGap(grid, 'columnGap'),
-    fallbackRowHeight,
-  });
-}
-
-function getEmojiRowIndex(emojiIndex: number, columns: number) {
-  return Math.floor(emojiIndex / columns);
-}
-
 function getEmojiTargetSelector(target: TabStop) {
   return `[data-mx-slot="emoji"][data-section="${target.sectionIndex}"][data-index="${target.emojiIndex}"]`;
 }
 
-function getFullVirtualWindows(
-  sections: PreparedSection[],
-  previousWindows: Record<string, EmojiGridVirtualWindow>,
-  fallbackRowHeight: number,
+function getVisibleSectionEmoji(
+  sections: EmojiSection[],
+  renderLimit: number | undefined,
 ) {
-  return Object.fromEntries(
-    sections.map(({ section, rowCount }) => {
-      const previousWindow = previousWindows[section.id];
+  if (renderLimit === undefined) {
+    return sections.map((section) => section.emojis);
+  }
 
-      return [
-        section.id,
-        createFullEmojiGridVirtualWindow({
-          rowCount,
-          rowHeight: previousWindow?.rowHeight ?? fallbackRowHeight,
-          rowGap: previousWindow?.rowGap ?? 4,
-        }),
-      ];
-    }),
-  ) satisfies Record<string, EmojiGridVirtualWindow>;
+  let remaining = Math.max(0, renderLimit);
+
+  return sections.map((section) => {
+    if (remaining <= 0) {
+      return [];
+    }
+
+    const emoji = section.emojis.slice(0, remaining);
+    remaining -= emoji.length;
+
+    return emoji;
+  });
 }
 
-function createGridPlaceholderStyle(height: number): CSSProperties {
-  return {
-    gridColumn: '1 / -1',
-    height,
-    pointerEvents: 'none',
-  };
+function getMeasuredSectionTops(
+  container: HTMLDivElement,
+  sections: EmojiSection[],
+  sectionRefs: RefObject<Record<string, HTMLElement | null>>,
+) {
+  return sections.map((section) => {
+    const element = sectionRefs.current[section.id];
+
+    return {
+      id: section.id,
+      sectionTop: element ? getElementScrollTop(container, element) : 0,
+    } satisfies SectionTop;
+  });
+}
+
+function findActiveSectionId(options: {
+  sections: SectionTop[];
+  thresholdTop: number;
+  fallbackId: EmojiCategoryId;
+}) {
+  const { sections, thresholdTop, fallbackId } = options;
+  let activeId = fallbackId;
+
+  for (const section of sections) {
+    if (section.sectionTop > thresholdTop) {
+      break;
+    }
+
+    activeId = section.id;
+  }
+
+  return activeId;
 }
 
 interface EmojiCellProps {
@@ -344,9 +258,12 @@ interface EmojiCellProps {
     state: EmojiRenderState,
   ) => ReactNode;
   onEmojiSelect: (emoji: EmojiRenderable) => void;
-  onEmojiHover: (emoji: EmojiRenderable | null) => void;
+  onEmojiHover: (
+    emoji: EmojiRenderable | null,
+    target?: TabStop,
+  ) => void;
   onEmojiFocus: (
-    event: React.FocusEvent<HTMLButtonElement>,
+    event: ReactFocusEvent<HTMLButtonElement>,
     emoji: EmojiRenderable,
     target: TabStop,
   ) => void;
@@ -413,15 +330,30 @@ function EmojiCell({
       data-selected={selected ? 'true' : undefined}
       tabIndex={initiallyFocusable ? 0 : -1}
       onClick={() => onEmojiSelect(emoji)}
-      onMouseEnter={() => onEmojiHover(emoji)}
-      onMouseLeave={() => onEmojiHover(null)}
+      onMouseEnter={() =>
+        onEmojiHover(emoji, {
+          sectionIndex,
+          emojiIndex,
+        })
+      }
+      onMouseLeave={() =>
+        onEmojiHover(null, {
+          sectionIndex,
+          emojiIndex,
+        })
+      }
       onFocus={(event) => {
         onEmojiFocus(event, emoji, {
           sectionIndex,
           emojiIndex,
         });
       }}
-      onBlur={() => onEmojiHover(null)}
+      onBlur={() =>
+        onEmojiHover(null, {
+          sectionIndex,
+          emojiIndex,
+        })
+      }
       title={displayName}
       aria-label={displayName}
     >
@@ -466,7 +398,7 @@ const MemoEmojiCell = memo(
       nextProps.resolveEmojiHoverColor,
 );
 
-export function EmojiGrid({
+function NaiveEmojiGrid({
   ref,
   sections,
   emojiSize,
@@ -481,8 +413,6 @@ export function EmojiGrid({
   onEmojiSelect,
   onEmojiHover,
   onActiveCategoryChange,
-  hoveredEmojiId,
-  virtualization,
   emptyState,
   hideEmptyState,
   labels,
@@ -490,420 +420,96 @@ export function EmojiGrid({
   classNames,
   styles,
   resolveEmojiHoverColor,
-}: EmojiGridProps) {
+  renderLimit,
+}: NaiveEmojiGridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-  const gridRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const pendingCategoryScrollRef = useRef<{
     id: EmojiCategoryId;
     top: number;
   } | null>(null);
-  const pendingFocusRef = useRef<TabStop | null>(null);
-  const virtualizationFrameRef = useRef<number | null>(null);
-  const layoutMeasureFrameRef = useRef<number | null>(null);
-  const layoutMetricsRef = useRef<EmojiGridLayoutMetrics>(
-    EMPTY_LAYOUT_METRICS,
-  );
   const slotOptions = useMemo(
     () => ({ unstyled, classNames, styles }),
     [classNames, styles, unstyled],
   );
+  const visibleSectionEmoji = useMemo(
+    () => getVisibleSectionEmoji(sections, renderLimit),
+    [renderLimit, sections],
+  );
   const hasRenderableEmoji = sections.some(
     (section) => section.emojis.length > 0,
   );
-  const preparedSections = useMemo(
-    () =>
-      sections.map((section, sectionIndex) => ({
-        section,
-        sectionIndex,
-        rowCount: getEmojiGridRowCount(section.emojis.length, columns),
-      })),
-    [columns, sections],
-  );
-  const virtualizationConfig = useMemo(
-    () => resolveEmojiGridVirtualization(virtualization),
-    [virtualization],
-  );
   const onActiveCategoryChangeRef = useRef(onActiveCategoryChange);
-  const lastMeasuredRowHeightRef = useRef(Math.max(emojiSize, 1));
   const [tabStop, setTabStop] = useState<TabStop | null>(() =>
     getInitialTabStop(sections),
   );
-  const [virtualWindows, setVirtualWindows] = useState<
-    Record<string, EmojiGridVirtualWindow>
-  >(() =>
-    getFullVirtualWindows(
-      preparedSections,
-      {},
-      lastMeasuredRowHeightRef.current,
-    ),
-  );
-  const virtualWindowsRef = useRef(virtualWindows);
+  const [activeCell, setActiveCell] = useState<TabStop | null>(null);
+  const activeCellRef = useRef<TabStop | null>(null);
 
-  virtualWindowsRef.current = virtualWindows;
+  const setActiveCellTarget = useCallback((target: TabStop | null) => {
+    activeCellRef.current = target;
+    setActiveCell((current) =>
+      isSameTabStop(current, target) ? current : target,
+    );
+  }, []);
+
   onActiveCategoryChangeRef.current = onActiveCategoryChange;
 
   useEffect(() => {
     const nextTabStop =
       tabStop &&
-      preparedSections[tabStop.sectionIndex]?.section.emojis[tabStop.emojiIndex]
+      sections[tabStop.sectionIndex]?.emojis[tabStop.emojiIndex]
         ? tabStop
         : getInitialTabStop(sections);
 
     if (!isSameTabStop(tabStop, nextTabStop)) {
       setTabStop(nextTabStop);
     }
-  }, [preparedSections, sections, tabStop]);
+  }, [sections, tabStop]);
 
   useEffect(() => {
-    const nextWindows = getFullVirtualWindows(
-      preparedSections,
-      virtualWindowsRef.current,
-      lastMeasuredRowHeightRef.current,
-    );
-
-    if (!areVirtualWindowsEqual(virtualWindowsRef.current, nextWindows)) {
-      virtualWindowsRef.current = nextWindows;
-      setVirtualWindows(nextWindows);
-    }
-  }, [preparedSections]);
-
-  const measureLayoutMetrics = useCallback(() => {
-    const container = scrollRef.current;
-
-    if (!container) {
-      return layoutMetricsRef.current;
-    }
-
-    const previousMetrics = layoutMetricsRef.current;
-    const nextSections = preparedSections.map(({ section }) => {
-      const previousSection = previousMetrics.byId[section.id];
-      const previousWindow = virtualWindowsRef.current[section.id];
-      const fallbackRowHeight =
-        previousSection?.rowHeight ??
-        previousWindow?.rowHeight ??
-        lastMeasuredRowHeightRef.current;
-      const fallbackRowGap =
-        previousSection?.rowGap ??
-        previousWindow?.rowGap ??
-        4;
-      const sectionElement = sectionRefs.current[section.id];
-      const gridElement = gridRefs.current[section.id];
-      const sectionTop = sectionElement
-        ? getElementScrollTop(container, sectionElement)
-        : previousSection?.sectionTop ?? 0;
-      const rowGap = gridElement
-        ? getGridGap(gridElement, 'rowGap') || fallbackRowGap
-        : fallbackRowGap;
-      const rowHeight = gridElement
-        ? getMeasuredRowHeight(
-            gridElement,
-            columns,
-            Math.max(fallbackRowHeight, emojiSize),
-          )
-        : fallbackRowHeight;
-
-      if (rowHeight > 0) {
-        lastMeasuredRowHeightRef.current = rowHeight;
-      }
-
-      return {
-        id: section.id,
-        sectionTop,
-        gridTop: gridElement
-          ? getElementScrollTop(container, gridElement)
-          : previousSection?.gridTop ?? sectionTop,
-        rowHeight,
-        rowGap,
-      } satisfies MeasuredSectionLayout;
-    });
-    const nextMetrics = createLayoutMetrics(
-      getContainerPaddingTop(container),
-      nextSections,
-    );
-
-    if (!areLayoutMetricsEqual(previousMetrics, nextMetrics)) {
-      layoutMetricsRef.current = nextMetrics;
-    }
-
-    return layoutMetricsRef.current;
-  }, [columns, emojiSize, preparedSections]);
-
-  const measureVirtualWindows = useCallback((
-    layoutMetrics: EmojiGridLayoutMetrics = layoutMetricsRef.current,
-  ) => {
-    const container = scrollRef.current;
-
-    if (!container) {
-      return;
-    }
-
-    if (!virtualizationConfig.enabled) {
-      const nextWindows = getFullVirtualWindows(
-        preparedSections,
-        virtualWindowsRef.current,
-        lastMeasuredRowHeightRef.current,
-      );
-
-      if (!areVirtualWindowsEqual(virtualWindowsRef.current, nextWindows)) {
-        virtualWindowsRef.current = nextWindows;
-        setVirtualWindows(nextWindows);
-      }
-
-      return;
-    }
-
-    const nextWindows = Object.fromEntries(
-      preparedSections.map(({ section, sectionIndex, rowCount }) => {
-        const previousWindow = virtualWindowsRef.current[section.id];
-        const sectionLayout = layoutMetrics.byId[section.id];
-        const fallbackRowHeight =
-          sectionLayout?.rowHeight ??
-          previousWindow?.rowHeight ??
-          lastMeasuredRowHeightRef.current;
-        const fallbackRowGap =
-          sectionLayout?.rowGap ??
-          previousWindow?.rowGap ??
-          4;
-
-        if (!sectionLayout) {
-          return [
-            section.id,
-            createFullEmojiGridVirtualWindow({
-              rowCount,
-              rowHeight: fallbackRowHeight,
-              rowGap: fallbackRowGap,
-            }),
-          ];
-        }
-
-        let window = computeEmojiGridVirtualWindow({
-          rowCount,
-          scrollTop: container.scrollTop,
-          viewportHeight: container.clientHeight,
-          gridTop: sectionLayout.gridTop,
-          rowHeight: sectionLayout.rowHeight,
-          rowGap: sectionLayout.rowGap,
-          overscanRows: virtualizationConfig.overscanRows,
-        });
-
-        const pinnedRows = [
-          tabStop?.sectionIndex === sectionIndex
-            ? getEmojiRowIndex(tabStop.emojiIndex, columns)
-            : null,
-          pendingFocusRef.current?.sectionIndex === sectionIndex
-            ? getEmojiRowIndex(pendingFocusRef.current.emojiIndex, columns)
-            : null,
-        ];
-
-        for (const targetRow of pinnedRows) {
-          window = expandEmojiGridVirtualWindow(window, rowCount, targetRow);
-        }
-
-        return [section.id, window];
-      }),
-    ) satisfies Record<string, EmojiGridVirtualWindow>;
-
-    if (!areVirtualWindowsEqual(virtualWindowsRef.current, nextWindows)) {
-      virtualWindowsRef.current = nextWindows;
-      setVirtualWindows(nextWindows);
-    }
-  }, [
-    columns,
-    preparedSections,
-    tabStop,
-    virtualizationConfig.enabled,
-    virtualizationConfig.overscanRows,
-  ]);
-
-  const scheduleVirtualWindowMeasure = useCallback(() => {
-    if (virtualizationFrameRef.current !== null) {
-      return;
-    }
-
-    virtualizationFrameRef.current = requestAnimationFrame(() => {
-      virtualizationFrameRef.current = null;
-      measureVirtualWindows();
-    });
-  }, [measureVirtualWindows]);
-
-  const scheduleLayoutMeasure = useCallback(() => {
-    if (layoutMeasureFrameRef.current !== null) {
-      return;
-    }
-
-    layoutMeasureFrameRef.current = requestAnimationFrame(() => {
-      layoutMeasureFrameRef.current = null;
-      const nextLayout = measureLayoutMetrics();
-      measureVirtualWindows(nextLayout);
-    });
-  }, [measureLayoutMetrics, measureVirtualWindows]);
-
-  useLayoutEffect(() => {
-    const nextLayout = measureLayoutMetrics();
-    measureVirtualWindows(nextLayout);
-  }, [measureLayoutMetrics, measureVirtualWindows]);
-
-  useEffect(() => {
-    const container = scrollRef.current;
-
-    if (!container) {
-      return;
-    }
-
-    const resizeObserver =
-      typeof ResizeObserver !== 'undefined'
-        ? new ResizeObserver(() => {
-            scheduleLayoutMeasure();
-          })
+    const nextCell =
+      activeCell &&
+      sections[activeCell.sectionIndex]?.emojis[activeCell.emojiIndex]
+        ? activeCell
         : null;
 
-    resizeObserver?.observe(container);
-    for (const { section } of preparedSections) {
-      const sectionElement = sectionRefs.current[section.id];
-      const gridElement = gridRefs.current[section.id];
-
-      if (sectionElement) {
-        resizeObserver?.observe(sectionElement);
-      }
-
-      if (gridElement) {
-        resizeObserver?.observe(gridElement);
-      }
+    if (!isSameTabStop(activeCell, nextCell)) {
+      setActiveCellTarget(nextCell);
     }
-    window.addEventListener('resize', scheduleLayoutMeasure);
+  }, [activeCell, sections, setActiveCellTarget]);
 
-    return () => {
-      window.removeEventListener('resize', scheduleLayoutMeasure);
-      resizeObserver?.disconnect();
-    };
-  }, [
-    preparedSections,
-    scheduleLayoutMeasure,
-  ]);
-
-  useEffect(() => {
+  const scrollEmojiIntoView = useCallback((
+    target: TabStop,
+    behavior: 'instant' | 'smooth' = 'instant',
+  ) => {
     const container = scrollRef.current;
-
-    if (!container || !virtualizationConfig.enabled) {
-      return;
-    }
-
-    container.addEventListener('scroll', scheduleVirtualWindowMeasure, {
-      passive: true,
-    });
-
-    return () => {
-      container.removeEventListener(
-        'scroll',
-        scheduleVirtualWindowMeasure,
-      );
-    };
-  }, [
-    scheduleVirtualWindowMeasure,
-    virtualizationConfig.enabled,
-  ]);
-
-  useEffect(() => {
-    return () => {
-      if (virtualizationFrameRef.current !== null) {
-        cancelAnimationFrame(virtualizationFrameRef.current);
-      }
-
-      if (layoutMeasureFrameRef.current !== null) {
-        cancelAnimationFrame(layoutMeasureFrameRef.current);
-      }
-    };
-  }, []);
-
-  const scrollEmojiIntoView = useCallback(
-    (
-      target: TabStop,
-      behavior: 'instant' | 'smooth' = 'instant',
-    ) => {
-      const container = scrollRef.current;
-      const preparedSection = preparedSections[target.sectionIndex];
-      const sectionId = preparedSection?.section.id;
-      const sectionLayout = sectionId
-        ? layoutMetricsRef.current.byId[sectionId]
-        : undefined;
-
-      if (!container || !preparedSection) {
-        return;
-      }
-
-      let rowGap = sectionLayout?.rowGap ?? 4;
-      let rowHeight =
-        sectionLayout?.rowHeight ??
-        Math.max(lastMeasuredRowHeightRef.current, emojiSize);
-      let gridTop = sectionLayout?.gridTop;
-
-      if (gridTop === undefined) {
-        const gridElement = sectionId ? gridRefs.current[sectionId] : null;
-
-        if (!gridElement) {
-          return;
-        }
-
-        rowGap = getGridGap(gridElement, 'rowGap') || rowGap;
-        rowHeight = getMeasuredRowHeight(
-          gridElement,
-          columns,
-          Math.max(rowHeight, emojiSize),
-        );
-        gridTop = getElementScrollTop(container, gridElement);
-      }
-
-      if (rowHeight > 0) {
-        lastMeasuredRowHeightRef.current = rowHeight;
-      }
-
-      const rowIndex = getEmojiRowIndex(target.emojiIndex, columns);
-      const rowStride = rowHeight + rowGap;
-      const rowTop = gridTop + rowIndex * rowStride;
-      const rowBottom = rowTop + rowHeight;
-      const viewportTop = container.scrollTop;
-      const viewportBottom = viewportTop + container.clientHeight;
-
-      if (rowTop < viewportTop) {
-        setContainerScrollTop(
-          container,
-          Math.max(rowTop - rowGap, 0),
-          behavior,
-        );
-        return;
-      }
-
-      if (rowBottom > viewportBottom) {
-        setContainerScrollTop(
-          container,
-          Math.max(rowBottom - container.clientHeight + rowGap, 0),
-          behavior,
-        );
-      }
-    },
-    [columns, emojiSize, preparedSections],
-  );
-
-  useLayoutEffect(() => {
-    const pendingTarget = pendingFocusRef.current;
-
-    if (!pendingTarget) {
-      return;
-    }
-
-    const container = scrollRef.current;
-    const nextTarget = container?.querySelector(
-      getEmojiTargetSelector(pendingTarget),
+    const nextButton = container?.querySelector(
+      getEmojiTargetSelector(target),
     ) as HTMLButtonElement | null;
 
-    if (!nextTarget) {
+    if (!container || !nextButton) {
       return;
     }
 
-    pendingFocusRef.current = null;
-    nextTarget.focus();
-  }, [virtualWindows]);
+    const buttonTop = getElementScrollTop(container, nextButton);
+    const buttonBottom = buttonTop + nextButton.offsetHeight;
+    const viewportTop = container.scrollTop;
+    const viewportBottom = viewportTop + container.clientHeight;
+
+    if (buttonTop < viewportTop) {
+      setContainerScrollTop(container, buttonTop, behavior);
+      return;
+    }
+
+    if (buttonBottom > viewportBottom) {
+      setContainerScrollTop(
+        container,
+        Math.max(buttonBottom - container.clientHeight, 0),
+        behavior,
+      );
+    }
+  }, []);
 
   const scrollToCategory = useCallback((
     id: EmojiCategoryId,
@@ -916,9 +522,7 @@ export function EmojiGrid({
     }
 
     const behavior = options?.behavior ?? 'smooth';
-    const nextTop =
-      layoutMetricsRef.current.byId[id]?.sectionTop ??
-      getElementScrollTop(container, target);
+    const nextTop = getElementScrollTop(container, target);
     pendingCategoryScrollRef.current = {
       id,
       top: nextTop,
@@ -932,9 +536,7 @@ export function EmojiGrid({
         return;
       }
 
-      const settledTop =
-        layoutMetricsRef.current.byId[id]?.sectionTop ??
-        getElementScrollTop(nextContainer, nextTarget);
+      const settledTop = getElementScrollTop(nextContainer, nextTarget);
       if (Math.abs(nextContainer.scrollTop - settledTop) <= 1) {
         return;
       }
@@ -980,18 +582,19 @@ export function EmojiGrid({
         return;
       }
 
-      const layoutMetrics = layoutMetricsRef.current;
-      const nextCategory =
-        layoutMetrics.sections.length > 0
-          ? findEmojiGridActiveSectionId({
-              sections: layoutMetrics.sections,
-              thresholdTop:
-                activeContainer.scrollTop +
-                layoutMetrics.paddingTop +
-                48,
-              fallbackId: initialCategory,
-            })
-          : initialCategory;
+      const sectionTops = getMeasuredSectionTops(
+        activeContainer,
+        sections,
+        sectionRefs,
+      );
+      const nextCategory = findActiveSectionId({
+        sections: sectionTops,
+        thresholdTop:
+          activeContainer.scrollTop +
+          getContainerPaddingTop(activeContainer) +
+          48,
+        fallbackId: initialCategory,
+      });
 
       onActiveCategoryChangeRef.current(nextCategory);
     }
@@ -1025,7 +628,7 @@ export function EmojiGrid({
     };
   }, [sections]);
 
-  function handleKeyDown(event: React.KeyboardEvent) {
+  function handleKeyDown(event: ReactKeyboardEvent) {
     const target = event.target as HTMLElement;
     if (target.dataset.mxSlot !== 'emoji') return;
 
@@ -1124,22 +727,38 @@ export function EmojiGrid({
       return;
     }
 
-    pendingFocusRef.current = nextTarget;
     scrollEmojiIntoView(nextTarget);
-    scheduleVirtualWindowMeasure();
   }
 
   const handleEmojiFocus = useCallback((
-    _event: React.FocusEvent<HTMLButtonElement>,
+    _event: ReactFocusEvent<HTMLButtonElement>,
     emoji: EmojiRenderable,
     target: TabStop,
   ) => {
-    pendingFocusRef.current = null;
+    setActiveCellTarget(target);
     setTabStop((current) =>
       isSameTabStop(current, target) ? current : target,
     );
     onEmojiHover(emoji);
-  }, [onEmojiHover]);
+  }, [onEmojiHover, setActiveCellTarget]);
+
+  const handleEmojiHover = useCallback((
+    emoji: EmojiRenderable | null,
+    target?: TabStop,
+  ) => {
+    if (emoji && target) {
+      setActiveCellTarget(target);
+      onEmojiHover(emoji);
+      return;
+    }
+
+    if (target && !isSameTabStop(activeCellRef.current, target)) {
+      return;
+    }
+
+    setActiveCellTarget(null);
+    onEmojiHover(null);
+  }, [onEmojiHover, setActiveCellTarget]);
 
   return (
     <div
@@ -1164,39 +783,8 @@ export function EmojiGrid({
         </div>
       )}
 
-      {preparedSections.map(({ section, sectionIndex, rowCount }) => {
-        const virtualWindow =
-          virtualWindows[section.id] ??
-          createFullEmojiGridVirtualWindow({
-            rowCount,
-            rowHeight: lastMeasuredRowHeightRef.current,
-            rowGap: 4,
-          });
-        const visibleEmojiStart =
-          virtualWindow.endRow >= virtualWindow.startRow
-            ? virtualWindow.startRow * columns
-            : 0;
-        const visibleEmojiEnd =
-          virtualWindow.endRow >= virtualWindow.startRow
-            ? Math.min(
-                section.emojis.length,
-                (virtualWindow.endRow + 1) * columns,
-              )
-            : 0;
-        const visibleEmoji = section.emojis.slice(
-          visibleEmojiStart,
-          visibleEmojiEnd,
-        );
-        const beforeHeight = computeEmojiGridPlaceholderHeight(
-          virtualWindow.beforeRows,
-          virtualWindow.rowHeight,
-          virtualWindow.rowGap,
-        );
-        const afterHeight = computeEmojiGridPlaceholderHeight(
-          virtualWindow.afterRows,
-          virtualWindow.rowHeight,
-          virtualWindow.rowGap,
-        );
+      {sections.map((section, sectionIndex) => {
+        const visibleEmoji = visibleSectionEmoji[sectionIndex] ?? [];
 
         return (
           <section
@@ -1228,7 +816,7 @@ export function EmojiGrid({
                   size: 15,
                   active: false,
                   spriteSheet,
-                }) ?? (
+                } satisfies EmojiCategoryIconRenderProps) ?? (
                   <EmojiCategoryIcon
                     icon={section.icon}
                     label={section.label}
@@ -1247,78 +835,59 @@ export function EmojiGrid({
               role="grid"
               aria-label={section.label}
               data-mx-slot="grid"
-              ref={(node) => {
-                gridRefs.current[section.id] = node;
-              }}
             >
-              {beforeHeight > 0 && (
-                <div
-                  className={getSlotClassName(
-                    'gridPlaceholder',
-                    slotOptions,
-                  )}
-                  style={getSlotStyle(
-                    'gridPlaceholder',
-                    slotOptions,
-                    createGridPlaceholderStyle(beforeHeight),
-                  )}
-                  aria-hidden="true"
-                  data-position="before"
-                  data-mx-slot="gridPlaceholder"
+              {visibleEmoji.map((emoji, emojiIndex) => (
+                <MemoEmojiCell
+                  key={`${section.id}:${emoji.id}`}
+                  emoji={emoji}
+                  emojiSize={emojiSize}
+                  skinTone={skinTone}
+                  selected={value === emoji.id}
+                  active={
+                    activeCell?.sectionIndex === sectionIndex &&
+                    activeCell.emojiIndex === emojiIndex
+                  }
+                  sectionId={section.id}
+                  sectionIndex={sectionIndex}
+                  emojiIndex={emojiIndex}
+                  initiallyFocusable={
+                    tabStop?.sectionIndex === sectionIndex &&
+                    tabStop.emojiIndex === emojiIndex
+                  }
+                  spriteSheet={spriteSheet}
+                  assetSource={assetSource}
+                  localeDefinition={localeDefinition}
+                  renderEmoji={renderEmoji}
+                  onEmojiSelect={onEmojiSelect}
+                  onEmojiHover={handleEmojiHover}
+                  onEmojiFocus={handleEmojiFocus}
+                  slotOptions={slotOptions}
+                  resolveEmojiHoverColor={resolveEmojiHoverColor}
                 />
-              )}
-
-              {visibleEmoji.map((emoji, relativeIndex) => {
-                const emojiIndex = visibleEmojiStart + relativeIndex;
-
-                return (
-                  <MemoEmojiCell
-                    key={`${section.id}:${emoji.id}`}
-                    emoji={emoji}
-                    emojiSize={emojiSize}
-                    skinTone={skinTone}
-                    selected={value === emoji.id}
-                    active={hoveredEmojiId === emoji.id}
-                    sectionId={section.id}
-                    sectionIndex={sectionIndex}
-                    emojiIndex={emojiIndex}
-                    initiallyFocusable={
-                      tabStop?.sectionIndex === sectionIndex &&
-                      tabStop.emojiIndex === emojiIndex
-                    }
-                    spriteSheet={spriteSheet}
-                    assetSource={assetSource}
-                    localeDefinition={localeDefinition}
-                    renderEmoji={renderEmoji}
-                    onEmojiSelect={onEmojiSelect}
-                    onEmojiHover={onEmojiHover}
-                    onEmojiFocus={handleEmojiFocus}
-                    slotOptions={slotOptions}
-                    resolveEmojiHoverColor={resolveEmojiHoverColor}
-                  />
-                );
-              })}
-
-              {afterHeight > 0 && (
-                <div
-                  className={getSlotClassName(
-                    'gridPlaceholder',
-                    slotOptions,
-                  )}
-                  style={getSlotStyle(
-                    'gridPlaceholder',
-                    slotOptions,
-                    createGridPlaceholderStyle(afterHeight),
-                  )}
-                  aria-hidden="true"
-                  data-position="after"
-                  data-mx-slot="gridPlaceholder"
-                />
-              )}
+              ))}
             </div>
           </section>
         );
       })}
     </div>
+  );
+}
+
+export function EmojiGrid(props: EmojiGridProps) {
+  if (!shouldUseVirtualizedGrid(props)) {
+    return <NaiveEmojiGrid {...props} />;
+  }
+
+  return (
+    <Suspense
+      fallback={
+        <NaiveEmojiGrid
+          {...props}
+          renderLimit={VIRTUALIZE_EMOJI_THRESHOLD}
+        />
+      }
+    >
+      <LazyVirtualizedEmojiGrid {...props} />
+    </Suspense>
   );
 }

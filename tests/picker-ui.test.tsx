@@ -130,4 +130,39 @@ describe('picker UI theming hooks', () => {
 
     expect(renderCounts.get('rocket')).toBe(initialRocketRenders);
   });
+
+  it('highlights only the hovered duplicate emoji cell', async () => {
+    const { container } = render(
+      <EmojiPicker
+        showPreview={false}
+        showSkinTones={false}
+        recent={{
+          emptyEmojiIds: ['1f600'],
+          showWhenEmpty: true,
+        }}
+      />,
+    );
+
+    const grinningFaceButtons = await waitFor(() => {
+      const buttons = Array.from(
+        container.querySelectorAll(
+          '[data-mx-slot="emoji"][aria-label="Grinning face"]',
+        ),
+      ) as HTMLButtonElement[];
+
+      expect(buttons.length).toBeGreaterThanOrEqual(2);
+      return buttons;
+    });
+
+    fireEvent.mouseEnter(grinningFaceButtons[0]!);
+
+    await waitFor(() => {
+      expect(grinningFaceButtons[0]).toHaveAttribute(
+        'data-active',
+        'true',
+      );
+    });
+
+    expect(grinningFaceButtons[1]).not.toHaveAttribute('data-active');
+  });
 });
