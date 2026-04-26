@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityFixture } from './AccessibilityFixture';
 import { CdnDefaultFixture } from './CdnDefaultFixture';
 import { OfflinePresetFixture } from './OfflinePresetFixture';
@@ -64,6 +64,136 @@ const RECENT_EMPTY_IDS = ['1f44b', '1f389', '2728', '1f680'];
 const DEFAULT_BRAND_LABEL = 'Brand Kit';
 const DEFAULT_CUSTOM_THEME_NAME = 'My Theme';
 const DEFAULT_PREVIEW_EMOJI = String.fromCodePoint(0x1f642);
+
+interface ShowcasePreset {
+  id: string;
+  name: string;
+  tagline: string;
+  vendor: EmojiVendor;
+  palette: DemoThemePalette;
+  columns: number;
+  emojiSize: number;
+  showSkinTones: boolean;
+  categoryIconStyle: EmojiCategoryIconPreset;
+}
+
+const SHOWCASE_PRESETS: ShowcasePreset[] = [
+  {
+    id: 'editorial',
+    name: 'Editorial',
+    tagline: 'Monochrome, sharp, document-grade.',
+    vendor: 'apple',
+    palette: {
+      mode: 'light',
+      accent: '#171717',
+      bg: '#ffffff',
+      panel: '#fafafa',
+      text: '#171717',
+      muted: '#737373',
+      radius: 8,
+      accentMix: 8,
+      scrollbar: '#d4d4d4',
+    },
+    columns: 7,
+    emojiSize: 22,
+    showSkinTones: false,
+    categoryIconStyle: 'outline',
+  },
+  {
+    id: 'studio',
+    name: 'Studio',
+    tagline: 'Indigo accents on graphite.',
+    vendor: 'google',
+    palette: {
+      mode: 'dark',
+      accent: '#7c5cff',
+      bg: '#0e1014',
+      panel: '#16181d',
+      text: '#e8e6f0',
+      muted: '#7c7d8a',
+      radius: 14,
+      accentMix: 24,
+      scrollbar: '#3a3c4a',
+    },
+    columns: 7,
+    emojiSize: 22,
+    showSkinTones: true,
+    categoryIconStyle: 'outline',
+  },
+  {
+    id: 'pulse',
+    name: 'Pulse',
+    tagline: 'Blurple chat-app energy.',
+    vendor: 'twitter',
+    palette: {
+      mode: 'dark',
+      accent: '#5865f2',
+      bg: '#1a1c24',
+      panel: '#22242c',
+      text: '#f2f3f5',
+      muted: '#8e94a4',
+      radius: 22,
+      accentMix: 28,
+      scrollbar: '#42454e',
+    },
+    columns: 7,
+    emojiSize: 24,
+    showSkinTones: true,
+    categoryIconStyle: 'twitter',
+  },
+  {
+    id: 'holiday',
+    name: 'Holiday',
+    tagline: 'Plum on warm cream paper.',
+    vendor: 'facebook',
+    palette: {
+      mode: 'light',
+      accent: '#a3185c',
+      bg: '#fff8f1',
+      panel: '#fff3e6',
+      text: '#3a1d1d',
+      muted: '#8c6f63',
+      radius: 26,
+      accentMix: 16,
+      scrollbar: '#d4b89e',
+    },
+    columns: 7,
+    emojiSize: 22,
+    showSkinTones: true,
+    categoryIconStyle: 'facebook',
+  },
+];
+
+const SHOWCASE_SPRITE_SHEETS: Record<EmojiVendor, ReturnType<typeof createEmojiSpriteSheet>> = {
+  twitter: createEmojiSpriteSheet({
+    source: 'cdn',
+    vendor: 'twitter',
+    sheetSize: 64,
+    variant: 'indexed-256',
+    cache: { enabled: true, preload: 'mount' },
+  }),
+  google: createEmojiSpriteSheet({
+    source: 'cdn',
+    vendor: 'google',
+    sheetSize: 64,
+    variant: 'indexed-256',
+    cache: { enabled: true, preload: 'mount' },
+  }),
+  apple: createEmojiSpriteSheet({
+    source: 'cdn',
+    vendor: 'apple',
+    sheetSize: 64,
+    variant: 'indexed-256',
+    cache: { enabled: true, preload: 'mount' },
+  }),
+  facebook: createEmojiSpriteSheet({
+    source: 'cdn',
+    vendor: 'facebook',
+    sheetSize: 64,
+    variant: 'indexed-256',
+    cache: { enabled: true, preload: 'mount' },
+  }),
+};
 
 const VENDOR_OPTIONS: Array<{
   label: string;
@@ -372,6 +502,9 @@ export function App() {
 
   const [lastEmoji, setLastEmoji] = useState<EmojiSelection | null>(null);
   const [spriteWarmed, setSpriteWarmed] = useState(false);
+  const [showcaseWarmed, setShowcaseWarmed] = useState<
+    Record<EmojiVendor, boolean>
+  >({ twitter: false, google: false, apple: false, facebook: false });
   const [vendor, setVendor] = useState<EmojiVendor>('twitter');
   const [locale, setLocale] = useState<EmojiLocaleCode>('en');
   const [emojiSize, setEmojiSize] = useState(22);
@@ -522,6 +655,63 @@ export function App() {
     };
   }, [spriteSheet]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const vendors: EmojiVendor[] = ['twitter', 'google', 'apple', 'facebook'];
+
+    vendors.forEach((vendorKey) => {
+      warmEmojiSpriteSheet(SHOWCASE_SPRITE_SHEETS[vendorKey])
+        .then(() => {
+          if (!cancelled) {
+            setShowcaseWarmed((prev) => ({ ...prev, [vendorKey]: true }));
+          }
+        })
+        .catch(() => {});
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const showcaseGridRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const grid = showcaseGridRef.current;
+    if (!grid) return;
+
+    const PATCHED = '__mxInstantScroll' as const;
+
+    function patch(content: HTMLDivElement) {
+      type Patched = HTMLDivElement & { [PATCHED]?: boolean };
+      const p = content as Patched;
+      if (p[PATCHED]) return;
+      p[PATCHED] = true;
+      const orig = content.scrollTo.bind(content);
+      content.scrollTo = function (
+        arg?: ScrollToOptions | number,
+        top?: number,
+      ) {
+        if (typeof arg === 'object' && arg !== null) {
+          orig({ ...arg, behavior: 'auto' });
+        } else if (arg !== undefined && top !== undefined) {
+          orig({ left: arg, top, behavior: 'auto' });
+        }
+      } as typeof content.scrollTo;
+    }
+
+    function applyAll() {
+      grid
+        ?.querySelectorAll<HTMLDivElement>('.mx-picker__content')
+        .forEach(patch);
+    }
+
+    applyAll();
+    const observer = new MutationObserver(applyAll);
+    observer.observe(grid, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
   function handleEmojiSelect(emoji: EmojiSelection) {
     setLastEmoji(emoji);
   }
@@ -661,8 +851,56 @@ export function App() {
         </div>
       </header>
 
+      <section className="showcase-section">
+        <div className="showcase-intro">
+          <span className="badge badge--soft">Theme presets</span>
+          <h2>Four pickers. One component.</h2>
+          <p>
+            Same <code>EmojiPicker</code>, four production-ready theme token
+            sets. Drop any of these straight into your app.
+          </p>
+        </div>
+        <div className="showcase-grid" ref={showcaseGridRef}>
+          {SHOWCASE_PRESETS.map((preset) => (
+            <article key={preset.id} className="showcase-item">
+              <div className="showcase-item__frame">
+                <EmojiPicker
+                  className="showcase-picker"
+                  showPreview={false}
+                  locale="en"
+                  emojiSize={preset.emojiSize}
+                  columns={preset.columns}
+                  showSkinTones={preset.showSkinTones}
+                  categoryIconStyle={preset.categoryIconStyle}
+                  style={createPickerThemeStyle(preset.palette)}
+                  spriteSheet={SHOWCASE_SPRITE_SHEETS[preset.vendor]}
+                  assetSource={
+                    showcaseWarmed[preset.vendor]
+                      ? undefined
+                      : NATIVE_FALLBACK_SOURCE
+                  }
+                />
+              </div>
+              <div className="showcase-item__label">
+                <strong>{preset.name}</strong>
+                <span>{preset.tagline}</span>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="demo-section">
+        <div className="demo-intro">
+          <span className="badge badge--soft">Build your own</span>
+          <h2>Configure it your way.</h2>
+          <p>
+            Tune every token below and watch the React snippet update in real
+            time.
+          </p>
+        </div>
         <div className="demo-shell">
+          <div className="demo-row demo-row--main">
           <section className="playground-card playground-card--picker">
             <div className="playground-card__head">
               <div>
@@ -740,7 +978,9 @@ export function App() {
               </div>
             </div>
           </section>
+          </div>
 
+          <div className="demo-row demo-row--config">
           <aside className="playground-card playground-card--dev">
             <div className="playground-card__head">
               <div>
@@ -1286,28 +1526,44 @@ export function App() {
                   </div>
                 </section>
 
-                <section className="dev-group">
-                  <div className="dev-group__head">
-                    <h3>Live snippet</h3>
-                    <span>Updates as you tweak props</span>
-                  </div>
-                  <pre className="code-block code-block--compact">
-                    {playgroundSnippet}
-                  </pre>
-                </section>
-
-                <section className="dev-group">
-                  <div className="dev-group__head">
-                    <h3>Selection payload</h3>
-                    <span>Latest onEmojiSelect value</span>
-                  </div>
-                  <pre className="code-block code-block--compact">
-                    {selectionPayload}
-                  </pre>
-                </section>
               </form>
             </div>
           </aside>
+
+          <aside className="playground-card playground-card--code">
+            <div className="playground-card__head">
+              <div>
+                <span className="playground-card__eyebrow">Live Output</span>
+                <strong>Generated snippet</strong>
+              </div>
+              <span className="playground-status playground-status--soft">
+                auto-updating
+              </span>
+            </div>
+            <div className="playground-card__body playground-card__body--code">
+              <section className="code-stack">
+                <div className="code-stack__group">
+                  <header className="code-stack__head">
+                    <h3>JSX</h3>
+                    <span>Reflects current props</span>
+                  </header>
+                  <pre className="code-block code-block--compact">
+                    {playgroundSnippet}
+                  </pre>
+                </div>
+                <div className="code-stack__group">
+                  <header className="code-stack__head">
+                    <h3>Selection payload</h3>
+                    <span>Latest onEmojiSelect</span>
+                  </header>
+                  <pre className="code-block code-block--compact">
+                    {selectionPayload}
+                  </pre>
+                </div>
+              </section>
+            </div>
+          </aside>
+          </div>
         </div>
       </section>
 
