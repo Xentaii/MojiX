@@ -28,6 +28,17 @@ jobs:
 
       - run: npm run test
 
-      - run: npm publish --provenance --access public
+      - name: Resolve npm dist tag
+        id: npm_tag
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [[ "${version}" == *-* ]]; then
+            echo "tag=beta" >> "${GITHUB_OUTPUT}"
+          else
+            echo "tag=latest" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - run: npm publish --provenance --access public --tag ${{ steps.npm_tag.outputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -62,7 +62,11 @@ jobs:
             version="${tag#v}"
             notes_path="docs/releases/${version}.md"
             draft="false"
-            prerelease="false"
+            if [[ "${version}" == *-* ]]; then
+              prerelease="true"
+            else
+              prerelease="false"
+            fi
           else
             raw_version="${{ github.event.inputs.version }}"
             version="${raw_version#v}"
