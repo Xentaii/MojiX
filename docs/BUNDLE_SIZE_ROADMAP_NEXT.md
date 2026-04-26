@@ -19,15 +19,15 @@ measurements for what has shipped.
 | 2.2 | Drop redundant fields from `emoji-data.json`      | 2    | **Done**    | -150 KB raw / -7.8 KB gzip             |
 | 2.3 | Split "extra" Lucide icons into a preset          | 2    | **Done**    | -2.5 KB default JS graph raw          |
 | 2.4 | Headless-only entry: `mojix-picker/headless`      | 2    | **Done**    | -41 KB raw for headless consumers     |
-| 2.5 | Lazy virtualization in `EmojiGrid`                | 2    | Planned     | −3–6 KB JS chunk + faster first paint |
+| 2.5 | Lazy virtualization in `EmojiGrid`                | 2    | **Done**    | 19 KB virtual grid chunk deferred      |
 | 3.1 | Split keywords / lazy search index                | 3    | **Done**    | −60–70% locale-pack cold-start        |
-| 3.2 | Vendor-split availability                         | 3    | Planned 2.0 | −15–25% data payload per vendor       |
+| 3.2 | Vendor-split availability                         | 3    | **Done 2.0**| availability files per vendor         |
 | 3.3 | Brotli/gzip pre-compression                       | 3    | **Done**    | −76–93% on the wire (per asset)       |
-| 3.4 | Locale delta-coding against English               | 3    | Planned     | −10–80 KB per locale pack             |
-| 3.5 | Drop `name` from `emoji-data.json`                | 3    | Planned 2.0 | −60–100 KB raw                        |
+| 3.4 | Locale delta-coding against English               | 3    | **Done**    | -4.4 KB raw on `locales/ru.json`      |
+| 3.5 | Drop `name` from `emoji-data.json`                | 3    | **Done 2.0**| core data now 190 KB raw              |
 
-`Done` = shipped; `Planned` = scoped, no API breaking; `Planned 2.0` = scoped
-but ships as a major release because it changes the data contract.
+`Done` = shipped; `Done 2.0` = implemented for the next major data contract.
+There are no remaining scoped implementation items in this roadmap.
 
 ## Baseline (post-1.0, pre-roadmap)
 
@@ -289,9 +289,9 @@ field, an additional ~37 KB Brotli loads on first keystroke and is cached.
 **Regressions:** main JS chunk grew by 1.5 KB (88 373 → 89 920 B) for the new
 search-index API; index entry by 140 B. Net wire savings vastly outweigh this.
 
-## Tier 1 — Quick wins *(1.1-1.4 done; 1.5 planned, no API breaking)*
+## Tier 1 — Quick wins *(done)*
 
-Each item is roughly a half-day of work and ships in a regular minor release.
+Each item was roughly a half-day of work and ships in a regular minor release.
 
 ### 1.1 Minify Lucide SVG path bodies *(done)*
 
@@ -332,9 +332,9 @@ read the key when iterating, or build `CATEGORY_META` dynamically from
 (noticeable wire savings on the locale CDN endpoint; modest impact on offline
 bundles).
 
-## Tier 2 — Medium refactors *(2.1, 2.3, 2.4 done; remaining items planned, no API breaking)*
+## Tier 2 — Medium refactors *(done)*
 
-Each item is one to three days and ships as a minor release.
+Each item was one to three days and ships as a minor release.
 
 ### 2.1 Column-oriented `emoji-data.json` *(done)*
 
@@ -388,68 +388,100 @@ root/context/hooks. Those moved to
 for the default JS graph, or **-41 235 B raw** for consumers that only need
 headless state/data/selection logic.
 
-### 2.5 Lazy virtualization in `EmojiGrid`
+### 2.5 Lazy virtualization in `EmojiGrid` *(done)*
 
-[src/components/EmojiGrid.tsx](../src/components/EmojiGrid.tsx) (1324 lines,
-38 KB source) is the biggest single contributor to the main chunk.
-[src/components/gridVirtualization.ts](../src/components/gridVirtualization.ts)
-is already a separate module (5.3 KB). Activate the virtualization path only
-when `emojis.length > VIRTUALIZE_THRESHOLD` (e.g., 200) and let small grids
-(recent + custom) render naively. Realistic: **−3–6 KB** in the initial chunk
-plus faster first paint for small grids.
+[src/components/EmojiGrid.tsx](../src/components/EmojiGrid.tsx) is now a
+light wrapper plus a naive small-grid renderer. The previous virtualized grid
+implementation moved to
+[src/components/VirtualizedEmojiGrid.tsx](../src/components/VirtualizedEmojiGrid.tsx)
+and is loaded through `React.lazy` only when virtualization is enabled and the
+visible emoji count is above `VIRTUALIZE_EMOJI_THRESHOLD` (200). Small grids
+(recents, custom-only pickers, and narrow search results) render without the
+virtualization helpers.
+
+Measured package build after the split:
+
+- `EmojiGrid.tsx` wrapper/source: **23 477 B**.
+- `VirtualizedEmojiGrid.tsx` source: **39 706 B**.
+- Lazy runtime chunk: `VirtualizedEmojiGrid-*.js` **19 752 B raw /
+  5 090 B Brotli**.
+- Static `MojiX-*.js` graph, excluding the lazy virtual chunk:
+  **93 337 B raw / 24 135 B Brotli**.
 
 ## Tier 3 — Big steps
 
-### 3.2 Vendor-split availability *(planned, 2.0)*
+### 3.2 Vendor-split availability *(done, 2.0)*
 
-Today every emoji record carries
-`availability: { apple, google, twitter, facebook }` (4 booleans) and
-`sheetX/sheetY` for each skin variant. The grid coordinates are identical
-across all four vendors (the upstream `emoji-datasource` ships them on a
-shared grid), but **availability differs**: some emojis exist on Apple but not
-on Twitter and vice versa. With ~1900 emoji × 4 booleans, the 4-byte block is
-~60–80 KB raw before compression.
+The base column data no longer carries `availability`. Vendor availability is
+emitted as `dist/data/availability.<vendor>.json`, where each file is the list
+of emoji ids missing from that vendor's sprite sheet. `createEmojiSpriteSheet`
+now accepts `availability`, and the four sprite preset entries
+(`mojix-picker/sprites/<vendor>`) import their vendor table automatically.
 
-**Build:** emit `dist/data/emoji-data.core.json` with the shared structural
-fields (`{ id, native, cat, sub, x, y, skins[].{tone, x, y} }`) and
-`dist/data/availability.<vendor>.json` containing only the IDs **missing** on
-that vendor (1–5 KB per vendor — the smaller side of the bitmap).
+If a sprite sheet is created without an availability table, runtime assumes all
+emoji are available, preserving the lightweight custom-sheet path. Legacy
+`preloadEmojiData()` input that still contains numeric or object availability
+continues to hydrate into `UnicodeEmoji.availability`.
 
-**Public API:** `preloadEmojiData(core)` unchanged.
-`createEmojiSpriteSheet({ vendor, availability })` accepts the per-vendor
-table; if omitted, "available everywhere" remains the default. Vendor entries
-(`mojix-picker/sprites/<vendor>`) ship the table as a side import so a single
-import wires both the sprite config and its availability set.
+Measured availability payloads:
 
-**Effect:** `emoji-data.json` raw 700 KB → ~550–600 KB; per-vendor
-availability adds 1–5 KB. Brotli savings: **−15–25%** on the data payload.
-Breaking only for consumers that read the raw JSON directly via
-`mojix-picker/data` — schedule for `2.0` with a deprecation warning during
-`1.x`.
+| Vendor     | Raw     | Brotli |
+|------------|--------:|-------:|
+| `apple`    |    37 B |   32 B |
+| `google`   |     2 B |    6 B |
+| `twitter`  |     2 B |    6 B |
+| `facebook` | 1 177 B |  214 B |
 
-### 3.4 Locale delta-coding against English *(planned)*
+### 3.4 Locale delta-coding against English *(done)*
 
-Many emoji names overlap with English in non-English locales (especially
-flags, technical symbols, abbreviations). Each locale pack still stores an
-independent `{ id: name }` table. Build-time delta: emit only entries where
-`localizedName !== englishName`. Runtime: `loadLocale(code)` first ensures
-`en` is loaded, then merges the delta on top — `mergeEmojiTranslations` is
-already there. No public API change.
+Locale name packs are emitted as deltas against English. After 3.5, English is
+the full runtime source for `UnicodeEmoji.name`, while non-English packs omit
+entries where `localizedName === englishName`. `loadEmojiData()` loads English
+before hydrating nameless core data, and `loadLocale(nonEnglish)` ensures
+English is available before applying the locale delta.
 
-**Effect:** −40–80 KB for high-overlap locales (`es`, `fr`, `pt`); −10–30 KB
-for low-overlap locales (`ja`, `ru`, `uk`). Minor breaking only for consumers
-that read raw `mojix-picker/locales/<code>` JSON directly.
+Measured package build after the split:
 
-### 3.5 Drop `name` from base `emoji-data.json` *(planned, 2.0)*
+| Locale | Names raw | Names Brotli | Entries |
+|--------|----------:|-------------:|--------:|
+| `de`   | 55 815 B  | 12 275 B     | 1 508   |
+| `en`   | 59 025 B  | 12 075 B     | 1 647   |
+| `es`   | 58 367 B  | 12 299 B     | 1 538   |
+| `fr`   | 56 580 B  | 12 303 B     | 1 508   |
+| `ja`   | 57 143 B  | 12 525 B     | 1 579   |
+| `pt`   | 57 581 B  | 12 350 B     | 1 541   |
+| `ru`   | 72 506 B  | 14 053 B     | 1 579   |
+| `uk`   | 79 728 B  | 15 426 B     | 1 580   |
 
-`emoji-data.json` carries the English `name` for each emoji, then
-`loadLocale('en')` re-emits the same string. Drop it from the base file and
-make `name` strictly locale-derived. Requires guaranteeing the English locale
-is always loaded (already implicit today).
+Measured savings versus the post-3.1 names-only packs: **-4 410 to -6 344 B
+raw** for non-English locales and **-545 to -964 B Brotli**. English is emitted
+in full again after 3.5 because base `emoji-data.json` no longer contains names.
 
-**Effect:** −60–100 KB on `emoji-data.json` raw. Breaking for consumers that
-read `emoji.name` directly off the raw record. Schedule for `2.0`; deprecate
-in `1.x`.
+### 3.5 Drop `name` from base `emoji-data.json` *(done, 2.0)*
+
+`emoji-data.json` no longer contains English names. The generated column fields
+are now:
+
+```json
+["id","native","aliases","emoticons","categoryId","subcategory","sheetX","sheetY","skins"]
+```
+
+Runtime still exposes `UnicodeEmoji.name`: `loadEmojiData()` fetches/registers
+the English locale pack before hydrating CDN data, and offline callers can keep
+using `preloadEmojiData(core)` after registering `mojix-picker/locales/en`.
+Legacy data containing `name` is still accepted.
+
+Measured core payload after 3.2 + 3.5:
+
+| Artifact                    | Raw       | Brotli   |
+|-----------------------------|----------:|---------:|
+| `emoji-data.json`           | 190 515 B | 28 951 B |
+| availability files combined |   1 218 B |    258 B |
+
+Compared with the post-3.4 core data, `emoji-data.json` is **-38 978 B raw**
+and **-9 982 B Brotli**. The English locale pack is now required for exact
+English names, so the cold-start tradeoff is better raw core data and explicit
+locale ownership rather than a pure wire win for every locale.
 
 ## Cumulative effect target
 
@@ -458,14 +490,14 @@ combining everything in this roadmap targets:
 
 | Channel               | Pre-roadmap | Current           | Remaining target    |
 |-----------------------|-------------|-------------------|---------------------|
-| `emoji-data.json` raw | 700 KB      | 229 KB            | ~150-190 KB         |
-| Locale pack raw       | 289 KB      | 77 KB             | ~60-70 KB           |
+| `emoji-data.json` raw | 700 KB      | 191 KB            | 2.0 complete        |
+| Locale pack raw       | 289 KB      | 73 KB             | ~60-70 KB           |
 | Search index (lazy)   | —           | 192 KB raw        | 192 KB raw          |
-| JS main chunk         | 88 KB       | 92 KB             | ~80-85 KB           |
-| **Cold-start Brotli** | ~120 KB     | **~78 KB**        | **~45-55 KB**       |
+| JS main chunk         | 88 KB       | 94 KB             | ~80-85 KB           |
+| **Cold-start Brotli** | ~120 KB     | **~82 KB**        | future compaction   |
 
-Cold-start = data + locale (no keywords) + JS chunk + CSS, after Brotli.
-Search index loads only on first keystroke and is cached.
+Cold-start = data + English names + selected locale (no keywords) + JS chunk +
+CSS, after Brotli. Search index loads only on first keystroke and is cached.
 
 ## Recommended sequence
 
@@ -479,11 +511,12 @@ Search index loads only on first keystroke and is cached.
    the default JS graph.
 5. **Tier 2.4** (headless subpath) — done; measured -41 235 B raw for
    headless consumers versus the default JS graph.
-6. **Tier 2.5** (lazy virtualization) — next Tier 2 PR; changes the grid render
-   path, no breaking.
-7. **Tier 3.4** (locale delta) — one PR after Tier 2 lands, minor.
-8. **Tier 3.2 + 3.5** — paired in `2.0`; both change the `emoji-data.json`
-   contract. Add deprecation warnings in `1.x` first.
+6. **Tier 2.5** (lazy virtualization) — done; virtual grid code now lands in
+   a deferred `VirtualizedEmojiGrid-*` chunk.
+7. **Tier 3.4** (locale delta) — done; measured -4.4 KB raw and -552 B Brotli
+   on `locales/ru.json`.
+8. **Tier 3.2 + 3.5** — done; paired in `2.0`; core
+   `emoji-data.json` now excludes names and vendor availability.
 
 ## Verification
 

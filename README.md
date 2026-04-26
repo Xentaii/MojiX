@@ -54,6 +54,29 @@ import 'mojix-picker/style.css';
 
 `react` and `react-dom` are peer dependencies.
 
+## Package size model
+
+MojiX optimizes for a different tradeoff than ultra-minimal emoji libraries:
+the npm package includes the runtime code **and** a CDN/offline-ready
+`dist/data/` directory. That means installs are larger than tiny headless
+pickers, but consumers get a complete, self-hostable data mirror without adding
+another data package.
+
+Current `npm pack --dry-run` comparison:
+
+| Package | Download | Unpacked install | What that usually means |
+| --- | ---: | ---: | --- |
+| `frimousse@0.3.0` | 67 KB | 257 KB | Smallest install; intentionally minimal package surface |
+| `emoji-mart@5.6.0` | 430 KB | 1.63 MB | Smaller package, with data handled separately in many setups |
+| `mojix-picker@1.0.0-beta.1` | 1.44 MB | 2.93 MB | Code plus compact emoji data, locale packs, search indexes, and precompressed CDN assets |
+| `emoji-picker-react@4.19.0` | 6.54 MB | 34.26 MB | Data-heavy package footprint |
+
+So MojiX is not trying to beat `frimousse` on raw install size. Its advantage
+is the middle path: a polished React picker, headless primitives, sprite
+presets, runtime localization, CDN-first loading, and explicit offline imports
+in one package. Default app bundles still avoid inlining the full emoji dataset
+unless you opt into `mojix-picker/data` or locale subpaths.
+
 ## Quick start
 
 ```tsx
@@ -296,7 +319,7 @@ paths for future marketing assets.
 - [Migration Guide](./docs/MIGRATION.md)
 - [Bundle size roadmap](./docs/BUNDLE_SIZE_ROADMAP.md)
 - [Headless API roadmap](./docs/HEADLESS_API_ROADMAP.md)
-- [Release notes: 1.0.0](./docs/releases/1.0.0.md)
+- [Release notes: 1.0.0-beta.1](./docs/releases/1.0.0-beta.1.md)
 - [Generation rules](./scripts/README.md)
 - [Changelog](./CHANGELOG.md)
 - [Contributing](./CONTRIBUTING.md)
