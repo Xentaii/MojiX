@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <rect width="1280" height="640" fill="#0B0B0F"/>
+  <text x="640" y="320" text-anchor="middle" dominant-baseline="middle"
+        fill="#FFFFFF" font-family="Segoe UI, Arial, sans-serif"
+        font-size="128" font-weight="700" letter-spacing="2">MojiX</text>
+  <text x="640" y="408" text-anchor="middle" dominant-baseline="middle"
+        fill="#9CA3AF" font-family="Segoe UI, Arial, sans-serif"
+        font-size="22" letter-spacing="4">placeholder</text>
+</svg>
