@@ -144,4 +144,45 @@ describe('public API surface', () => {
       sheetY: 56,
     });
   });
+
+  it('preloadEmojiData accepts 2.0 column data without name or availability', () => {
+    const [emoji] = api.preloadEmojiData({
+      version: 1,
+      fields: [
+        'id',
+        'native',
+        'aliases',
+        'emoticons',
+        'categoryId',
+        'subcategory',
+        'sheetX',
+        'sheetY',
+        'skins',
+      ],
+      categories: ['smileys'],
+      subcategories: ['face-smiling'],
+      skinTones: ['light'],
+      rows: [
+        [
+          '1f600',
+          '\u{1F600}',
+          ['grinning'],
+          [':D'],
+          0,
+          0,
+          32,
+          47,
+          null,
+        ],
+      ],
+    });
+
+    expect(emoji?.name).toBe('Grinning face');
+    expect(emoji?.availability).toEqual({
+      apple: true,
+      google: true,
+      twitter: true,
+      facebook: true,
+    });
+  });
 });

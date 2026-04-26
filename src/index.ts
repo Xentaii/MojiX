@@ -159,6 +159,7 @@ export type {
   EmojiSpriteSheetVariant,
   EmojiSystemCategoryId,
   EmojiVendor,
+  EmojiVendorAvailability,
   ResolvedEmojiCategoryIcon,
   EmojiSvgAsset,
   EmojiSvgAssetSource,

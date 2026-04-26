@@ -98,6 +98,16 @@ function copyBundleDataPlugin() {
         resolve(generatedDir, 'emoji-data.json'),
         resolve(distDataDir, 'emoji-data.json'),
       );
+      for (const fileName of readdirSync(generatedDir)) {
+        if (!/^availability\.[^.]+\.json$/u.test(fileName)) {
+          continue;
+        }
+
+        cpSync(
+          resolve(generatedDir, fileName),
+          resolve(distDataDir, fileName),
+        );
+      }
       writeFileSync(
         resolve(distLibNodeDir, 'data.js'),
         [

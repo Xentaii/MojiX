@@ -12,6 +12,7 @@ import type {
   EmojiSpriteSheetContext,
   EmojiSpriteSheetSource,
   EmojiSpriteSheetVariant,
+  EmojiVendorAvailability,
   EmojiVendor,
   UnicodeEmojiAvailability,
 } from './types';
@@ -28,12 +29,13 @@ export interface ResolvedEmojiSpriteSheetConfig
     Required<
       Omit<
         EmojiSpriteSheetConfig,
-        'cache' | 'url'
+        'availability' | 'cache' | 'url'
       >
     >,
     never
   > {
   url: string | ((context: EmojiSpriteSheetContext) => string);
+  availability?: ReadonlySet<string>;
   cache: Omit<Required<EmojiSpriteSheetCacheConfig>, 'adapter'> &
     Pick<EmojiSpriteSheetCacheConfig, 'adapter'>;
 }
@@ -115,6 +117,7 @@ export function createEmojiSpriteSheet(
 
   return {
     vendor,
+    availability: options.availability,
     sheetSize,
     padding: options.padding ?? EMOJI_SHEET_PADDING,
     gridSize: options.gridSize ?? EMOJI_SHEET_GRID_SIZE,
@@ -127,6 +130,31 @@ export function createEmojiSpriteSheet(
     cache: options.cache,
     url,
   };
+}
+
+function resolveVendorAvailability(
+  availability?: EmojiVendorAvailability,
+) {
+  if (!availability) {
+    return undefined;
+  }
+
+  if (availability instanceof Set) {
+    return availability;
+  }
+
+  if (Array.isArray(availability)) {
+    return new Set(availability);
+  }
+
+  const missing =
+    'missing' in availability
+      ? availability.missing
+      : 'unavailable' in availability
+        ? availability.unavailable
+        : [];
+
+  return new Set(missing);
 }
 
 export function createEmojiCdnSpriteSheet(
@@ -169,6 +197,7 @@ export function resolveSpriteSheetConfig(
 
   return {
     vendor: base.vendor ?? defaultSpriteSheet.vendor ?? 'twitter',
+    availability: resolveVendorAvailability(base.availability),
     sheetSize: base.sheetSize ?? defaultSpriteSheet.sheetSize ?? 64,
     padding: base.padding ?? defaultSpriteSheet.padding ?? EMOJI_SHEET_PADDING,
     gridSize: base.gridSize ?? defaultSpriteSheet.gridSize ?? EMOJI_SHEET_GRID_SIZE,
@@ -271,8 +300,20 @@ export function getSpriteStyle(options: {
 
 export function vendorCanRenderEmoji(
   vendor: EmojiVendor,
-  availability: UnicodeEmojiAvailability,
+  availability?: UnicodeEmojiAvailability,
+  options: {
+    emojiId?: string;
+    missingEmojiIds?: ReadonlySet<string>;
+  } = {},
 ) {
+  if (options.emojiId && options.missingEmojiIds) {
+    return !options.missingEmojiIds.has(options.emojiId);
+  }
+
+  if (!availability) {
+    return true;
+  }
+
   switch (vendor) {
     case 'apple':
       return availability.apple;

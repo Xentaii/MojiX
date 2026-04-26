@@ -88,6 +88,14 @@ function ensureTarballContainsDataAssets(packEntries) {
   if (!files.has('dist/data/emoji-data.json')) {
     throw new Error('Tarball is missing dist/data/emoji-data.json');
   }
+
+  for (const vendor of ['apple', 'google', 'twitter', 'facebook']) {
+    const availabilityPath = `dist/data/availability.${vendor}.json`;
+
+    if (!files.has(availabilityPath)) {
+      throw new Error(`Tarball is missing ${availabilityPath}`);
+    }
+  }
 }
 
 function ensureTarballHasNoCjs(packEntries) {

@@ -8,13 +8,17 @@ artifacts under `src/core/generated/`. Any future generator must follow them.
 - `src/core/generated/emoji-data.json` - the canonical, locale-independent
   catalog of emoji. It is stored as a column payload:
   `{ version, fields, categories, subcategories, skinTones, rows }`.
-  Rows contain id, native emoji, name, aliases, emoticons, category,
-  subcategory, sprite coordinates, vendor availability, and skin variations in
-  field order. `unified` is derived from `id` at runtime; `availability` is
-  stored as a 4-bit mask.
-- `src/core/generated/emoji-locales.json` - combined per-locale name maps:
-  `{ [locale]: { [emojiId]: { name } } }`.
+  Rows contain id, native emoji, aliases, emoticons, category, subcategory,
+  sprite coordinates, and skin variations in field order. `unified` is derived
+  from `id` at runtime. Runtime English names come from the English locale pack,
+  and vendor availability lives in separate vendor files.
+- `src/core/generated/availability.<vendor>.json` - one per-vendor array of
+  emoji ids missing from that vendor's sprite sheet.
+- `src/core/generated/emoji-locales.json` - combined per-locale name delta maps:
+  `{ [locale]: { [emojiId]: { name } } }`. English is full; non-English packs
+  omit names that match English.
 - `src/core/generated/emoji-locale.<code>.json` - one names-only locale pack.
+  English is full; non-English locales are deltas against English.
 - `src/core/generated/emoji-locale.<code>.search.json` - one lazy keyword
   index per locale: `{ [emojiId]: string[] }`.
 - `src/core/generated/emoji-meta.json` - sprite metadata: source package
@@ -32,7 +36,7 @@ artifacts under `src/core/generated/`. Any future generator must follow them.
 ## Supported locales
 
 Declared via `SUPPORTED_LOCALES` in the script. Every supported locale gets a
-name map for non-regional-flag emoji and a separate lazy search index for
+name delta map for non-regional-flag emoji and a separate lazy search index for
 keyword lookup.
 
 ## Casing rules
@@ -42,7 +46,6 @@ lowercased, then the first character is uppercased.
 
 Applies to:
 
-- `emoji.name` in `emoji-data.json`.
 - `emoji.name` per locale in generated locale name maps.
 - Every keyword entry in generated search indexes.
 
@@ -59,9 +62,14 @@ this order:
 
 1. CLDR `tts[0]` for the emoji's native sequence. Lookup first tries the exact
    native string, then with `U+FE0F` variation selectors stripped.
-2. The catalog `emoji.name`, already sentence-cased.
+2. The catalog English name, already sentence-cased.
 
 The resolved value is run through `toSentenceCase` before being written.
+
+The English locale pack is emitted in full because the base emoji catalog no
+longer contains names. Non-English names equal to English are omitted. Runtime
+lookup falls back through the resolved locale chain, so omitted entries remain
+resolvable after the English pack is registered or loaded.
 
 Regional indicator flags are omitted from the generated name maps. Runtime
 lookups derive `"<flag label>: <region name>"` with `Intl.DisplayNames` in
@@ -78,6 +86,9 @@ emoji unless the runtime compatibility layer is intentionally being changed.
 - Empty `aliases`, `emoticons`, and `skins` are stored as `null`.
 - Skin variants are tuples:
   `[toneIndex, unified, native, sheetX, sheetY]`.
+- Base rows intentionally do not contain `name` or `availability`. `name` is
+  restored from the English locale pack at runtime; `availability` is applied by
+  vendor sprite presets.
 
 ## Keywords
 

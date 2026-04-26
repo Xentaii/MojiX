@@ -1,5 +1,10 @@
 import '@testing-library/jest-dom/vitest';
 import emojiData from '../src/entries/data';
-import { preloadEmojiData } from '../src/index';
+import enLocale from '../src/entries/locales/en';
+import {
+  preloadEmojiData,
+  registerEmojiLocalePack,
+} from '../src/index';
 
+registerEmojiLocalePack('en', enLocale);
 preloadEmojiData(emojiData);

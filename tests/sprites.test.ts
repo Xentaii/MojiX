@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { getSpriteStyle } from '../src/core/sprites';
+import {
+  createEmojiSpriteSheet,
+  getSpriteStyle,
+  resolveSpriteSheetConfig,
+  vendorCanRenderEmoji,
+} from '../src/core/sprites';
 
 describe('sprite style helpers', () => {
   it('renders scaled sprite tiles with percentage-based sprite positioning', () => {
@@ -44,5 +49,27 @@ describe('sprite style helpers', () => {
       backgroundPosition:
         '3.1746031746031744% 4.761904761904762%',
     });
+  });
+
+  it('uses vendor availability tables to block missing emoji sprites', () => {
+    const spriteSheet = resolveSpriteSheetConfig(
+      createEmojiSpriteSheet({
+        vendor: 'facebook',
+        availability: ['1f600'],
+      }),
+    );
+
+    expect(
+      vendorCanRenderEmoji('facebook', undefined, {
+        emojiId: '1f600',
+        missingEmojiIds: spriteSheet.availability,
+      }),
+    ).toBe(false);
+    expect(
+      vendorCanRenderEmoji('facebook', undefined, {
+        emojiId: '1f603',
+        missingEmojiIds: spriteSheet.availability,
+      }),
+    ).toBe(true);
   });
 });

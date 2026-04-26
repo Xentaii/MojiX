@@ -7,9 +7,11 @@ import ptLocale from '../src/entries/locales/pt';
 import ukLocale from '../src/entries/locales/uk';
 import {
   emojiPickerLocales,
+  getLocalizedEmojiName,
   registerEmojiLocalePack,
   resolveLocaleDefinition,
 } from '../src/index';
+import type { EmojiRenderable } from '../src/index';
 
 describe('expanded locales', () => {
   it('ships additional chrome locales out of the box', () => {
@@ -37,5 +39,20 @@ describe('expanded locales', () => {
     expect(emojiPickerLocales.ja?.emoji['1f600']?.name).toBeTruthy();
     expect(emojiPickerLocales.pt?.emoji['1f600']?.name).toBeTruthy();
     expect(emojiPickerLocales.uk?.emoji['1f600']?.name).toBeTruthy();
+  });
+
+  it('falls back to the base English name for omitted locale deltas', () => {
+    expect(deLocale['1f933']).toBeUndefined();
+
+    registerEmojiLocalePack('de', deLocale);
+
+    const definition = resolveLocaleDefinition('de');
+    const fakeEmoji = {
+      kind: 'unicode',
+      id: '1f933',
+      name: 'Selfie',
+    } as unknown as EmojiRenderable;
+
+    expect(getLocalizedEmojiName(fakeEmoji, definition)).toBe('Selfie');
   });
 });

@@ -56,7 +56,10 @@ function resolveDefaultEmojiAsset(
     request.spriteSheet ?? defaultSpriteSheet,
   );
   const canUseSprite =
-    vendorCanRenderEmoji(spriteSheet.vendor, emoji.availability) ||
+    vendorCanRenderEmoji(spriteSheet.vendor, emoji.availability, {
+      emojiId: emoji.id,
+      missingEmojiIds: spriteSheet.availability,
+    }) ||
     !spriteSheet.fallbackNative;
 
   if (!canUseSprite) {

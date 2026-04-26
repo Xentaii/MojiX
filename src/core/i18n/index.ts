@@ -576,12 +576,10 @@ export function registerEmojiLocalePack(
   return existing;
 }
 
-export async function loadLocale(locale: EmojiLocaleCode) {
+export async function loadLocale(
+  locale: EmojiLocaleCode,
+): Promise<EmojiLocaleDefinition> {
   for (const candidate of createLocaleCandidates(locale)) {
-    if (candidate === 'en') {
-      return resolveLocaleDefinition('en');
-    }
-
     const existing = getRegisteredLocaleDefinition(candidate);
 
     if (existing && Object.keys(existing.emoji).length > 0) {
@@ -594,8 +592,11 @@ export async function loadLocale(locale: EmojiLocaleCode) {
       return pendingLoad;
     }
 
-    const loadPromise = loadEmojiLocalePackFromCdn(candidate)
-      .then((pack) => {
+    const loadPromise: Promise<EmojiLocaleDefinition> = (candidate === 'en'
+      ? Promise.resolve()
+      : loadLocale('en').then(() => undefined))
+      .then(() => loadEmojiLocalePackFromCdn(candidate))
+      .then((pack: Record<string, EmojiLocaleEmojiTranslation>) => {
         registerEmojiLocalePack(candidate, pack);
         return resolveLocaleDefinition(candidate);
       })

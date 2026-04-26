@@ -52,4 +52,5 @@ export type {
   EmojiSkinTone,
   EmojiSpriteSheetConfig,
   EmojiVendor,
+  EmojiVendorAvailability,
 } from '../core/types';

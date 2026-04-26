@@ -23,7 +23,6 @@ const activeFixture =
     : new URLSearchParams(window.location.search).get('fixture');
 
 if (!activeFixture?.startsWith('cdn-')) {
-  preloadEmojiData(emojiData);
   registerEmojiLocalePack('de', deLocale);
   registerEmojiLocalePack('en', enLocale);
   registerEmojiLocalePack('es', esLocale);
@@ -32,6 +31,7 @@ if (!activeFixture?.startsWith('cdn-')) {
   registerEmojiLocalePack('pt', ptLocale);
   registerEmojiLocalePack('ru', ruLocale);
   registerEmojiLocalePack('uk', ukLocale);
+  preloadEmojiData(emojiData);
 }
 
 createRoot(document.getElementById('root')!).render(

@@ -3,6 +3,8 @@ import {
   getLocalizedCategoryLabel,
   getLocalizedEmojiKeywords,
   getLocalizedEmojiName,
+  loadLocale,
+  resolveLocaleDefinition,
 } from './i18n';
 import {
   CATEGORY_META,
@@ -84,9 +86,10 @@ export type EmojiSkinVariantColumnRow = [
 
 export type UnicodeEmojiDataRecord = Omit<
   PreparedUnicodeEmojiRecord,
-  'unified' | 'availability' | 'skins' | 'subcategory'
+  'unified' | 'availability' | 'name' | 'skins' | 'subcategory'
 > & {
   unified?: string;
+  name?: string;
   subcategory?: string;
   availability?: EmojiDataAvailabilityInput;
   skins: EmojiSkinVariantInput[];
@@ -306,6 +309,16 @@ function requireColumnString(
   return value;
 }
 
+function getOptionalColumnString(
+  row: readonly UnicodeEmojiColumnValue[],
+  indexes: Partial<Record<UnicodeEmojiCanonicalColumnField, number>>,
+  field: UnicodeEmojiCanonicalColumnField,
+) {
+  const value = getColumnValue(row, indexes, field);
+
+  return typeof value === 'string' ? value : undefined;
+}
+
 function requireColumnNumber(
   row: readonly UnicodeEmojiColumnValue[],
   indexes: Partial<Record<UnicodeEmojiCanonicalColumnField, number>>,
@@ -433,7 +446,7 @@ function expandColumnEmojiData(
   return raw.rows.map((row) => ({
     id: requireColumnString(row, indexes, 'id'),
     native: requireColumnString(row, indexes, 'native'),
-    name: requireColumnString(row, indexes, 'name'),
+    name: getOptionalColumnString(row, indexes, 'name'),
     aliases: toStringArray(getColumnValue(row, indexes, 'aliases')),
     emoticons: toStringArray(getColumnValue(row, indexes, 'emoticons')),
     categoryId: resolveColumnCategory(
@@ -464,6 +477,28 @@ function normalizeEmojiDataInput(raw: EmojiDataInput): UnicodeEmojiDataRecord[] 
 
 function idToUnified(id: string) {
   return id.toUpperCase();
+}
+
+function toFallbackEmojiName(id: string, aliases: string[]) {
+  const candidate = aliases[0] ?? id;
+  const normalized = candidate.replaceAll('_', ' ').replaceAll('-', ' ');
+
+  return normalized.charAt(0).toLocaleUpperCase('en') + normalized.slice(1);
+}
+
+function resolveEnglishEmojiName(
+  id: string,
+  explicitName: string | undefined,
+  aliases: string[],
+) {
+  if (explicitName) {
+    return explicitName;
+  }
+
+  return (
+    resolveLocaleDefinition('en').emoji[id]?.name ??
+    toFallbackEmojiName(id, aliases)
+  );
 }
 
 function normalizeAvailability(
@@ -498,8 +533,15 @@ function normalizeAvailability(
 function normalizeUnicodeEmojiRecord(
   emoji: UnicodeEmojiDataRecord,
 ): PreparedUnicodeEmojiRecord {
+  const name = resolveEnglishEmojiName(
+    emoji.id,
+    emoji.name,
+    emoji.aliases,
+  );
+
   return {
     ...emoji,
+    name,
     unified: emoji.unified ?? idToUnified(emoji.id),
     subcategory: emoji.subcategory ?? '',
     availability: normalizeAvailability(emoji.availability),
@@ -660,8 +702,11 @@ export function loadEmojiData(): Promise<UnicodeEmoji[]> {
   emojiDataStore.status = 'loading';
   emojiDataStore.error = null;
 
-  const loadPromise = loadEmojiDataFromCdn()
-    .then((raw) => preloadEmojiData(raw))
+  const loadPromise = Promise.all([
+    loadEmojiDataFromCdn(),
+    loadLocale('en').catch(() => null),
+  ])
+    .then(([raw]) => preloadEmojiData(raw))
     .catch((error) => {
       emojiDataStore.status = 'error';
       emojiDataStore.error = error;

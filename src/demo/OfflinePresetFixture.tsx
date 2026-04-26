@@ -16,8 +16,8 @@ export function OfflinePresetFixture() {
   const [selection, setSelection] = useState<EmojiSelection | null>(null);
 
   if (!initializedRef.current) {
-    preloadEmojiData(emojiData);
     registerEmojiLocalePack('en', enLocale);
+    preloadEmojiData(emojiData);
     initializedRef.current = true;
   }
 

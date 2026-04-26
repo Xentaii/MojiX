@@ -37,6 +37,7 @@ const AVAILABILITY_BITS = {
   twitter: 4,
   facebook: 8,
 };
+const VENDORS = Object.keys(AVAILABILITY_BITS);
 const CATEGORY_ID_ORDER = Object.values(CATEGORY_IDS);
 const SKIN_TONE_ORDER = [
   'light',
@@ -48,14 +49,12 @@ const SKIN_TONE_ORDER = [
 const EMOJI_DATA_FIELDS = [
   'id',
   'native',
-  'name',
   'aliases',
   'emoticons',
   'categoryId',
   'subcategory',
   'sheetX',
   'sheetY',
-  'availability',
   'skins',
 ];
 
@@ -177,17 +176,25 @@ function toColumnEmojiData(records) {
     rows: records.map((emoji) => [
       emoji.id,
       emoji.native,
-      emoji.name,
       compactStringArray(emoji.aliases),
       compactStringArray(emoji.emoticons),
       categoryIndexes.get(emoji.categoryId),
       subcategoryIndexes.get(emoji.subcategory ?? ''),
       emoji.sheetX,
       emoji.sheetY,
-      emoji.availability,
       compactSkins(emoji.skins),
     ]),
   };
+}
+
+function createLocaleNameDelta(localeNames, baseNames) {
+  return Object.fromEntries(
+    Object.entries(localeNames).filter(([emojiId, translation]) => {
+      const baseName = baseNames[emojiId];
+
+      return baseName === undefined || translation.name !== baseName;
+    }),
+  );
 }
 
 function lookupAnnotation(annotations, native) {
@@ -295,6 +302,33 @@ const localeData = Object.fromEntries(
     }),
   ),
 );
+const baseEnglishNames = Object.fromEntries(
+  emojiData.map((emoji) => [emoji.id, emoji.name]),
+);
+const deltaLocaleData = Object.fromEntries(
+  Object.entries(localeData).map(([locale, pack]) => [
+    locale,
+    {
+      names:
+        locale === 'en'
+          ? pack.names
+          : createLocaleNameDelta(pack.names, baseEnglishNames),
+      keywords: pack.keywords,
+    },
+  ]),
+);
+const vendorAvailabilityData = Object.fromEntries(
+  VENDORS.map((vendor) => {
+    const bit = AVAILABILITY_BITS[vendor];
+
+    return [
+      vendor,
+      emojiData
+        .filter((emoji) => (emoji.availability & bit) === 0)
+        .map((emoji) => emoji.id),
+    ];
+  }),
+);
 
 await mkdir(resolve('src/core/generated'), { recursive: true });
 await writeFile(OUTPUT_PATH, JSON.stringify(toColumnEmojiData(emojiData)));
@@ -302,13 +336,16 @@ await writeFile(
   LOCALE_OUTPUT_PATH,
   JSON.stringify(
     Object.fromEntries(
-      Object.entries(localeData).map(([code, pack]) => [code, pack.names]),
+      Object.entries(deltaLocaleData).map(([code, pack]) => [
+        code,
+        pack.names,
+      ]),
     ),
   ),
 );
 await writeFile(META_OUTPUT_PATH, JSON.stringify(emojiMeta));
 
-for (const [locale, pack] of Object.entries(localeData)) {
+for (const [locale, pack] of Object.entries(deltaLocaleData)) {
   const perLocalePath = resolve(`src/core/generated/emoji-locale.${locale}.json`);
   const perLocaleSearchPath = resolve(
     `src/core/generated/emoji-locale.${locale}.search.json`,
@@ -319,6 +356,17 @@ for (const [locale, pack] of Object.entries(localeData)) {
   console.log(`Generated '${locale}' locale pack to ${perLocalePath}`);
   console.log(
     `Generated '${locale}' search index to ${perLocaleSearchPath}`,
+  );
+}
+
+for (const [vendor, missingEmojiIds] of Object.entries(vendorAvailabilityData)) {
+  const vendorAvailabilityPath = resolve(
+    `src/core/generated/availability.${vendor}.json`,
+  );
+
+  await writeFile(vendorAvailabilityPath, JSON.stringify(missingEmojiIds));
+  console.log(
+    `Generated '${vendor}' availability data to ${vendorAvailabilityPath}`,
   );
 }
 

@@ -112,6 +112,14 @@ export interface UnicodeEmojiAvailability {
   facebook: boolean;
 }
 
+export type EmojiVendorAvailability =
+  | readonly string[]
+  | ReadonlySet<string>
+  | {
+      missing?: readonly string[];
+      unavailable?: readonly string[];
+    };
+
 export interface UnicodeEmoji {
   kind: 'unicode';
   id: string;
@@ -246,6 +254,7 @@ export interface EmojiSpriteSheetCacheConfig {
 export interface EmojiSpriteSheetConfig {
   url?: string | ((context: EmojiSpriteSheetContext) => string);
   vendor?: EmojiVendor;
+  availability?: EmojiVendorAvailability;
   sheetSize?: number;
   padding?: number;
   gridSize?: number;

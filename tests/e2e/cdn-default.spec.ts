@@ -5,6 +5,10 @@ const emojiDataJson = readFileSync(
   new URL('../../src/core/generated/emoji-data.json', import.meta.url),
   'utf8',
 );
+const englishLocaleJson = readFileSync(
+  new URL('../../src/core/generated/emoji-locale.en.json', import.meta.url),
+  'utf8',
+);
 
 test.describe('MojiX CDN data loading', () => {
   test('loads emoji data from jsdelivr on first mount', async ({ page }) => {
@@ -20,6 +24,16 @@ test.describe('MojiX CDN data loading', () => {
           status: 200,
           contentType: 'application/json',
           body: emojiDataJson,
+        });
+      },
+    );
+    await page.route(
+      'https://cdn.jsdelivr.net/**/data/locales/en.json',
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: englishLocaleJson,
         });
       },
     );
@@ -48,6 +62,16 @@ test.describe('MojiX CDN data loading', () => {
           status: 503,
           contentType: 'application/json',
           body: '{"error":"unavailable"}',
+        });
+      },
+    );
+    await page.route(
+      'https://cdn.jsdelivr.net/**/data/locales/en.json',
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: englishLocaleJson,
         });
       },
     );
