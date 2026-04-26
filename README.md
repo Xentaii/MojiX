@@ -2,7 +2,7 @@
 
 # MojiX
 
-**A modern React emoji picker that starts small, feels polished, and scales from drop-in UI to fully headless composition.**
+React emoji picker for web apps.
 
 [![npm](https://img.shields.io/npm/v/mojix-picker?style=flat-square)](https://www.npmjs.com/package/mojix-picker)
 [![downloads](https://img.shields.io/npm/dm/mojix-picker?style=flat-square)](https://www.npmjs.com/package/mojix-picker)
@@ -13,38 +13,40 @@
 
 [Live Demo](https://xentaii.github.io/MojiX/) - [npm](https://www.npmjs.com/package/mojix-picker) - [API Docs](./docs/api/README.md) - [Migration Guide](./docs/MIGRATION.md)
 
-<a href="https://xentaii.github.io/MojiX/">
-  <img src="./docs/assets/repo-cover-placeholder.svg" alt="MojiX repository cover placeholder" width="100%" />
-</a>
-
 </div>
 
-> **Start with the live demo.**  
-> The fastest way to evaluate MojiX is to open the playground, try the default picker, tweak the theme, switch locales, and see the headless pieces in action:
->
-> **[Try the live demo](https://xentaii.github.io/MojiX/)**
+MojiX provides:
 
-MojiX is built for teams that want a real product surface, not just a pile of emoji data:
+- a ready-to-use React emoji picker
+- headless primitives for custom picker layouts
+- async emoji data loading from the npm CDN mirror
+- explicit offline data imports
+- native emoji rendering, sprite sheet rendering, and custom asset sources
+- locale packs and lazy search indexes
 
-- a polished default picker you can ship quickly
-- a headless composition layer when product needs outgrow the default layout
-- CDN-first emoji metadata so the main package stays lean
-- an explicit offline preload path for regulated or air-gapped environments
-- vendor sprite presets, custom assets, theming hooks, and runtime i18n
+Current release line: `1.0.0-beta.1`. The package is still in beta; the public
+API is intended to be stable, but the generated data contract and package shape
+may still change before a stable `1.0.0`.
 
-## Why teams pick MojiX
+## 📚 Table of Contents
 
-- **Fast default path.** `EmojiPicker` works out of the box with search, recents, preview, skin tones, and category navigation.
-- **Headless when needed.** `MojiX.*` primitives and engine helpers let you build custom popovers, compact pickers, or app-specific layouts without forking the library.
-- **CDN-first by design.** Unicode emoji data and locale packs load lazily from the package CDN mirror instead of bloating the main entry.
-- **Offline is still first-class.** Use `mojix-picker/data` and `mojix-picker/locales/<code>` when runtime network access is not allowed.
-- **Real integration surface.** Sprite presets, custom asset sources, stable slot hooks, and strong TypeScript support make it practical in production apps.
-- **Live playground included.** The demo site is part of the repo workflow and doubles as a review surface for UI, accessibility, and release verification.
+- [📦 Install](#install)
+- [💾 Data](#data)
+- [😀 Picker](#picker)
+- [🧩 Headless API](#headless-api)
+- [🎨 Emoji Rendering](#emoji-rendering)
+- [🌍 Internationalization](#internationalization)
+- [🖥️ SSR](#ssr)
+- [🗂️ Package Contents](#package-contents)
+- [🛠️ Development](#development)
+- [📖 Docs](#docs)
 
-## Install
+<a id="install"></a>
+
+## 📦 Install
 
 ```bash
-npm install mojix-picker
+npm install mojix-picker@beta
 ```
 
 ```tsx
@@ -54,30 +56,47 @@ import 'mojix-picker/style.css';
 
 `react` and `react-dom` are peer dependencies.
 
-## Package size model
+<a id="data"></a>
 
-MojiX optimizes for a different tradeoff than ultra-minimal emoji libraries:
-the npm package includes the runtime code **and** a CDN/offline-ready
-`dist/data/` directory. That means installs are larger than tiny headless
-pickers, but consumers get a complete, self-hostable data mirror without adding
-another data package.
+## 💾 Data
 
-Current `npm pack --dry-run` comparison:
+The default picker does not import the full emoji dataset into the main JS
+entry. On first mount, MojiX loads the unicode emoji metadata and the active
+locale from the package CDN mirror:
 
-| Package | Download | Unpacked install | What that usually means |
-| --- | ---: | ---: | --- |
-| `frimousse@0.3.0` | 67 KB | 257 KB | Smallest install; intentionally minimal package surface |
-| `emoji-mart@5.6.0` | 430 KB | 1.63 MB | Smaller package, with data handled separately in many setups |
-| `mojix-picker@1.0.0-beta.1` | 1.44 MB | 2.93 MB | Code plus compact emoji data, locale packs, search indexes, and precompressed CDN assets |
-| `emoji-picker-react@4.19.0` | 6.54 MB | 34.26 MB | Data-heavy package footprint |
+```text
+https://cdn.jsdelivr.net/npm/mojix-picker@<version>/data/emoji-data.json
+https://cdn.jsdelivr.net/npm/mojix-picker@<version>/data/locales/<code>.json
+```
 
-So MojiX is not trying to beat `frimousse` on raw install size. Its advantage
-is the middle path: a polished React picker, headless primitives, sprite
-presets, runtime localization, CDN-first loading, and explicit offline imports
-in one package. Default app bundles still avoid inlining the full emoji dataset
-unless you opt into `mojix-picker/data` or locale subpaths.
+Locale keyword search indexes are split from locale name packs. They are loaded
+only when search needs them:
 
-## Quick start
+```text
+https://cdn.jsdelivr.net/npm/mojix-picker@<version>/data/locales/<code>.search.json
+```
+
+For apps that cannot use runtime network requests, import the data subpaths and
+register them during bootstrap:
+
+```tsx
+import emojiData from 'mojix-picker/data';
+import ruLocale from 'mojix-picker/locales/ru';
+import ruSearch from 'mojix-picker/locales/ru/search';
+import {
+  preloadEmojiData,
+  registerEmojiLocalePack,
+  registerEmojiLocaleSearchIndex,
+} from 'mojix-picker';
+
+preloadEmojiData(emojiData);
+registerEmojiLocalePack('ru', ruLocale);
+registerEmojiLocaleSearchIndex('ru', ruSearch);
+```
+
+<a id="picker"></a>
+
+## 😀 Picker
 
 ```tsx
 import { EmojiPicker } from 'mojix-picker';
@@ -95,41 +114,20 @@ export function ComposerEmojiPicker() {
 }
 ```
 
-On first mount, MojiX loads unicode emoji data and the active locale pack from:
+The default picker includes:
 
-```text
-https://cdn.jsdelivr.net/npm/mojix-picker@<version>/data/emoji-data.json
-https://cdn.jsdelivr.net/npm/mojix-picker@<version>/data/locales/<code>.json
-```
+- search
+- recent emoji
+- category navigation
+- skin tone selection
+- active emoji preview
+- loading and empty states
 
-Sprite sheets continue to resolve from the vendor CDN packages:
+<a id="headless-api"></a>
 
-```text
-https://cdn.jsdelivr.net/npm/emoji-datasource-twitter@16.0.0/img/twitter/sheets-256/64.png
-```
+## 🧩 Headless API
 
-## Offline preload
-
-If your app must run without runtime network access, preload the package data at
-bootstrap:
-
-```tsx
-import emojiData from 'mojix-picker/data';
-import ruLocale from 'mojix-picker/locales/ru';
-import twitterSprites from 'mojix-picker/sprites/twitter';
-import {
-  EmojiPicker,
-  preloadEmojiData,
-  registerEmojiLocalePack,
-} from 'mojix-picker';
-
-preloadEmojiData(emojiData);
-registerEmojiLocalePack('ru', ruLocale);
-
-<EmojiPicker locale="ru" spriteSheet={twitterSprites} />;
-```
-
-## Headless API
+Use `MojiX.*` primitives when the default picker layout is not enough.
 
 ```tsx
 import { MojiX } from 'mojix-picker';
@@ -176,14 +174,18 @@ Hooks:
 - `useSkinTone`
 - `useEmojiAssets`
 
-## Asset sources
+<a id="emoji-rendering"></a>
+
+## 🎨 Emoji Rendering
+
+By default, MojiX can render native operating-system emoji. Sprite sheets and
+custom assets are opt-in.
 
 ```tsx
 import {
   EmojiPicker,
   createEmojiSpriteSheet,
   createSpriteSheetAssetSource,
-  createSvgAssetSource,
 } from 'mojix-picker';
 
 <EmojiPicker
@@ -194,13 +196,16 @@ import {
     variant: 'indexed-256',
   })}
   gridAssetSource={createSpriteSheetAssetSource()}
-  previewAssetSource={createSvgAssetSource({
-    resolveUrl: ({ emoji }) => `/emoji/svg/${emoji.id}.svg`,
-  })}
 />;
 ```
 
-Factories:
+Sprite sheets resolve through `emoji-datasource-*` CDN packages:
+
+```text
+https://cdn.jsdelivr.net/npm/emoji-datasource-twitter@16.0.0/img/twitter/sheets-256/64.png
+```
+
+Asset source helpers:
 
 - `createNativeAssetSource`
 - `createSpriteSheetAssetSource`
@@ -208,7 +213,43 @@ Factories:
 - `createSvgAssetSource`
 - `createMixedAssetSource`
 
-## Localization
+Sprite preset subpaths:
+
+- `mojix-picker/sprites/twitter`
+- `mojix-picker/sprites/apple`
+- `mojix-picker/sprites/google`
+- `mojix-picker/sprites/facebook`
+
+<a id="internationalization"></a>
+
+## 🌍 Internationalization
+
+Built-in chrome locales:
+
+- `en`
+- `de`
+- `es`
+- `fr`
+- `ja`
+- `pt`
+- `ru`
+- `uk`
+
+Setting `locale="ru"` loads the Russian emoji name pack on demand. Locale
+search data is separate and can be loaded with `loadEmojiLocaleSearchIndex()`.
+
+```tsx
+import {
+  EmojiPicker,
+  loadEmojiLocaleSearchIndex,
+} from 'mojix-picker';
+
+await loadEmojiLocaleSearchIndex('ru');
+
+<EmojiPicker locale="ru" />;
+```
+
+Local label overrides can be passed through the `locales` prop:
 
 ```tsx
 <EmojiPicker
@@ -219,31 +260,18 @@ Factories:
       labels: { searchPlaceholder: 'Find emoji' },
     },
   }}
-/>
+/>;
 ```
 
-- Built-in chrome locales: `en`, `de`, `es`, `fr`, `ja`, `pt`, `ru`, `uk`
-- Setting `locale="ru"` loads that locale's emoji translation pack on demand
-- Offline apps can register packs from `mojix-picker/locales/<code>`
-- `emojiPickerLocales` reflects only locale packs explicitly registered in the current runtime
+`emojiPickerLocales` reflects locale packs explicitly registered in the current
+runtime. It is not a static list of every locale shipped by the package.
 
-## Loading and errors
+<a id="ssr"></a>
 
-MojiX shows `MojiX.Loading` while unicode emoji data is loading. If the CDN
-request fails, observe it through `onDataError`:
+## 🖥️ SSR
 
-```tsx
-<EmojiPicker
-  onDataError={(error) => {
-    console.error('Failed to load emoji data', error);
-  }}
-/>
-```
-
-## SSR
-
-MojiX reads browser APIs such as `window`, `localStorage`, and Cache Storage.
-Mount it from a client boundary in SSR frameworks.
+MojiX uses browser APIs such as `window`, `localStorage`, Cache Storage, and
+DOM measurements. Render it from a client boundary in SSR frameworks.
 
 ```tsx
 // Next.js App Router
@@ -261,7 +289,32 @@ export const EmojiPicker = dynamic(
 );
 ```
 
-## Development
+<a id="package-contents"></a>
+
+## 🗂️ Package Contents
+
+Published packages ship:
+
+- `dist/lib/` - ESM runtime, type declarations, CSS, and subpath entries
+- `dist/data/` - emoji data, locale packs, search indexes, availability files,
+  and precompressed `.br` / `.gz` assets
+
+Current `npm pack --dry-run` size for `1.0.0-beta.1`:
+
+| Metric | Size |
+| --- | ---: |
+| Tarball download | 1.44 MB |
+| Unpacked install | 2.93 MB |
+| Files | 184 |
+
+This package is larger than minimal headless emoji libraries because it carries
+the data mirror needed for jsDelivr, self-hosting, and offline imports. The
+default app bundle does not inline the full emoji dataset unless the app imports
+`mojix-picker/data` or locale data subpaths directly.
+
+<a id="development"></a>
+
+## 🛠️ Development
 
 ```bash
 git clone https://github.com/Xentaii/MojiX
@@ -275,44 +328,35 @@ Key scripts:
 
 | Script | Purpose |
 | --- | --- |
-| `npm run dev` | Start the live playground |
-| `npm run emoji:data` | Regenerate `src/core/generated/` from CLDR + `emoji-datasource` |
-| `npm run typecheck` | Run strict TypeScript checks |
+| `npm run dev` | Start the demo app |
+| `npm run emoji:data` | Regenerate `src/core/generated/` from CLDR and `emoji-datasource` |
+| `npm run typecheck` | Run TypeScript checks |
 | `npm run test` | Run Vitest |
 | `npm run test:e2e` | Run Playwright |
 | `npm run build:demo` | Build the demo app |
-| `npm run build:lib` | Build the publishable library (ESM + types) |
+| `npm run build:lib` | Build the library artifacts |
 | `npm run build:package` | Regenerate data and build package artifacts |
-| `npm run pack:check` | Verify `npm pack --dry-run` output |
+| `npm run pack:check` | Verify package exports and packed assets |
 
-Published packages ship `dist/lib/` plus `dist/data/`. The main entry stays
-code-only, and `dist/data/` powers both jsDelivr delivery and offline subpath
-imports.
-
-## Project structure
+Project layout:
 
 ```text
 src/
-|-- components/              React layer and UI primitives
-|-- core/                    Engine, async data store, i18n, sprite helpers
-|-- entries/                 Offline subpath modules and sprite presets
-|-- demo/                    Playground and test fixtures
+|-- components/              React components and headless primitives
+|-- core/                    Data store, i18n, search, sprites, storage
+|-- entries/                 Package subpath entries
+|-- demo/                    Demo app and test fixtures
 `-- index.ts                 Public entry
 scripts/
 `-- build-emoji-data.mjs     Generator for src/core/generated/*
 ```
 
-`src/core/generated/` is a build artifact. Regenerate it with `npm run emoji:data`.
+`src/core/generated/` is a build artifact. Regenerate it with
+`npm run emoji:data`.
 
-## Screenshots and cover placeholders
+<a id="docs"></a>
 
-- Repository cover placeholder: [docs/assets/repo-cover-placeholder.svg](./docs/assets/repo-cover-placeholder.svg)
-- Live demo placeholder: [docs/assets/live-demo-placeholder.svg](./docs/assets/live-demo-placeholder.svg)
-
-These are intentionally lightweight placeholders so the repo already has stable
-paths for future marketing assets.
-
-## Docs
+## 📖 Docs
 
 - [Live Demo](https://xentaii.github.io/MojiX/)
 - [API reference](./docs/api/README.md)
@@ -324,6 +368,6 @@ paths for future marketing assets.
 - [Changelog](./CHANGELOG.md)
 - [Contributing](./CONTRIBUTING.md)
 
-## License
+## ⚖️ License
 
 [MIT](./LICENSE)
