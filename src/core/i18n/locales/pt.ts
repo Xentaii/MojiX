@@ -12,6 +12,7 @@ export const portugueseLabels: EmojiPickerLabels = {
     'Tente uma palavra, um alias ou um emoticon mais curto.',
   recents: 'Recentes',
   custom: 'Personalizados',
+  categoryNavigation: 'Emoji categories',
   skinToneButton: 'Tom de pele',
   clearSearch: 'Limpar pesquisa',
 };

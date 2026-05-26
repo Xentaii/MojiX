@@ -12,6 +12,7 @@ export const germanLabels: EmojiPickerLabels = {
     'Versuche ein kürzeres Wort, einen Alias oder ein Emoticon.',
   recents: 'Zuletzt verwendet',
   custom: 'Eigene',
+  categoryNavigation: 'Emoji categories',
   skinToneButton: 'Hautfarbe',
   clearSearch: 'Suche löschen',
 };

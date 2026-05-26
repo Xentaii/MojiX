@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
 import { createContext, useContext, useMemo } from 'react';
 import { SKIN_TONE_OPTIONS } from '../core/constants';
 import { resolveEmojiAsset } from '../core/assets';
@@ -31,6 +31,66 @@ const retainedSpriteSheetStyle = {
   pointerEvents: 'none',
   transform: 'translate(-9999px, -9999px)',
 } satisfies CSSProperties;
+
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+function getFocusableElements(root: HTMLElement) {
+  return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+    .filter((element) => {
+      if (element.hidden || element.getAttribute('aria-hidden') === 'true') {
+        return false;
+      }
+
+      return true;
+    });
+}
+
+function handleFocusTrapKeyDown(
+  event: KeyboardEvent<HTMLDivElement>,
+  options: {
+    trapFocus: boolean;
+    closeOnEscape: boolean;
+    setOpen: (open: boolean) => void;
+  },
+) {
+  if (event.key === 'Escape' && options.closeOnEscape) {
+    event.stopPropagation();
+    options.setOpen(false);
+    return;
+  }
+
+  if (event.key !== 'Tab' || !options.trapFocus) {
+    return;
+  }
+
+  const root = event.currentTarget;
+  const focusable = getFocusableElements(root);
+
+  if (focusable.length === 0) {
+    event.preventDefault();
+    root.focus();
+    return;
+  }
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const activeElement = document.activeElement;
+
+  if (!event.shiftKey && activeElement === last) {
+    event.preventDefault();
+    first?.focus();
+  } else if (event.shiftKey && activeElement === first) {
+    event.preventDefault();
+    last?.focus();
+  }
+}
 
 export function useMojiXContext() {
   const context = useContext(MojiXContext);
@@ -103,6 +163,9 @@ export interface MojiXRootProps
 export function MojiXRoot({
   children,
   value,
+  open,
+  defaultOpen,
+  onOpenChange,
   searchQuery,
   defaultSearchQuery,
   onSearchQueryChange,
@@ -119,6 +182,9 @@ export function MojiXRoot({
   activeEmojiId,
   defaultActiveEmojiId,
   onActiveEmojiChange,
+  recentEmoji,
+  defaultRecentEmoji,
+  onRecentEmojiChange,
   emojiSize,
   columns,
   loading,
@@ -144,6 +210,8 @@ export function MojiXRoot({
   loadCategoryShards,
   autoScrollCategoriesOnHover,
   categoryScrollBehavior,
+  trapFocus,
+  closeOnEscape,
   categories,
   categoryIcons,
   categoryIconStyle,
@@ -166,6 +234,9 @@ export function MojiXRoot({
 }: MojiXRootProps) {
   const state = useEmojiPickerState({
     value,
+    open,
+    defaultOpen,
+    onOpenChange,
     searchQuery,
     defaultSearchQuery,
     onSearchQueryChange,
@@ -182,6 +253,9 @@ export function MojiXRoot({
     activeEmojiId,
     defaultActiveEmojiId,
     onActiveEmojiChange,
+    recentEmoji,
+    defaultRecentEmoji,
+    onRecentEmojiChange,
     emojiSize,
     columns,
     loading,
@@ -207,6 +281,8 @@ export function MojiXRoot({
     loadCategoryShards,
     autoScrollCategoriesOnHover,
     categoryScrollBehavior,
+    trapFocus,
+    closeOnEscape,
     categories,
     categoryIcons,
     categoryIconStyle,
@@ -243,8 +319,23 @@ export function MojiXRoot({
           style,
         )}
         data-mx-slot="root"
+        data-open={state.open ? 'true' : 'false'}
         data-mx-unstyled={state.unstyled ? 'true' : undefined}
         data-loading={state.loading ? 'true' : undefined}
+        tabIndex={state.trapFocus ? -1 : rest.tabIndex}
+        onKeyDown={(event) => {
+          rest.onKeyDown?.(event);
+
+          if (event.defaultPrevented) {
+            return;
+          }
+
+          handleFocusTrapKeyDown(event, {
+            trapFocus: state.open && state.trapFocus,
+            closeOnEscape: state.open && state.closeOnEscape,
+            setOpen: state.setOpen,
+          });
+        }}
       >
         {state.retainedSpriteSheetUrl ? (
           <img

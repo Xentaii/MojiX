@@ -12,6 +12,7 @@ export const spanishLabels: EmojiPickerLabels = {
     'Prueba una palabra, un alias o un emoticono más corto.',
   recents: 'Recientes',
   custom: 'Personalizados',
+  categoryNavigation: 'Emoji categories',
   skinToneButton: 'Tono de piel',
   clearSearch: 'Borrar búsqueda',
 };

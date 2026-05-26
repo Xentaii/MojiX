@@ -3,6 +3,7 @@ import type {
   EmojiCategoryIconRenderProps,
   EmojiCategoryId,
   EmojiPickerClassNames,
+  EmojiPickerLabels,
   EmojiPickerStyles,
   EmojiSection,
   EmojiSpriteSheetConfig,
@@ -13,6 +14,7 @@ import { getSlotClassName, getSlotStyle } from './utils';
 export interface EmojiSidebarProps {
   sections: EmojiSection[];
   activeCategory: EmojiCategoryId;
+  labels?: Pick<EmojiPickerLabels, 'categoryNavigation'>;
   onCategoryClick: (id: EmojiCategoryId) => void;
   renderCategoryIcon?: (props: EmojiCategoryIconRenderProps) => ReactNode;
   spriteSheet?: EmojiSpriteSheetConfig;
@@ -29,6 +31,7 @@ const AUTOSCROLL_MAX_SPEED = 14;
 export function EmojiSidebar({
   sections,
   activeCategory,
+  labels,
   onCategoryClick,
   renderCategoryIcon,
   spriteSheet,
@@ -158,7 +161,7 @@ export function EmojiSidebar({
       ref={sidebarRef}
       className={getSlotClassName('sidebar', slotOptions)}
       style={getSlotStyle('sidebar', slotOptions)}
-      aria-label="Emoji categories"
+      aria-label={labels?.categoryNavigation ?? 'Emoji categories'}
       data-mx-slot="sidebar"
     >
       {sections.map((section) => {

@@ -12,6 +12,7 @@ export const japaneseLabels: EmojiPickerLabels = {
     'もっと短い単語、エイリアス、または顔文字で試してください。',
   recents: '最近使ったもの',
   custom: 'カスタム',
+  categoryNavigation: 'Emoji categories',
   skinToneButton: '肌の色',
   clearSearch: '検索をクリア',
 };

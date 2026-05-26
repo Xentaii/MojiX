@@ -49,6 +49,7 @@ describe('public API surface', () => {
     expect(api.resolveEmojiSelection).toBeTypeOf('function');
     expect(api.createRecentEmojiStore).toBeTypeOf('function');
     expect(api.createSkinToneStore).toBeTypeOf('function');
+    expect(api.pushRecentEmojiRecord).toBeTypeOf('function');
     expect(api.useEmojiAssets).toBeTypeOf('function');
     expect(api.preloadEmojiPicker).toBeTypeOf('function');
     expect(api.usePreloadMojiX).toBeTypeOf('function');

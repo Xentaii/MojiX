@@ -154,3 +154,7 @@ falls back to the main thread on environments without `Worker`.
   Covers unicode emoji data loading, locale helpers, shards, and search indexes.
 - [TypeScript Types](./typescript-types.md)
   Covers all exported TypeScript types.
+- [Performance Recipes](../guides/performance-recipes.md)
+  Covers cold starts, huge custom lists, WebViews, and low-end devices.
+- [Integration Examples](../guides/integration-examples.md)
+  Covers chat composers, page icons, command palettes, and settings modals.

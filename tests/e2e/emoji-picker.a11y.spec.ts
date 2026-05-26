@@ -74,13 +74,13 @@ test.describe('MojiX accessibility fixture', () => {
     await toneButton.click();
 
     await expect(
-      page.getByRole('button', { name: /^Light$/ }),
+      page.getByRole('menuitemradio', { name: /^Light$/ }),
     ).toBeVisible();
     await expect(
-      page.getByRole('button', { name: /^Medium dark$/ }),
+      page.getByRole('menuitemradio', { name: /^Medium dark$/ }),
     ).toBeVisible();
     await expect(
-      page.getByRole('button', { name: /^Dark$/ }),
+      page.getByRole('menuitemradio', { name: /^Dark$/ }),
     ).toBeVisible();
   });
 });

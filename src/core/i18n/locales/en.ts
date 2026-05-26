@@ -12,6 +12,7 @@ export const englishLabels: EmojiPickerLabels = {
   noResultsBody: 'Try a shorter word, alias, or emoticon.',
   recents: 'Recent',
   custom: 'Custom',
+  categoryNavigation: 'Emoji categories',
   skinToneButton: 'Skin tone',
   clearSearch: 'Clear search',
 };

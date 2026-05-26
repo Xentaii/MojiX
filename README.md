@@ -462,6 +462,8 @@ examples/
 - [Migration Guide](./docs/MIGRATION.md)
 - [Package Delivery](./docs/guides/package-delivery.md)
 - [Custom Layouts](./docs/guides/custom-layouts.md)
+- [Performance Recipes](./docs/guides/performance-recipes.md)
+- [Integration Examples](./docs/guides/integration-examples.md)
 - [Tauri and WebView2](./docs/guides/tauri-webview.md)
 - [Release notes: 1.0.0-beta.2](./docs/releases/1.0.0-beta.2.md)
 - [Generation rules](./scripts/README.md)

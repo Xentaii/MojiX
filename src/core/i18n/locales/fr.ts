@@ -12,6 +12,7 @@ export const frenchLabels: EmojiPickerLabels = {
     'Essaie un terme, un alias ou une émoticône plus court.',
   recents: 'Récents',
   custom: 'Personnalisés',
+  categoryNavigation: 'Emoji categories',
   skinToneButton: 'Teinte de peau',
   clearSearch: 'Effacer la recherche',
 };

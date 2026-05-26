@@ -41,6 +41,7 @@ export type {
   EmojiLocaleCode,
   EmojiLocaleDefinition,
   EmojiPickerColors,
+  EmojiPickerLabels,
   EmojiPickerProps,
   EmojiPickerScrollBehavior,
   EmojiRecentCategoryConfig,
@@ -54,4 +55,5 @@ export type {
   EmojiSpriteSheetConfig,
   EmojiVendor,
   EmojiVendorAvailability,
+  RecentEmojiRecord,
 } from '../core/types';

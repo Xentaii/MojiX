@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { SKIN_TONE_OPTIONS } from '../core/constants';
 import {
   peekUnicodeEmojiById,
@@ -44,6 +44,8 @@ export function EmojiSkinToneButton({
 }: EmojiSkinToneButtonProps) {
   const [toneMenuOpen, setToneMenuOpen] = useState(false);
   const toneMenuRef = useRef<HTMLDivElement>(null);
+  const toneButtonRef = useRef<HTMLButtonElement>(null);
+  const toneMenuId = useId();
   const slotOptions = { unstyled, classNames, styles };
   const handEmoji = peekUnicodeEmojiById(SKIN_TONE_PREVIEW_EMOJI_ID);
 
@@ -99,9 +101,20 @@ export function EmojiSkinToneButton({
       className={getSlotClassName('tonePicker', slotOptions)}
       style={getSlotStyle('tonePicker', slotOptions)}
       ref={toneMenuRef}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || !toneMenuOpen) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        setToneMenuOpen(false);
+        toneButtonRef.current?.focus();
+      }}
       data-mx-slot="tonePicker"
     >
       <button
+        ref={toneButtonRef}
         type="button"
         className={getSlotClassName(
           'toneButton',
@@ -111,6 +124,9 @@ export function EmojiSkinToneButton({
         style={getSlotStyle('toneButton', slotOptions)}
         onClick={() => setToneMenuOpen((open) => !open)}
         aria-label={labels.skinToneButton}
+        aria-haspopup="menu"
+        aria-expanded={toneMenuOpen}
+        aria-controls={toneMenuOpen ? toneMenuId : undefined}
         title={labels.skinToneButton}
         data-mx-slot="toneButton"
         data-open={toneMenuOpen ? 'true' : undefined}
@@ -120,6 +136,9 @@ export function EmojiSkinToneButton({
 
       {toneMenuOpen && (
         <div
+          id={toneMenuId}
+          role="menu"
+          aria-label={labels.skinToneButton}
           className={getSlotClassName('toneMenu', slotOptions)}
           style={getSlotStyle('toneMenu', slotOptions)}
           data-mx-slot="toneMenu"
@@ -135,6 +154,8 @@ export function EmojiSkinToneButton({
               )}
               style={getSlotStyle('toneOption', slotOptions)}
               onClick={() => handleSkinToneSelect(option.tone)}
+              role="menuitemradio"
+              aria-checked={option.tone === skinTone}
               title={getLocalizedSkinToneLabel(
                 option.tone,
                 localeDefinition,

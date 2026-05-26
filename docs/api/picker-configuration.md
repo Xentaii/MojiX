@@ -9,6 +9,9 @@ These props are accepted by both `EmojiPicker` and `MojiX.Root`.
 | Prop | Type | Purpose |
 | --- | --- | --- |
 | `value` | `string` | Marks an emoji id as selected in the grid. |
+| `open` | `boolean` | Controlled open state for popover integrations. MojiX exposes the state and close intent; your popover decides whether to mount or hide. |
+| `defaultOpen` | `boolean` | Initial open state for uncontrolled integrations. Defaults to `true`. |
+| `onOpenChange` | `(open) => void` | Fired when Escape or app code requests an open-state change. |
 | `searchQuery` | `string` | Controlled search value. |
 | `defaultSearchQuery` | `string` | Initial search value for uncontrolled mode. |
 | `onSearchQueryChange` | `(query) => void` | Fired when the search query changes. |
@@ -21,6 +24,9 @@ These props are accepted by both `EmojiPicker` and `MojiX.Root`.
 | `activeCategory` | `EmojiCategoryId` | Legacy alias for controlled `selectedCategory`. |
 | `defaultActiveCategory` | `EmojiCategoryId` | Legacy alias for `defaultSelectedCategory`. |
 | `onActiveCategoryChange` | `(categoryId) => void` | Legacy alias for `onSelectedCategoryChange`. |
+| `activeEmojiId` | `string \| null` | Controlled active/preview emoji id. |
+| `defaultActiveEmojiId` | `string \| null` | Initial active/preview emoji id. |
+| `onActiveEmojiChange` | `(emojiId) => void` | Fired when keyboard focus or tracked hover changes the active emoji. |
 | `skinTone` | `EmojiSkinTone` | Controlled skin tone. |
 | `defaultSkinTone` | `EmojiSkinTone` | Initial skin tone for uncontrolled mode. |
 | `onSkinToneChange` | `(tone) => void` | Fired when the skin tone changes. |
@@ -49,6 +55,8 @@ the viewport.
 | `classNames` | `EmojiPickerClassNames` | Per-slot class overrides. |
 | `styles` | `EmojiPickerStyles` | Per-slot inline style overrides. |
 | `style` | `CSSProperties` | Root inline styles. |
+| `trapFocus` | `boolean` | Opt-in focus trap for popover/dialog wrappers. Cycles Tab focus inside the root while `open` is true. |
+| `closeOnEscape` | `boolean` | Controls whether Escape calls `onOpenChange(false)`. Defaults to true when `open`, `defaultOpen={false}`, or `trapFocus` makes the picker look popover-managed. |
 
 ## Theme CSS Variables
 
@@ -74,6 +82,15 @@ Example:
 }
 ```
 
+## Keyboard Behavior
+
+Emoji cells support arrow navigation, `Home`/`End`, `PageUp`/`PageDown`,
+`Enter`/Space selection, and `Escape` to clear the active cell and bubble close
+intent to a popover-managed root. The search field uses `Escape` to clear the
+query first; a second `Escape` can close the surrounding popover through
+`onOpenChange(false)`. The skin-tone menu uses labelled `menuitemradio`
+options and closes itself on `Escape`.
+
 ## Recents
 
 | Prop | Type | Purpose |
@@ -82,6 +99,9 @@ Example:
 | `recentStorageKey` | `string` | Legacy localStorage key for recents. |
 | `recentStore` | `EmojiRecentStore` | Legacy custom recent store injection. |
 | `recent` | `EmojiRecentCategoryConfig` | New recent-category config block. Controls enablement, limit, sort mode, empty seeded emojis, default activation, storage key, and custom store. |
+| `recentEmoji` | `RecentEmojiRecord[]` | Controlled recent entries. When provided, MojiX emits updates through `onRecentEmojiChange` instead of mutating internal recent state. |
+| `defaultRecentEmoji` | `RecentEmojiRecord[]` | Initial recent entries for uncontrolled mode. |
+| `onRecentEmojiChange` | `(records) => void` | Fired after selecting an emoji when recents are enabled. |
 
 ## Localization
 

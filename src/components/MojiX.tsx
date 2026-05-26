@@ -271,6 +271,7 @@ export function MojiXCategoryNav({ children }: MojiXCategoryNavProps) {
     <EmojiSidebar
       sections={context.sections}
       activeCategory={context.selectedCategory}
+      labels={context.labelSet}
       onCategoryClick={context.handleCategoryClick}
       renderCategoryIcon={context.renderCategoryIcon}
       spriteSheet={context.activeSpriteSheet}

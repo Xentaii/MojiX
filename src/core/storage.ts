@@ -48,7 +48,22 @@ export function pushRecentEmoji(
   entry: Pick<RecentEmojiRecord, 'id' | 'custom' | 'skinTone'>,
   limit: number = DEFAULT_RECENT_LIMIT,
 ) {
-  const next = [...readRecentEmoji(storageKey)];
+  const deduped = pushRecentEmojiRecord(
+    readRecentEmoji(storageKey),
+    entry,
+    limit,
+  );
+
+  writeRecentEmoji(storageKey, deduped);
+  return deduped;
+}
+
+export function pushRecentEmojiRecord(
+  records: readonly RecentEmojiRecord[],
+  entry: Pick<RecentEmojiRecord, 'id' | 'custom' | 'skinTone'>,
+  limit: number = DEFAULT_RECENT_LIMIT,
+) {
+  const next = [...records];
   const existingIndex = next.findIndex(
     (recent) =>
       recent.id === entry.id &&
@@ -82,7 +97,6 @@ export function pushRecentEmoji(
     .sort((left, right) => right.usedAt - left.usedAt)
     .slice(0, limit);
 
-  writeRecentEmoji(storageKey, deduped);
   return deduped;
 }
 

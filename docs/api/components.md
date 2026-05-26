@@ -22,6 +22,14 @@ These exports are the ready-made UI pieces available from the package root.
 - The lower-level components are useful when you already have picker state and want to compose your own layout.
 - `EmojiCategoryIcon` is the easiest way to reuse the same category icon logic in custom layouts when you override `renderCategoryIcon`.
 
+## Stability Contract
+
+The `EmojiPickerSlot` names, `data-mx-slot` values, `data-category-id`,
+`data-active`, `data-selected`, `data-open`, and the theme variables documented
+here are treated as the stable styling/integration contract. Beta releases may
+add slots or attributes, but existing names should not be renamed or removed in
+a beta/minor update without a migration note.
+
 ## Slot ClassNames and DOM Map
 
 Every styled slot includes `data-mx-slot="<slot>"` and can be targeted through

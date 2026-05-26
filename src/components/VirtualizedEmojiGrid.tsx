@@ -30,6 +30,10 @@ import type {
 import { EmojiCategoryIcon } from './EmojiCategoryIcon';
 import { EmojiSprite } from './EmojiSprite';
 import {
+  getEmojiGridPageOffset,
+  getEmojiGridTabStopByOffset,
+} from './gridNavigation';
+import {
   computeAdaptiveOverscanRows,
   computeEmojiGridPlaceholderHeight,
   computeEmojiGridVirtualWindow,
@@ -1211,6 +1215,42 @@ export function VirtualizedEmojiGrid({
       case 'End':
         nextIndex = currentSection.emojis.length - 1;
         break;
+      case 'PageDown':
+      case 'PageUp': {
+        const container = scrollRef.current;
+        const currentLayout =
+          layoutMetricsRef.current.sections[sectionIdx];
+        const offset = getEmojiGridPageOffset({
+          columns,
+          containerHeight: container?.clientHeight ?? emojiSize,
+          rowHeight:
+            currentLayout?.rowHeight ??
+            Math.max(lastMeasuredRowHeightRef.current, emojiSize),
+          direction: event.key === 'PageDown' ? 1 : -1,
+        });
+        const nextTarget = getEmojiGridTabStopByOffset(
+          sections,
+          {
+            sectionIndex: sectionIdx,
+            emojiIndex: emojiIdx,
+          },
+          offset,
+        );
+
+        if (!nextTarget) {
+          return;
+        }
+
+        nextSection = nextTarget.sectionIndex;
+        nextIndex = nextTarget.emojiIndex;
+        break;
+      }
+      case 'Escape':
+        pendingFocusRef.current = null;
+        setActiveCellTarget(null);
+        onEmojiHover(null);
+        target.blur();
+        return;
       case 'Enter':
       case ' ':
         event.preventDefault();

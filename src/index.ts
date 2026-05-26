@@ -56,6 +56,7 @@ export {
 } from './core/sprite-cache';
 export {
   createLocalStorageRecentStore,
+  pushRecentEmojiRecord,
   pushRecentEmoji,
   readRecentEmoji,
   readStoredSkinTone,
@@ -166,6 +167,7 @@ export type {
   EmojiNativeAsset,
   EmojiNativeAssetSource,
   EmojiPickerColors,
+  EmojiPickerLabels,
   EmojiPickerProps,
   EmojiPickerClassNames,
   EmojiPickerScrollBehavior,
@@ -196,6 +198,7 @@ export type {
   EmojiSystemCategoryId,
   EmojiVendor,
   EmojiVendorAvailability,
+  RecentEmojiRecord,
   ResolvedEmojiCategoryIcon,
   EmojiSvgAsset,
   EmojiSvgAssetSource,

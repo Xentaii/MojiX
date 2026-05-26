@@ -42,6 +42,7 @@ This file lists the TypeScript types exported from the package root.
 | `UnicodeEmoji` | Bundled unicode emoji record shape. |
 | `EmojiRecentCategoryConfig` | Config block for the recent category behavior. |
 | `EmojiRecentStore` | Storage interface for reading and writing recent emoji. |
+| `RecentEmojiRecord` | Recent-entry record used by controlled `recentEmoji` state and stores. |
 | `EmojiLocaleCode` | Locale code union used by the picker. |
 | `EmojiLocaleCategoryLabels` | Category label map for locale definitions. |
 | `EmojiLocaleDefinition` | Fully resolved locale definition shape. |

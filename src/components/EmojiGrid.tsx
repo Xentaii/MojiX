@@ -32,6 +32,10 @@ import type {
 } from '../core/types';
 import { EmojiCategoryIcon } from './EmojiCategoryIcon';
 import { EmojiSprite } from './EmojiSprite';
+import {
+  getEmojiGridPageOffset,
+  getEmojiGridTabStopByOffset,
+} from './gridNavigation';
 import type {
   EmojiGridHandle,
   EmojiGridProps,
@@ -696,6 +700,37 @@ function NaiveEmojiGrid({
       case 'End':
         nextIndex = currentSection.emojis.length - 1;
         break;
+      case 'PageDown':
+      case 'PageUp': {
+        const container = scrollRef.current;
+        const offset = getEmojiGridPageOffset({
+          columns,
+          containerHeight: container?.clientHeight ?? emojiSize,
+          rowHeight: emojiSize + 4,
+          direction: event.key === 'PageDown' ? 1 : -1,
+        });
+        const nextTarget = getEmojiGridTabStopByOffset(
+          sections,
+          {
+            sectionIndex: sectionIdx,
+            emojiIndex: emojiIdx,
+          },
+          offset,
+        );
+
+        if (!nextTarget) {
+          return;
+        }
+
+        nextSection = nextTarget.sectionIndex;
+        nextIndex = nextTarget.emojiIndex;
+        break;
+      }
+      case 'Escape':
+        setActiveCellTarget(null);
+        onEmojiHover(null);
+        target.blur();
+        return;
       case 'Enter':
       case ' ':
         event.preventDefault();

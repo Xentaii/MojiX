@@ -42,3 +42,4 @@ MojiX exposes a headless composition layer through the `MojiX` namespace plus se
 - `renderCategoryIcon` from `EmojiPickerProps` also works on `MojiXRoot`.
 - Use `selectedCategory` for nav UI and `visibleCategory` for scroll-spy UI when smooth scrolling should not move the selected nav state through intermediate sections.
 - Set `showPreview={false}` to disable the default preview and let hover stay CSS-only; pass `trackHoverActive` if your custom layout still needs hover state.
+- Use `open`, `onOpenChange`, and `trapFocus` when `MojiX.Root` lives inside a popover or modal. MojiX reports close intent and cycles focus; the surrounding popover remains responsible for mounting and positioning.

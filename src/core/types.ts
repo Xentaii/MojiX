@@ -275,6 +275,7 @@ export interface EmojiPickerLabels {
   noResultsBody: string;
   recents: string;
   custom: string;
+  categoryNavigation?: string;
   skinToneButton: string;
   clearSearch: string;
 }
@@ -517,6 +518,9 @@ export interface EmojiPickerProps
   defaultSearchQuery?: string;
   onSearchQueryChange?: (query: string) => void;
   searchConfig?: EmojiSearchConfigLike;
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
   /**
    * Category selected by the user or by app code. This is intentionally
    * separate from `visibleCategory`, which tracks scroll position.
@@ -540,6 +544,9 @@ export interface EmojiPickerProps
   activeEmojiId?: string | null;
   defaultActiveEmojiId?: string | null;
   onActiveEmojiChange?: (emojiId: string | null) => void;
+  recentEmoji?: RecentEmojiRecord[];
+  defaultRecentEmoji?: RecentEmojiRecord[];
+  onRecentEmojiChange?: (records: RecentEmojiRecord[]) => void;
   emojiSize?: number;
   columns?: number;
   loading?: boolean;
@@ -583,6 +590,8 @@ export interface EmojiPickerProps
    * and `auto` lets CSS decide.
    */
   categoryScrollBehavior?: EmojiPickerScrollBehavior;
+  trapFocus?: boolean;
+  closeOnEscape?: boolean;
   renderEmoji?: (
     emoji: EmojiRenderable,
     state: EmojiRenderState,
