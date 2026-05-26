@@ -93,11 +93,16 @@ registerEmojiLocalePack('ru', ruLocale);
 ### 6. Warm before opening
 
 ```tsx
-import { preloadEmojiPicker } from 'mojix-picker';
+import { preloadEmojiPicker, usePreloadMojiX } from 'mojix-picker';
 
 button.addEventListener('pointerenter', () => {
   void preloadEmojiPicker({ locale: 'en' });
 });
+
+function ComposerShell() {
+  usePreloadMojiX({ locale: 'en' });
+  return <button type="button">Emoji</button>;
+}
 ```
 
 `preloadEmojiPicker()` also benefits from the browser prepared-data cache: once

@@ -42,6 +42,7 @@ export type {
   EmojiLocaleDefinition,
   EmojiPickerColors,
   EmojiPickerProps,
+  EmojiPickerScrollBehavior,
   EmojiRecentCategoryConfig,
   EmojiRenderable,
   EmojiResolvedAsset,

@@ -75,10 +75,13 @@ export type {
 } from './core/search';
 export { resolveEmojiSelection } from './core/engine';
 export type { ResolveEmojiSelectionOptions } from './core/engine';
-export { preloadEmojiPicker } from './preload';
+export { preloadEmojiPicker, usePreloadMojiX } from './preload';
 export type {
+  PreloadMojiXStatus,
   PreloadEmojiPickerOptions,
   PreloadEmojiPickerResult,
+  UsePreloadMojiXOptions,
+  UsePreloadMojiXResult,
 } from './preload';
 export {
   createRecentEmojiStore,
@@ -165,6 +168,7 @@ export type {
   EmojiPickerColors,
   EmojiPickerProps,
   EmojiPickerClassNames,
+  EmojiPickerScrollBehavior,
   EmojiPickerSlot,
   EmojiPickerStyles,
   EmojiPickerVirtualization,

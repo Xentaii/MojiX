@@ -118,8 +118,10 @@ export function MojiXList({
 
   useEffect(() => {
     if (shouldPreloadVirtualizedGrid(context.virtualization)) {
-      preloadVirtualizedEmojiGrid();
+      return preloadVirtualizedEmojiGrid({ idle: true });
     }
+
+    return undefined;
   }, [context.virtualization]);
 
   return (
@@ -139,6 +141,8 @@ export function MojiXList({
       onEmojiHover={context.handleEmojiHover}
       onActiveCategoryChange={context.handleActiveCategoryChange}
       hoveredEmojiId={context.hoveredEmoji?.id ?? null}
+      trackHoverActive={context.trackHoverActive}
+      categoryScrollBehavior={context.categoryScrollBehavior}
       virtualization={context.virtualization}
       emptyState={emptyState ?? context.emptyState}
       hideEmptyState={!showEmptyState}
@@ -247,6 +251,10 @@ export interface MojiXCategoryNavProps {
     sections: EmojiPickerState['sections'];
     activeCategory: EmojiCategoryId;
     setActiveCategory: (categoryId: EmojiCategoryId) => void;
+    selectedCategory: EmojiCategoryId;
+    setSelectedCategory: (categoryId: EmojiCategoryId) => void;
+    visibleCategory: EmojiCategoryId;
+    setVisibleCategory: (categoryId: EmojiCategoryId) => void;
     selectCategory: (categoryId: EmojiCategoryId) => void;
   }>;
 }
@@ -262,7 +270,7 @@ export function MojiXCategoryNav({ children }: MojiXCategoryNavProps) {
   return (
     <EmojiSidebar
       sections={context.sections}
-      activeCategory={context.activeCategory}
+      activeCategory={context.selectedCategory}
       onCategoryClick={context.handleCategoryClick}
       renderCategoryIcon={context.renderCategoryIcon}
       spriteSheet={context.activeSpriteSheet}

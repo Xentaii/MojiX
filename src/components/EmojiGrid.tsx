@@ -21,6 +21,7 @@ import type {
   EmojiCategoryId,
   EmojiLocaleDefinition,
   EmojiPickerClassNames,
+  EmojiPickerScrollBehavior,
   EmojiPickerStyles,
   EmojiPickerVirtualization,
   EmojiRenderable,
@@ -109,8 +110,8 @@ function getContainerPaddingTop(container: HTMLDivElement) {
   return Number.parseFloat(window.getComputedStyle(container).paddingTop) || 0;
 }
 
-function getScrollBehavior(mode: 'instant' | 'smooth' = 'smooth') {
-  if (mode === 'instant') {
+function getScrollBehavior(mode: EmojiPickerScrollBehavior = 'smooth') {
+  if (mode === 'instant' || mode === 'auto') {
     return 'auto' as const;
   }
 
@@ -127,7 +128,7 @@ function getScrollBehavior(mode: 'instant' | 'smooth' = 'smooth') {
 function setContainerScrollTop(
   container: HTMLDivElement,
   top: number,
-  behavior: 'instant' | 'smooth',
+  behavior: EmojiPickerScrollBehavior,
 ) {
   if (behavior === 'instant') {
     const previousInlineBehavior = container.style.scrollBehavior;
@@ -142,7 +143,7 @@ function setContainerScrollTop(
     return;
   }
 
-  container.scrollTo({ top, behavior: getScrollBehavior('smooth') });
+  container.scrollTo({ top, behavior: getScrollBehavior(behavior) });
 }
 
 function getElementScrollTop(
@@ -262,6 +263,7 @@ interface EmojiCellProps {
   onEmojiHover: (
     emoji: EmojiRenderable | null,
     target?: TabStop,
+    reason?: 'pointer' | 'focus',
   ) => void;
   onEmojiFocus: (
     event: ReactFocusEvent<HTMLButtonElement>,
@@ -335,13 +337,13 @@ function EmojiCell({
         onEmojiHover(emoji, {
           sectionIndex,
           emojiIndex,
-        })
+        }, 'pointer')
       }
       onMouseLeave={() =>
         onEmojiHover(null, {
           sectionIndex,
           emojiIndex,
-        })
+        }, 'pointer')
       }
       onFocus={(event) => {
         onEmojiFocus(event, emoji, {
@@ -353,7 +355,7 @@ function EmojiCell({
         onEmojiHover(null, {
           sectionIndex,
           emojiIndex,
-        })
+        }, 'focus')
       }
       title={displayName}
       aria-label={displayName}
@@ -414,6 +416,8 @@ function NaiveEmojiGrid({
   onEmojiSelect,
   onEmojiHover,
   onActiveCategoryChange,
+  trackHoverActive = true,
+  categoryScrollBehavior = 'smooth',
   emptyState,
   hideEmptyState,
   labels,
@@ -482,7 +486,7 @@ function NaiveEmojiGrid({
 
   const scrollEmojiIntoView = useCallback((
     target: TabStop,
-    behavior: 'instant' | 'smooth' = 'instant',
+    behavior: EmojiPickerScrollBehavior = 'instant',
   ) => {
     const container = scrollRef.current;
     const nextButton = container?.querySelector(
@@ -514,7 +518,7 @@ function NaiveEmojiGrid({
 
   const scrollToCategory = useCallback((
     id: EmojiCategoryId,
-    options?: { behavior?: 'instant' | 'smooth' },
+    options?: { behavior?: EmojiPickerScrollBehavior },
   ) => {
     const container = scrollRef.current;
     const target = sectionRefs.current[id];
@@ -522,7 +526,7 @@ function NaiveEmojiGrid({
       return;
     }
 
-    const behavior = options?.behavior ?? 'smooth';
+    const behavior = options?.behavior ?? categoryScrollBehavior;
     const nextTop = getElementScrollTop(container, target);
     pendingCategoryScrollRef.current = {
       id,
@@ -548,7 +552,7 @@ function NaiveEmojiGrid({
       };
       setContainerScrollTop(nextContainer, settledTop, behavior);
     });
-  }, []);
+  }, [categoryScrollBehavior]);
 
   useImperativeHandle(
     ref,
@@ -578,9 +582,6 @@ function NaiveEmojiGrid({
         ) {
           pendingCategoryScrollRef.current = null;
         }
-
-        onActiveCategoryChangeRef.current(pendingScroll.id);
-        return;
       }
 
       const sectionTops = getMeasuredSectionTops(
@@ -746,7 +747,28 @@ function NaiveEmojiGrid({
   const handleEmojiHover = useCallback((
     emoji: EmojiRenderable | null,
     target?: TabStop,
+    reason: 'pointer' | 'focus' = 'pointer',
   ) => {
+    if (reason === 'focus') {
+      if (emoji && target) {
+        setActiveCellTarget(target);
+        onEmojiHover(emoji);
+        return;
+      }
+
+      if (target && !isSameTabStop(activeCellRef.current, target)) {
+        return;
+      }
+
+      setActiveCellTarget(null);
+      onEmojiHover(null);
+      return;
+    }
+
+    if (!trackHoverActive) {
+      return;
+    }
+
     if (emoji && target) {
       setActiveCellTarget(target);
       onEmojiHover(emoji);
@@ -759,7 +781,7 @@ function NaiveEmojiGrid({
 
     setActiveCellTarget(null);
     onEmojiHover(null);
-  }, [onEmojiHover, setActiveCellTarget]);
+  }, [onEmojiHover, setActiveCellTarget, trackHoverActive]);
 
   return (
     <div

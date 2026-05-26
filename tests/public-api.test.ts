@@ -51,6 +51,7 @@ describe('public API surface', () => {
     expect(api.createSkinToneStore).toBeTypeOf('function');
     expect(api.useEmojiAssets).toBeTypeOf('function');
     expect(api.preloadEmojiPicker).toBeTypeOf('function');
+    expect(api.usePreloadMojiX).toBeTypeOf('function');
     expect(api.configureMojiXDataSource).toBeTypeOf('function');
     expect(api.clearPreparedEmojiDataCache).toBeTypeOf('function');
     expect(api.clearEmojiSpriteStyleCache).toBeTypeOf('function');

@@ -33,6 +33,81 @@ export function CustomEmojiPicker() {
 }
 ```
 
+## App-Fitted Layout
+
+This example keeps MojiX state and grid behavior, but replaces the surrounding
+chrome with application UI: a custom topbar, custom category nav, a remove
+button, an app-styled skin-tone control, no preview, and instant category jumps.
+
+```tsx
+import { MojiX } from 'mojix-picker';
+import 'mojix-picker/style.css';
+
+export function ComposerEmojiPanel({
+  onEmoji,
+  onRemove,
+}: {
+  onEmoji: (value: string) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <MojiX.Root
+      className="composer-emoji-panel"
+      showPreview={false}
+      categoryScrollBehavior="instant"
+      onEmojiSelect={(emoji) => onEmoji(emoji.native ?? emoji.id)}
+    >
+      <div className="composer-emoji-topbar">
+        <MojiX.Search />
+        <button type="button" onClick={onRemove} aria-label="Remove emoji">
+          Delete
+        </button>
+        <MojiX.SkinTone>
+          {({ skinTone, setSkinTone, options }) => (
+            <div className="composer-tone-tabs">
+              {options.map((option) => (
+                <button
+                  key={option.tone}
+                  type="button"
+                  aria-pressed={skinTone === option.tone}
+                  onClick={() => setSkinTone(option.tone)}
+                >
+                  {option.icon}
+                </button>
+              ))}
+            </div>
+          )}
+        </MojiX.SkinTone>
+      </div>
+
+      <MojiX.CategoryNav>
+        {({ sections, selectedCategory, visibleCategory, selectCategory }) => (
+          <nav className="composer-category-nav" aria-label="Emoji categories">
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                type="button"
+                aria-current={selectedCategory === section.id}
+                data-visible={visibleCategory === section.id || undefined}
+                onClick={() => selectCategory(section.id)}
+              >
+                {section.label}
+              </button>
+            ))}
+          </nav>
+        )}
+      </MojiX.CategoryNav>
+
+      <MojiX.Viewport>
+        <MojiX.Loading />
+        <MojiX.Empty>No emoji found.</MojiX.Empty>
+        <MojiX.List />
+      </MojiX.Viewport>
+    </MojiX.Root>
+  );
+}
+```
+
 ## Design Notes
 
 - Start with `EmojiPicker` when the bundled layout is close enough.
@@ -40,6 +115,10 @@ export function CustomEmojiPicker() {
 - Move to `MojiX.*` when layout order, surrounding chrome, or render-prop
   access matters.
 - Use engine helpers only when React UI is not the integration point.
+- Use `selectedCategory` for "what the user picked" and `visibleCategory` for
+  scroll-position indicators.
+- Keep preview off with `showPreview={false}` for CSS-only hover, or opt back
+  into hover state with `trackHoverActive`.
 
 ## Related Pages
 

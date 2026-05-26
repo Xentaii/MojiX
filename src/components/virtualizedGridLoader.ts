@@ -1,3 +1,5 @@
+import { scheduleIdleTask } from '../core/idle';
+
 let virtualizedEmojiGridModulePromise:
   | Promise<typeof import('./VirtualizedEmojiGrid')>
   | null = null;
@@ -7,6 +9,15 @@ export function loadVirtualizedEmojiGridModule() {
   return virtualizedEmojiGridModulePromise;
 }
 
-export function preloadVirtualizedEmojiGrid() {
-  void loadVirtualizedEmojiGridModule();
+export function preloadVirtualizedEmojiGrid(
+  options: { idle?: boolean } = {},
+) {
+  if (!options.idle) {
+    void loadVirtualizedEmojiGridModule();
+    return;
+  }
+
+  return scheduleIdleTask(() => {
+    void loadVirtualizedEmojiGridModule();
+  });
 }

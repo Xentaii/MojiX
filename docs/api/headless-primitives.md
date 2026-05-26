@@ -30,7 +30,7 @@ MojiX exposes a headless composition layer through the `MojiX` namespace plus se
 | --- | --- | --- |
 | `useMojiX` | Full picker state | Low-level access to the current root context. |
 | `useEmojiSearch` | Search state helpers | Gives `searchId`, `searchQuery`, `setSearchQuery`, and localized labels. |
-| `useEmojiCategories` | Category helpers | Gives `sections`, `activeCategory`, `setActiveCategory`, and `selectCategory`. |
+| `useEmojiCategories` | Category helpers | Gives `sections`, `selectedCategory`, `visibleCategory`, legacy `activeCategory`, setters, and `selectCategory`. |
 | `useEmojiSelection` | Selection helpers | Gives current `value` and the `selectEmoji` callback. |
 | `useActiveEmoji` | Preview helpers | Gives `emoji`, `selection`, `hoveredEmoji`, and `setHoveredEmoji`. |
 | `useSkinTone` | Skin-tone helpers | Gives current tone, setter, preset options, labels, and locale definition. |
@@ -40,3 +40,5 @@ MojiX exposes a headless composition layer through the `MojiX` namespace plus se
 - Use `MojiXRoot` when you want one picker state tree shared across a custom layout.
 - `EmojiPicker` is already built on top of these primitives.
 - `renderCategoryIcon` from `EmojiPickerProps` also works on `MojiXRoot`.
+- Use `selectedCategory` for nav UI and `visibleCategory` for scroll-spy UI when smooth scrolling should not move the selected nav state through intermediate sections.
+- Set `showPreview={false}` to disable the default preview and let hover stay CSS-only; pass `trackHoverActive` if your custom layout still needs hover state.

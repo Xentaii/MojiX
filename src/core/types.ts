@@ -43,6 +43,8 @@ export type EmojiCategoryId =
   | EmojiSystemCategoryId
   | (string & {});
 
+export type EmojiPickerScrollBehavior = 'instant' | 'smooth' | 'auto';
+
 export type BuiltInEmojiCategoryId = Exclude<
   EmojiSystemCategoryId,
   'recent' | 'custom'
@@ -515,6 +517,23 @@ export interface EmojiPickerProps
   defaultSearchQuery?: string;
   onSearchQueryChange?: (query: string) => void;
   searchConfig?: EmojiSearchConfigLike;
+  /**
+   * Category selected by the user or by app code. This is intentionally
+   * separate from `visibleCategory`, which tracks scroll position.
+   */
+  selectedCategory?: EmojiCategoryId;
+  defaultSelectedCategory?: EmojiCategoryId;
+  onSelectedCategoryChange?: (categoryId: EmojiCategoryId) => void;
+  /**
+   * Category currently visible in the grid viewport. Use this for scroll-spy
+   * indicators without moving the selected nav item during smooth scroll.
+   */
+  visibleCategory?: EmojiCategoryId;
+  defaultVisibleCategory?: EmojiCategoryId;
+  onVisibleCategoryChange?: (categoryId: EmojiCategoryId) => void;
+  /**
+   * Legacy alias for `selectedCategory`.
+   */
   activeCategory?: EmojiCategoryId;
   defaultActiveCategory?: EmojiCategoryId;
   onActiveCategoryChange?: (categoryId: EmojiCategoryId) => void;
@@ -526,6 +545,12 @@ export interface EmojiPickerProps
   loading?: boolean;
   onDataError?: (error: unknown) => void;
   showPreview?: boolean;
+  /**
+   * When `false`, pointer hover stays CSS-only and does not update React
+   * active-cell state. Defaults to `showPreview`; keyboard focus is always
+   * tracked for accessibility.
+   */
+  trackHoverActive?: boolean;
   showRecents?: boolean;
   showSkinTones?: boolean;
   recentLimit?: number;
@@ -552,6 +577,12 @@ export interface EmojiPickerProps
   unstyled?: boolean;
   classNames?: EmojiPickerClassNames;
   styles?: EmojiPickerStyles;
+  /**
+   * Controls category navigation scroll. `instant` bypasses CSS
+   * `scroll-behavior`, `smooth` animates unless reduced motion is requested,
+   * and `auto` lets CSS decide.
+   */
+  categoryScrollBehavior?: EmojiPickerScrollBehavior;
   renderEmoji?: (
     emoji: EmojiRenderable,
     state: EmojiRenderState,

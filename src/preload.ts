@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   loadEmojiCategoryShards,
   loadEmojiData,
@@ -38,6 +39,24 @@ export interface PreloadEmojiPickerResult {
   locales: Awaited<ReturnType<typeof loadLocale>>[];
   searchIndexes: EmojiLocaleSearchIndex[];
   spriteSheet: EmojiSpriteSheetCachedAsset | null;
+}
+
+export type PreloadMojiXStatus =
+  | 'idle'
+  | 'loading'
+  | 'success'
+  | 'error';
+
+export interface UsePreloadMojiXOptions
+  extends PreloadEmojiPickerOptions {
+  disabled?: boolean;
+}
+
+export interface UsePreloadMojiXResult {
+  status: PreloadMojiXStatus;
+  result: PreloadEmojiPickerResult | null;
+  error: unknown;
+  preload: () => Promise<PreloadEmojiPickerResult>;
 }
 
 function collectLocales(
@@ -89,5 +108,91 @@ export async function preloadEmojiPicker(
     locales: loadedLocales,
     searchIndexes,
     spriteSheet,
+  };
+}
+
+export function usePreloadMojiX(
+  options: UsePreloadMojiXOptions = {},
+): UsePreloadMojiXResult {
+  const {
+    disabled = false,
+    warmSpriteSheet,
+    spriteSheet,
+    ...preloadOptions
+  } = options;
+  const effectiveOptions = useMemo<PreloadEmojiPickerOptions>(
+    () => ({
+      ...preloadOptions,
+      spriteSheet,
+      warmSpriteSheet: warmSpriteSheet ?? Boolean(spriteSheet),
+    }),
+    [
+      preloadOptions.fallbackLocale,
+      preloadOptions.locale,
+      preloadOptions.search,
+      preloadOptions.shards,
+      preloadOptions.virtualizedGrid,
+      spriteSheet,
+      warmSpriteSheet,
+    ],
+  );
+  const [status, setStatus] = useState<PreloadMojiXStatus>('idle');
+  const [result, setResult] =
+    useState<PreloadEmojiPickerResult | null>(null);
+  const [error, setError] = useState<unknown>(null);
+
+  const preload = useCallback(async () => {
+    setStatus('loading');
+    setError(null);
+
+    try {
+      const nextResult = await preloadEmojiPicker(effectiveOptions);
+      setResult(nextResult);
+      setStatus('success');
+      return nextResult;
+    } catch (nextError) {
+      setError(nextError);
+      setStatus('error');
+      throw nextError;
+    }
+  }, [effectiveOptions]);
+
+  useEffect(() => {
+    if (disabled) {
+      return;
+    }
+
+    let cancelled = false;
+    setStatus('loading');
+    setError(null);
+
+    preloadEmojiPicker(effectiveOptions)
+      .then((nextResult) => {
+        if (cancelled) {
+          return;
+        }
+
+        setResult(nextResult);
+        setStatus('success');
+      })
+      .catch((nextError) => {
+        if (cancelled) {
+          return;
+        }
+
+        setError(nextError);
+        setStatus('error');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [disabled, effectiveOptions]);
+
+  return {
+    status,
+    result,
+    error,
+    preload,
   };
 }

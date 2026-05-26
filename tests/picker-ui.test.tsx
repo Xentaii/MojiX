@@ -36,7 +36,11 @@ describe('picker UI theming hooks', () => {
 
     expect(root).not.toBeNull();
     expect(root?.style.getPropertyValue('--mx-accent')).toBe('#123456');
+    expect(root?.style.getPropertyValue('--mojix-accent')).toBe('#123456');
     expect(root?.style.getPropertyValue('--mx-hover')).toBe(
+      'rgba(1, 2, 3, 0.25)',
+    );
+    expect(root?.style.getPropertyValue('--mojix-bg-hover')).toBe(
       'rgba(1, 2, 3, 0.25)',
     );
     expect(root?.style.getPropertyValue('--mx-scrollbar-thumb')).toBe(
@@ -140,7 +144,7 @@ describe('picker UI theming hooks', () => {
     expect(retainedSpriteSheet?.getAttribute('decoding')).toBe('async');
   });
 
-  it('re-renders only the affected emoji cells when hover changes', async () => {
+  it('does not re-render emoji cells on hover when preview is hidden', async () => {
     const renderCounts = new Map<string, number>();
     const renderEmoji = vi.fn((emoji: { id: string; name: string }) => {
       renderCounts.set(
@@ -180,6 +184,53 @@ describe('picker UI theming hooks', () => {
 
     fireEvent.mouseEnter(emojis[0]!);
 
+    fireEvent.mouseEnter(emojis[1]!);
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(renderCounts.get('wave')).toBe(initialWaveRenders);
+    expect(renderCounts.get('party')).toBe(initialPartyRenders);
+    expect(renderCounts.get('rocket')).toBe(initialRocketRenders);
+  });
+
+  it('keeps hover active tracking as an explicit opt-in', async () => {
+    const renderCounts = new Map<string, number>();
+    const renderEmoji = vi.fn((emoji: { id: string; name: string }) => {
+      renderCounts.set(
+        emoji.id,
+        (renderCounts.get(emoji.id) ?? 0) + 1,
+      );
+
+      return <span>{emoji.name}</span>;
+    });
+
+    const { container } = render(
+      <EmojiPicker
+        showPreview={false}
+        trackHoverActive
+        showRecents={false}
+        showSkinTones={false}
+        categories={hiddenSystemCategories}
+        customEmojis={[
+          { id: 'wave', name: 'Wave' },
+          { id: 'party', name: 'Party' },
+          { id: 'rocket', name: 'Rocket' },
+        ]}
+        renderEmoji={renderEmoji}
+      />,
+    );
+
+    const emojis = Array.from(
+      container.querySelectorAll('[data-mx-slot="emoji"]'),
+    ) as HTMLButtonElement[];
+    const initialWaveRenders = renderCounts.get('wave') ?? 0;
+    const initialPartyRenders = renderCounts.get('party') ?? 0;
+    const initialRocketRenders = renderCounts.get('rocket') ?? 0;
+
+    expect(emojis).toHaveLength(3);
+
+    fireEvent.mouseEnter(emojis[0]!);
+
     await waitFor(() => {
       expect(renderCounts.get('wave')).toBe(initialWaveRenders + 1);
     });
@@ -197,10 +248,42 @@ describe('picker UI theming hooks', () => {
     expect(renderCounts.get('rocket')).toBe(initialRocketRenders);
   });
 
-  it('highlights only the hovered duplicate emoji cell', async () => {
+  it('does not set data-active on simple hover when preview is hidden', async () => {
     const { container } = render(
       <EmojiPicker
         showPreview={false}
+        showSkinTones={false}
+        recent={{
+          emptyEmojiIds: ['1f600'],
+          showWhenEmpty: true,
+        }}
+      />,
+    );
+
+    const grinningFaceButtons = await waitFor(() => {
+      const buttons = Array.from(
+        container.querySelectorAll(
+          '[data-mx-slot="emoji"][aria-label="Grinning face"]',
+        ),
+      ) as HTMLButtonElement[];
+
+      expect(buttons.length).toBeGreaterThanOrEqual(2);
+      return buttons;
+    });
+
+    fireEvent.mouseEnter(grinningFaceButtons[0]!);
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(grinningFaceButtons[0]).not.toHaveAttribute('data-active');
+    expect(grinningFaceButtons[1]).not.toHaveAttribute('data-active');
+  });
+
+  it('highlights only the hovered duplicate emoji cell when hover tracking is enabled', async () => {
+    const { container } = render(
+      <EmojiPicker
+        showPreview={false}
+        trackHoverActive
         showSkinTones={false}
         recent={{
           emptyEmojiIds: ['1f600'],

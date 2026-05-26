@@ -27,6 +27,7 @@ the unicode emoji dataset when it has been preloaded or fetched already.
 | `isEmojiCategoryLoaded` | Function | Returns `true` once the given built-in category has been merged into the store (via bootstrap, full preload, or a shard). |
 | `getLoadedEmojiCategories` | Function | Snapshot of currently loaded built-in categories. Useful for diagnostics or for deciding which shards to prefetch. |
 | `preloadEmojiPicker` | Function | Warms emoji data, locale packs, the virtualized grid chunk, optional search indexes, and optional spritesheet assets before mounting the picker. Fresh CDN data is prepared in idle chunks. Pass `{ shards: [...] }` to skip the full bootstrap and load only those categories. |
+| `usePreloadMojiX` | React hook | Calls `preloadEmojiPicker` from a component, tracks `status`, `result`, and `error`, and warms a provided `spriteSheet` by default. |
 | `preloadEmojiData` | Function | Seeds the unicode emoji dataset synchronously from local JSON or fetched data. |
 | `computeEmojiSearchTokensOnWorker` | Function | Off-main-thread search-token builder. Used internally when `workerPreparation` is enabled and exposed for advanced consumers. Falls back to the main thread when `Worker` is unavailable. |
 | `isEmojiPreparationWorkerAvailable` | Function | Reports whether the runtime can construct the preparation Worker (i.e., `Worker`, `Blob`, and `URL.createObjectURL` are all present and the worker hasn't failed to start). |
@@ -45,6 +46,24 @@ configureMojiXDataSource({
 });
 
 await preloadEmojiPicker({ locale: 'en' });
+```
+
+In React components, use the hook when the picker package is already loaded by
+the route or popover shell:
+
+```tsx
+import { createEmojiSpriteSheet, usePreloadMojiX } from 'mojix-picker';
+
+const spriteSheet = createEmojiSpriteSheet({
+  source: 'cdn',
+  vendor: 'twitter',
+});
+
+function ComposerShell() {
+  usePreloadMojiX({ locale: 'en', spriteSheet });
+
+  return <button type="button">Emoji</button>;
+}
 ```
 
 Set `preparedCache: false` when normalized emoji data should not be persisted,
@@ -73,9 +92,9 @@ When `loadCategoryShards` is enabled on the picker, the sidebar always shows
 all built-in categories — clicking or programmatically activating a category
 that has not been fetched yet triggers `loadEmojiCategoryShard(categoryId)`.
 The store carries each shard's records permanently, so navigating back is a
-free no-op. If `activeCategory` is `'recent'` (the default when recents are
-enabled) and no built-in category is loaded yet, the picker also kicks off a
-`smileys` fetch so the grid is not visibly empty.
+free no-op. If `selectedCategory`/legacy `activeCategory` is `'recent'` (the
+default when recents are enabled) and no built-in category is loaded yet, the
+picker also kicks off a `smileys` fetch so the grid is not visibly empty.
 
 ### Programmatic shard control
 
