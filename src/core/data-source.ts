@@ -2,17 +2,14 @@ import {
   DEFAULT_DATA_CACHE_NAME,
   DEFAULT_PREPARED_DATA_CACHE_NAME,
 } from './constants';
-import { createBrowserAssetCacheAdapter } from './sprite-cache';
 import type { EmojiDataPayload } from './data';
+import { createBrowserAssetCacheAdapter } from './sprite-cache';
 import type {
   EmojiLocaleEmojiTranslation,
   EmojiLocaleSearchIndex,
 } from './types';
 
-export type MojiXDataAssetKind =
-  | 'emoji-data'
-  | 'locale'
-  | 'locale-search';
+export type MojiXDataAssetKind = 'emoji-data' | 'locale' | 'locale-search';
 
 export interface MojiXDataFetchRequest {
   kind: MojiXDataAssetKind;
@@ -28,10 +25,12 @@ export type MojiXDataFetcher = <T = unknown>(
 ) => Promise<Response | T>;
 
 export interface MojiXDataSourceConfig {
-  baseUrl?: string | ((
-    path: string,
-    request: Omit<MojiXDataFetchRequest, 'init' | 'url'>,
-  ) => string);
+  baseUrl?:
+    | string
+    | ((
+        path: string,
+        request: Omit<MojiXDataFetchRequest, 'init' | 'url'>,
+      ) => string);
   cache?: boolean;
   cacheName?: string;
   preparedCache?: boolean;
@@ -53,9 +52,7 @@ export interface EmojiDataBootstrapPayload {
 
 let dataSourceConfig: MojiXDataSourceConfig = {};
 
-export function configureMojiXDataSource(
-  config: MojiXDataSourceConfig | null,
-) {
+export function configureMojiXDataSource(config: MojiXDataSourceConfig | null) {
   dataSourceConfig = config ? { ...dataSourceConfig, ...config } : {};
 }
 

@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MojiXDataFetcher } from '../src/core/data-source';
 
 const SHARD_PAYLOADS: Record<string, unknown> = {
@@ -19,9 +19,7 @@ const SHARD_PAYLOADS: Record<string, unknown> = {
     categories: ['smileys'],
     subcategories: ['face-smiling'],
     skinTones: ['light'],
-    rows: [
-      ['1f600', '\u{1F600}', ['grinning'], [':D'], 0, 0, 32, 47, null],
-    ],
+    rows: [['1f600', '\u{1F600}', ['grinning'], [':D'], 0, 0, 32, 47, null]],
   },
   people: {
     version: 1,
@@ -39,9 +37,7 @@ const SHARD_PAYLOADS: Record<string, unknown> = {
     categories: ['people'],
     subcategories: ['hand-fingers-open'],
     skinTones: ['light'],
-    rows: [
-      ['1f44b', '\u{1F44B}', ['wave'], null, 0, 0, 4, 55, null],
-    ],
+    rows: [['1f44b', '\u{1F44B}', ['wave'], null, 0, 0, 4, 55, null]],
   },
 };
 
@@ -66,15 +62,18 @@ describe('EmojiPicker with loadCategoryShards', () => {
     const fetcher =
       fetcherOverride ??
       vi.fn(async (request) => {
-        if (request.kind === 'emoji-data' && request.key.startsWith('emoji-shard:')) {
+        if (
+          request.kind === 'emoji-data' &&
+          request.key.startsWith('emoji-shard:')
+        ) {
           const id = request.key.slice('emoji-shard:'.length);
           const payload = SHARD_PAYLOADS[id];
           if (!payload) {
-            throw new Error('No fixture for shard ' + id);
+            throw new Error(`No fixture for shard ${id}`);
           }
           return payload as never;
         }
-        throw new Error('Unexpected fetch: ' + request.key);
+        throw new Error(`Unexpected fetch: ${request.key}`);
       });
 
     dataSourceModule.configureMojiXDataSource({
@@ -159,12 +158,7 @@ describe('EmojiPicker with loadCategoryShards', () => {
     const { indexModule, fetcher } = await setup();
     const { EmojiPicker } = indexModule;
 
-    render(
-      <EmojiPicker
-        loadCategoryShards
-        activeCategory="recent"
-      />,
-    );
+    render(<EmojiPicker loadCategoryShards activeCategory="recent" />);
 
     await waitFor(() => {
       const fetchedKeys = (fetcher as ReturnType<typeof vi.fn>).mock.calls.map(

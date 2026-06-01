@@ -1,13 +1,13 @@
 import { useRef, useState } from 'react';
+import emojiData from '../entries/data';
+import enLocale from '../entries/locales/en';
+import type { EmojiSelection } from '../index';
 import {
-  EmojiPicker,
   createNativeAssetSource,
+  EmojiPicker,
   preloadEmojiData,
   registerEmojiLocalePack,
 } from '../index';
-import type { EmojiSelection } from '../index';
-import emojiData from '../entries/data';
-import enLocale from '../entries/locales/en';
 
 const NATIVE_SOURCE = createNativeAssetSource();
 

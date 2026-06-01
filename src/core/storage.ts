@@ -6,7 +6,9 @@ import type {
 } from './types';
 
 function canUseStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+  return (
+    typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
+  );
 }
 
 export function readRecentEmoji(storageKey: string) {
@@ -31,7 +33,10 @@ export function readRecentEmoji(storageKey: string) {
   }
 }
 
-export function writeRecentEmoji(storageKey: string, entries: RecentEmojiRecord[]) {
+export function writeRecentEmoji(
+  storageKey: string,
+  entries: RecentEmojiRecord[],
+) {
   if (!canUseStorage()) {
     return;
   }
@@ -136,10 +141,7 @@ export function readStoredSkinTone(
   }
 }
 
-export function writeStoredSkinTone(
-  storageKey: string,
-  tone: EmojiSkinTone,
-) {
+export function writeStoredSkinTone(storageKey: string, tone: EmojiSkinTone) {
   if (!canUseStorage()) {
     return;
   }

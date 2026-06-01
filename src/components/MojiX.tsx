@@ -1,5 +1,5 @@
-import { useEffect, type HTMLAttributes } from 'react';
-import { SKIN_TONE_OPTIONS } from '../core/constants';
+import { type HTMLAttributes, useEffect } from 'react';
+import type { SKIN_TONE_OPTIONS } from '../core/constants';
 import type {
   EmojiCategoryId,
   EmojiPickerProps,
@@ -12,23 +12,20 @@ import { EmojiPreview } from './EmojiPreview';
 import { EmojiSearchField } from './EmojiSearchField';
 import { EmojiSidebar } from './EmojiSidebar';
 import { EmojiSkinToneButton } from './EmojiSkinToneButton';
-import { preloadVirtualizedEmojiGrid } from './virtualizedGridLoader';
 import {
-  getSlotClassName,
-  getSlotStyle,
-} from './utils';
-import {
-  MojiXRoot,
   getContextSlotOptions,
+  MojiXRoot,
+  type RenderChild,
   renderChild,
   useActiveEmoji,
   useEmojiCategories,
   useEmojiSearch,
   useMojiXContext,
   useSkinTone,
-  type RenderChild,
 } from './MojiXRoot';
 import type { EmojiPickerState } from './useEmojiPickerState';
+import { getSlotClassName, getSlotStyle } from './utils';
+import { preloadVirtualizedEmojiGrid } from './virtualizedGridLoader';
 
 function shouldPreloadVirtualizedGrid(
   virtualization: EmojiPickerProps['virtualization'],
@@ -39,6 +36,10 @@ function shouldPreloadVirtualizedGrid(
   );
 }
 
+export type {
+  MojiXRootProps,
+  UseEmojiAssetsResult,
+} from './MojiXRoot';
 export {
   MojiXRoot,
   useActiveEmoji,
@@ -48,10 +49,6 @@ export {
   useEmojiSelection,
   useMojiX,
   useSkinTone,
-} from './MojiXRoot';
-export type {
-  MojiXRootProps,
-  UseEmojiAssetsResult,
 } from './MojiXRoot';
 
 export interface MojiXSearchProps {
@@ -79,8 +76,7 @@ export function MojiXSearch({ children }: MojiXSearchProps) {
   );
 }
 
-export interface MojiXViewportProps
-  extends HTMLAttributes<HTMLDivElement> {}
+export interface MojiXViewportProps extends HTMLAttributes<HTMLDivElement> {}
 
 export function MojiXViewport({
   className,
@@ -222,8 +218,7 @@ export function MojiXLoading({
   );
 }
 
-export interface MojiXFooterProps
-  extends HTMLAttributes<HTMLDivElement> {}
+export interface MojiXFooterProps extends HTMLAttributes<HTMLDivElement> {}
 
 export function MojiXFooter({
   className,
@@ -330,11 +325,13 @@ export function MojiXSkinTone({ children }: MojiXSkinToneProps) {
 
   if (children) {
     return (
-      <>{children({
-        skinTone: skinToneState.skinTone,
-        setSkinTone: skinToneState.setSkinTone,
-        options: skinToneState.options,
-      })}</>
+      <>
+        {children({
+          skinTone: skinToneState.skinTone,
+          setSkinTone: skinToneState.setSkinTone,
+          options: skinToneState.options,
+        })}
+      </>
     );
   }
 

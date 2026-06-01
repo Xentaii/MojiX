@@ -185,7 +185,7 @@ export function createEmojiIndex(
 
   for (const emoji of emojis) {
     const native =
-      emoji.kind === 'unicode' ? emoji.native : emoji.native ?? '';
+      emoji.kind === 'unicode' ? emoji.native : (emoji.native ?? '');
 
     if (native) {
       byNative.set(native, emoji);
@@ -217,13 +217,10 @@ export function filterEmojiWithSearchConfig(
   searchConfig: EmojiSearchConfigLike | undefined,
 ): EmojiRenderable[] {
   if (!searchConfig) {
-    return filterEmoji(
-      emojis,
-      query,
-      (emoji) =>
-        emoji.kind === 'custom'
-          ? []
-          : getLocalizedSearchTokens(emoji, localeDefinition),
+    return filterEmoji(emojis, query, (emoji) =>
+      emoji.kind === 'custom'
+        ? []
+        : getLocalizedSearchTokens(emoji, localeDefinition),
     );
   }
 

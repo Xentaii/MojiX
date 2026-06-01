@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-const emojiDataJson = readFileSync(
+const _emojiDataJson = readFileSync(
   new URL('../../src/core/generated/emoji-data.json', import.meta.url),
   'utf8',
 );
@@ -96,7 +96,9 @@ test.describe('MojiX CDN data loading', () => {
     ).toBeVisible();
     await expect(page.locator('[data-mx-slot="loading"]')).toBeVisible();
     await expect(page.getByTestId('cdn-error-output')).not.toHaveText('none');
-    await expect(page.locator('[data-mx-slot="emoji"]').first()).toContainText('👋');
+    await expect(page.locator('[data-mx-slot="emoji"]').first()).toContainText(
+      '👋',
+    );
     expect(emojiDataRequests).toBe(1);
   });
 });

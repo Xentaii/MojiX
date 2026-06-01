@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 // Flattens docs/**/*.md into a GitHub Wiki layout.
 //
 // Usage:
@@ -12,6 +13,7 @@
 // under docs/assets/ are copied to wiki/assets/ verbatim and the rewritten
 // links point at that folder.
 
+import { existsSync } from 'node:fs';
 import {
   copyFile,
   mkdir,
@@ -20,7 +22,6 @@ import {
   rm,
   writeFile,
 } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 
 const args = process.argv.slice(2);
@@ -39,11 +40,7 @@ function titleCase(word) {
 // converting '_' to '-' and title-casing each '-' delimited chunk so
 // 'caching-and-storage' becomes 'Caching-And-Storage'.
 function normalizeSegment(segment) {
-  return segment
-    .replace(/_/g, '-')
-    .split('-')
-    .map(titleCase)
-    .join('-');
+  return segment.replace(/_/g, '-').split('-').map(titleCase).join('-');
 }
 
 function toWikiPageName(relativePath) {
@@ -105,8 +102,7 @@ async function walk(dir, prefix = '') {
 
 function resolveRelativeLink(sourceRelPath, target) {
   const sourceDir = dirname(sourceRelPath);
-  const combined =
-    sourceDir === '.' ? target : `${sourceDir}/${target}`;
+  const combined = sourceDir === '.' ? target : `${sourceDir}/${target}`;
   const segments = combined.replace(/\\/g, '/').split('/');
   const stack = [];
 
@@ -129,7 +125,11 @@ function rewriteLinks(content, sourceRelPath, pageByRelPath, assetByRelPath) {
     /(!?)\[([^\]]*)\]\(([^)]+)\)/g,
     (match, bang, text, target) => {
       // Skip absolute URLs, mailto, anchors-only, and empty targets.
-      if (!target || /^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('#')) {
+      if (
+        !target ||
+        /^[a-z][a-z0-9+.-]*:/i.test(target) ||
+        target.startsWith('#')
+      ) {
         return match;
       }
 
@@ -164,7 +164,8 @@ function buildSidebar(pageByRelPath, pageTitleByRelPath) {
 
   for (const [relPath, wikiName] of pageByRelPath) {
     const segments = relPath.split('/');
-    const group = segments.length > 1 ? normalizeSegment(segments[0]) : 'Top-level';
+    const group =
+      segments.length > 1 ? normalizeSegment(segments[0]) : 'Top-level';
     const list = groups.get(group) ?? [];
     list.push({ relPath, wikiName });
     groups.set(group, list);
@@ -201,7 +202,7 @@ function buildSidebar(pageByRelPath, pageTitleByRelPath) {
       const label =
         wikiName === 'Home'
           ? 'Home'
-          : pageTitleByRelPath.get(relPath) ?? wikiName.replace(/-/g, ' ');
+          : (pageTitleByRelPath.get(relPath) ?? wikiName.replace(/-/g, ' '));
       lines.push(`- [${label}](${wikiName})`);
     }
     lines.push('');

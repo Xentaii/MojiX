@@ -1,7 +1,7 @@
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
 import { createContext, useContext, useMemo } from 'react';
-import { SKIN_TONE_OPTIONS } from '../core/constants';
 import { resolveEmojiAsset } from '../core/assets';
+import { SKIN_TONE_OPTIONS } from '../core/constants';
 import type {
   EmojiAssetRenderContext,
   EmojiAssetSource,
@@ -12,14 +12,10 @@ import type {
   EmojiSkinTone,
 } from '../core/types';
 import {
-  getSlotClassName,
-  getSlotStyle,
-  type SlotStyleOptions,
-} from './utils';
-import {
   type EmojiPickerState,
   useEmojiPickerState,
 } from './useEmojiPickerState';
+import { getSlotClassName, getSlotStyle, type SlotStyleOptions } from './utils';
 
 const MojiXContext = createContext<EmojiPickerState | null>(null);
 
@@ -42,14 +38,15 @@ const FOCUSABLE_SELECTOR = [
 ].join(',');
 
 function getFocusableElements(root: HTMLElement) {
-  return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
-    .filter((element) => {
-      if (element.hidden || element.getAttribute('aria-hidden') === 'true') {
-        return false;
-      }
+  return Array.from(
+    root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+  ).filter((element) => {
+    if (element.hidden || element.getAttribute('aria-hidden') === 'true') {
+      return false;
+    }
 
-      return true;
-    });
+    return true;
+  });
 }
 
 function handleFocusTrapKeyDown(
@@ -137,9 +134,7 @@ function getRootColorStyles(colors: EmojiPickerColors | undefined) {
     ['--mx-accent-soft' as string]: colors.accentSoft,
     ['--mx-hover' as string]: colors.hover,
     ['--mx-emoji-hover' as string]:
-      typeof colors.emojiHover === 'string'
-        ? colors.emojiHover
-        : undefined,
+      typeof colors.emojiHover === 'string' ? colors.emojiHover : undefined,
     ['--mx-category-hover' as string]:
       typeof colors.categoryHover === 'string'
         ? colors.categoryHover
@@ -155,8 +150,7 @@ function getRootColorStyles(colors: EmojiPickerColors | undefined) {
   };
 }
 
-export interface MojiXRootProps
-  extends Omit<EmojiPickerProps, 'children'> {
+export interface MojiXRootProps extends Omit<EmojiPickerProps, 'children'> {
   children?: ReactNode | RenderChild<EmojiPickerState>;
 }
 

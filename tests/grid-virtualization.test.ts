@@ -80,9 +80,7 @@ describe('grid virtualization helpers', () => {
       overscanRows: 1,
     });
 
-    expect(
-      expandEmojiGridVirtualWindow(window, 20, 10),
-    ).toMatchObject({
+    expect(expandEmojiGridVirtualWindow(window, 20, 10)).toMatchObject({
       startRow: 0,
       endRow: 10,
       beforeRows: 0,

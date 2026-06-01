@@ -40,9 +40,10 @@ export const englishSkinTones: Record<EmojiSkinTone, string> = {
   dark: 'Dark',
 };
 
-export const englishLocale: EmojiLocaleDefinition = createChromeLocaleDefinition({
-  code: 'en',
-  labels: englishLabels,
-  categories: englishCategories,
-  skinTones: englishSkinTones,
-});
+export const englishLocale: EmojiLocaleDefinition =
+  createChromeLocaleDefinition({
+    code: 'en',
+    labels: englishLabels,
+    categories: englishCategories,
+    skinTones: englishSkinTones,
+  });

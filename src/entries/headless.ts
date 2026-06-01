@@ -1,13 +1,4 @@
-import {
-  MojiXRoot,
-  useActiveEmoji,
-  useEmojiAssets,
-  useEmojiCategories,
-  useEmojiSearch,
-  useEmojiSelection,
-  useMojiX,
-  useSkinTone,
-} from '../components/MojiXRoot';
+import { MojiXRoot } from '../components/MojiXRoot';
 
 export {
   MojiXRoot,

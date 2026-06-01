@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   emojiPickerLocales,
-  getLocalizedEmojiName,
   getLocalizedEmojiKeywords,
+  getLocalizedEmojiName,
   preloadEmojiLocaleSearchIndex,
   registerEmojiLocalePack,
   resolveLocaleDefinition,
@@ -30,9 +30,7 @@ describe('registerEmojiLocalePack', () => {
       id: '1f600',
     } as unknown as EmojiRenderable;
 
-    expect(getLocalizedEmojiKeywords(fakeEmoji, definition)).toEqual([
-      'смайл',
-    ]);
+    expect(getLocalizedEmojiKeywords(fakeEmoji, definition)).toEqual(['смайл']);
   });
 
   it('computes regional flag names when locale packs omit them', () => {
@@ -68,6 +66,8 @@ describe('registerEmojiLocalePack', () => {
     });
 
     expect(emojiPickerLocales.de).toBeDefined();
-    expect(emojiPickerLocales.de?.emoji['1f600']?.name).toBe('Grinsendes Gesicht');
+    expect(emojiPickerLocales.de?.emoji['1f600']?.name).toBe(
+      'Grinsendes Gesicht',
+    );
   });
 });

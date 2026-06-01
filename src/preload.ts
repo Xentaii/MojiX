@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  loadEmojiCategoryShards,
-  loadEmojiData,
-} from './core/data';
-import {
-  loadEmojiLocaleSearchIndex,
-  loadLocale,
-} from './core/i18n';
+import { loadVirtualizedEmojiGridModule } from './components/virtualizedGridLoader';
+import { loadEmojiCategoryShards, loadEmojiData } from './core/data';
+import { loadEmojiLocaleSearchIndex, loadLocale } from './core/i18n';
 import { warmEmojiSpriteSheet } from './core/sprite-cache';
 import type {
   BuiltInEmojiCategoryId,
@@ -16,7 +11,6 @@ import type {
   EmojiSpriteSheetConfig,
   UnicodeEmoji,
 } from './core/types';
-import { loadVirtualizedEmojiGridModule } from './components/virtualizedGridLoader';
 
 export interface PreloadEmojiPickerOptions {
   locale?: EmojiLocaleCode;
@@ -41,14 +35,9 @@ export interface PreloadEmojiPickerResult {
   spriteSheet: EmojiSpriteSheetCachedAsset | null;
 }
 
-export type PreloadMojiXStatus =
-  | 'idle'
-  | 'loading'
-  | 'success'
-  | 'error';
+export type PreloadMojiXStatus = 'idle' | 'loading' | 'success' | 'error';
 
-export interface UsePreloadMojiXOptions
-  extends PreloadEmojiPickerOptions {
+export interface UsePreloadMojiXOptions extends PreloadEmojiPickerOptions {
   disabled?: boolean;
 }
 
@@ -90,18 +79,15 @@ export async function preloadEmojiPicker(
       ? loadEmojiCategoryShards(options.shards)
       : loadEmojiData();
 
-  const [data, loadedLocales, searchIndexes, spriteSheet] =
-    await Promise.all([
-      dataPromise,
-      Promise.all(locales.map((locale) => loadLocale(locale))),
-      options.search
-        ? Promise.all(
-            locales.map((locale) => loadEmojiLocaleSearchIndex(locale)),
-          )
-        : Promise.resolve([]),
-      spriteSheetPromise,
-      virtualizedGridPromise,
-    ] as const);
+  const [data, loadedLocales, searchIndexes, spriteSheet] = await Promise.all([
+    dataPromise,
+    Promise.all(locales.map((locale) => loadLocale(locale))),
+    options.search
+      ? Promise.all(locales.map((locale) => loadEmojiLocaleSearchIndex(locale)))
+      : Promise.resolve([]),
+    spriteSheetPromise,
+    virtualizedGridPromise,
+  ] as const);
 
   return {
     data,
@@ -137,8 +123,7 @@ export function usePreloadMojiX(
     ],
   );
   const [status, setStatus] = useState<PreloadMojiXStatus>('idle');
-  const [result, setResult] =
-    useState<PreloadEmojiPickerResult | null>(null);
+  const [result, setResult] = useState<PreloadEmojiPickerResult | null>(null);
   const [error, setError] = useState<unknown>(null);
 
   const preload = useCallback(async () => {

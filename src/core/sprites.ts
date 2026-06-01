@@ -12,8 +12,8 @@ import type {
   EmojiSpriteSheetContext,
   EmojiSpriteSheetSource,
   EmojiSpriteSheetVariant,
-  EmojiVendorAvailability,
   EmojiVendor,
+  EmojiVendorAvailability,
   UnicodeEmojiAvailability,
 } from './types';
 
@@ -28,12 +28,7 @@ const spriteStyleCache = new Map<string, CSSProperties>();
 
 export interface ResolvedEmojiSpriteSheetConfig
   extends Omit<
-    Required<
-      Omit<
-        EmojiSpriteSheetConfig,
-        'availability' | 'cache' | 'url'
-      >
-    >,
+    Required<Omit<EmojiSpriteSheetConfig, 'availability' | 'cache' | 'url'>>,
     never
   > {
   url: string | ((context: EmojiSpriteSheetContext) => string);
@@ -134,9 +129,7 @@ export function createEmojiSpriteSheet(
   };
 }
 
-function resolveVendorAvailability(
-  availability?: EmojiVendorAvailability,
-) {
+function resolveVendorAvailability(availability?: EmojiVendorAvailability) {
   if (!availability) {
     return undefined;
   }
@@ -177,9 +170,7 @@ export function createEmojiLocalSpriteSheet(
   return createEmojiSpriteSheet({
     ...options,
     source: 'local',
-    ...(isDirectUrl
-      ? { url: urlOrBasePath }
-      : { basePath: urlOrBasePath }),
+    ...(isDirectUrl ? { url: urlOrBasePath } : { basePath: urlOrBasePath }),
   });
 }
 
@@ -202,16 +193,20 @@ export function resolveSpriteSheetConfig(
     availability: resolveVendorAvailability(base.availability),
     sheetSize: base.sheetSize ?? defaultSpriteSheet.sheetSize ?? 64,
     padding: base.padding ?? defaultSpriteSheet.padding ?? EMOJI_SHEET_PADDING,
-    gridSize: base.gridSize ?? defaultSpriteSheet.gridSize ?? EMOJI_SHEET_GRID_SIZE,
+    gridSize:
+      base.gridSize ?? defaultSpriteSheet.gridSize ?? EMOJI_SHEET_GRID_SIZE,
     variant: base.variant ?? defaultSpriteSheet.variant ?? 'indexed-256',
-    fallbackNative: base.fallbackNative ?? defaultSpriteSheet.fallbackNative ?? true,
+    fallbackNative:
+      base.fallbackNative ?? defaultSpriteSheet.fallbackNative ?? true,
     source: base.source ?? defaultSpriteSheet.source ?? 'cdn',
-    version: base.version ?? defaultSpriteSheet.version ?? EMOJI_DATASET_VERSION,
+    version:
+      base.version ?? defaultSpriteSheet.version ?? EMOJI_DATASET_VERSION,
     packageName:
       base.packageName ??
       defaultSpriteSheet.packageName ??
       resolveVendorPackageName(base.vendor ?? 'twitter'),
-    basePath: base.basePath ?? defaultSpriteSheet.basePath ?? DEFAULT_SPRITE_BASE_PATH,
+    basePath:
+      base.basePath ?? defaultSpriteSheet.basePath ?? DEFAULT_SPRITE_BASE_PATH,
     url: base.url ?? defaultSpriteSheet.url ?? createEmojiCdnUrl(),
     cache,
   };
@@ -332,10 +327,7 @@ export function getSpriteStyle(options: {
 
   const backgroundScalePercent =
     (gridSize * cellSize * 100) / Math.max(1, sheetSize);
-  const backgroundTravel = Math.max(
-    1,
-    gridSize * cellSize - sheetSize,
-  );
+  const backgroundTravel = Math.max(1, gridSize * cellSize - sheetSize);
   const backgroundPositionXPercent =
     ((options.sheetX * cellSize + padding) * 100) / backgroundTravel;
   const backgroundPositionYPercent =

@@ -8,11 +8,7 @@ import type {
   EmojiSpriteSheetConfig,
 } from '../core/types';
 import { EmojiSprite } from './EmojiSprite';
-import {
-  formatEmojiName,
-  getSlotClassName,
-  getSlotStyle,
-} from './utils';
+import { formatEmojiName, getSlotClassName, getSlotStyle } from './utils';
 
 export interface EmojiPreviewProps {
   emoji: EmojiRenderable | null;
@@ -111,8 +107,7 @@ export function EmojiPreview({
             <span>{selection.native ?? primaryAlias ?? displayName}</span>
             <span>{selection.categoryLabel}</span>
           </div>
-          {(secondaryAliases.length > 0 ||
-            selection.emoticons.length > 0) && (
+          {(secondaryAliases.length > 0 || selection.emoticons.length > 0) && (
             <div
               className={getSlotClassName('previewMeta', slotOptions)}
               style={getSlotStyle('previewMeta', slotOptions)}

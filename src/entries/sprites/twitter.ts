@@ -1,5 +1,5 @@
-import { createEmojiCdnSpriteSheet } from '../../core/sprites';
 import availability from '../../core/generated/availability.twitter.json';
+import { createEmojiCdnSpriteSheet } from '../../core/sprites';
 
 const twitterSprites = createEmojiCdnSpriteSheet({
   vendor: 'twitter',

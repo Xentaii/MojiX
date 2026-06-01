@@ -1,9 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { SKIN_TONE_OPTIONS } from '../core/constants';
-import {
-  peekUnicodeEmojiById,
-  resolveUnicodeEmojiVariant,
-} from '../core/data';
+import { peekUnicodeEmojiById, resolveUnicodeEmojiVariant } from '../core/data';
 import { getLocalizedSkinToneLabel } from '../core/i18n';
 import type {
   EmojiAssetSource,
@@ -70,7 +67,10 @@ export function EmojiSkinToneButton({
     if (!handEmoji) {
       return (
         <span aria-hidden="true">
-          {SKIN_TONE_OPTIONS.find((option) => option.tone === nextSkinTone)?.icon}
+          {
+            SKIN_TONE_OPTIONS.find((option) => option.tone === nextSkinTone)
+              ?.icon
+          }
         </span>
       );
     }
@@ -156,10 +156,7 @@ export function EmojiSkinToneButton({
               onClick={() => handleSkinToneSelect(option.tone)}
               role="menuitemradio"
               aria-checked={option.tone === skinTone}
-              title={getLocalizedSkinToneLabel(
-                option.tone,
-                localeDefinition,
-              )}
+              title={getLocalizedSkinToneLabel(option.tone, localeDefinition)}
               aria-label={getLocalizedSkinToneLabel(
                 option.tone,
                 localeDefinition,

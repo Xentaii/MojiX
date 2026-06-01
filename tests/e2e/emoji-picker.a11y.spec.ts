@@ -30,12 +30,8 @@ test.describe('MojiX accessibility fixture', () => {
   test('initial visible categories render emoji instead of an empty placeholder window', async ({
     page,
   }) => {
-    const smileysSection = page.locator(
-      'section[data-category-id="smileys"]',
-    );
-    const smileysEmoji = smileysSection.locator(
-      '[data-mx-slot="emoji"]',
-    );
+    const smileysSection = page.locator('section[data-category-id="smileys"]');
+    const smileysEmoji = smileysSection.locator('[data-mx-slot="emoji"]');
 
     await expect(smileysSection).toBeVisible();
     await expect(smileysEmoji.first()).toBeVisible();
@@ -60,9 +56,9 @@ test.describe('MojiX accessibility fixture', () => {
 
     await page.keyboard.press('Enter');
 
-    await expect(
-      page.getByTestId('selection-output'),
-    ).not.toHaveText('No emoji selected');
+    await expect(page.getByTestId('selection-output')).not.toHaveText(
+      'No emoji selected',
+    );
   });
 
   test('skin tone controls expose labelled options', async ({ page }) => {

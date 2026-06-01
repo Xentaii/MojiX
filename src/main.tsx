@@ -1,10 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './demo/App';
-import {
-  preloadEmojiData,
-  registerEmojiLocalePack,
-} from './index';
 import emojiData from './entries/data';
 import deLocale from './entries/locales/de';
 import enLocale from './entries/locales/en';
@@ -14,6 +10,7 @@ import jaLocale from './entries/locales/ja';
 import ptLocale from './entries/locales/pt';
 import ruLocale from './entries/locales/ru';
 import ukLocale from './entries/locales/uk';
+import { preloadEmojiData, registerEmojiLocalePack } from './index';
 import './components/EmojiPicker.css'; // default styled picker; not auto-imported from the package root
 import './demo/demo.css';
 

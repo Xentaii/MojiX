@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { EmojiPicker } from '../index';
 import type { EmojiSelection } from '../index';
+import { EmojiPicker } from '../index';
 
 const SEEDED_RECENTS = ['1f44b', '1f642', '1f680', '2728'];
 

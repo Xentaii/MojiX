@@ -7,14 +7,14 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { dirname, extname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   brotliCompressSync,
-  constants as zlibConstants,
   gzipSync,
+  constants as zlibConstants,
 } from 'node:zlib';
-import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(
@@ -59,7 +59,8 @@ function precompressDirectory(dir: string) {
       `${fullPath}.br`,
       brotliCompressSync(buffer, {
         params: {
-          [zlibConstants.BROTLI_PARAM_QUALITY]: zlibConstants.BROTLI_MAX_QUALITY,
+          [zlibConstants.BROTLI_PARAM_QUALITY]:
+            zlibConstants.BROTLI_MAX_QUALITY,
           [zlibConstants.BROTLI_PARAM_SIZE_HINT]: size,
         },
       }),
@@ -107,20 +108,14 @@ function copyBundleDataPlugin() {
           continue;
         }
 
-        cpSync(
-          resolve(generatedDir, fileName),
-          resolve(distDataDir, fileName),
-        );
+        cpSync(resolve(generatedDir, fileName), resolve(distDataDir, fileName));
       }
       for (const fileName of readdirSync(generatedDir)) {
         if (!/^availability\.[^.]+\.json$/u.test(fileName)) {
           continue;
         }
 
-        cpSync(
-          resolve(generatedDir, fileName),
-          resolve(distDataDir, fileName),
-        );
+        cpSync(resolve(generatedDir, fileName), resolve(distDataDir, fileName));
       }
       writeFileSync(
         resolve(distLibNodeDir, 'data.js'),
@@ -212,7 +207,10 @@ export default defineConfig({
         headless: resolve(__dirname, 'src/entries/headless.ts'),
         style: resolve(__dirname, 'src/entries/style.ts'),
         'sprites/apple': resolve(__dirname, 'src/entries/sprites/apple.ts'),
-        'sprites/facebook': resolve(__dirname, 'src/entries/sprites/facebook.ts'),
+        'sprites/facebook': resolve(
+          __dirname,
+          'src/entries/sprites/facebook.ts',
+        ),
         'sprites/google': resolve(__dirname, 'src/entries/sprites/google.ts'),
         'sprites/twitter': resolve(__dirname, 'src/entries/sprites/twitter.ts'),
         'icons/extra': resolve(__dirname, 'src/entries/icons/extra.ts'),

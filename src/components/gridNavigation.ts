@@ -13,7 +13,11 @@ export function getEmojiGridTabStopByOffset(
   let cursor = 0;
   let currentFlatIndex = -1;
 
-  for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex += 1) {
+  for (
+    let sectionIndex = 0;
+    sectionIndex < sections.length;
+    sectionIndex += 1
+  ) {
     const section = sections[sectionIndex];
 
     if (!section) {
@@ -37,7 +41,11 @@ export function getEmojiGridTabStopByOffset(
   );
   let targetCursor = 0;
 
-  for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex += 1) {
+  for (
+    let sectionIndex = 0;
+    sectionIndex < sections.length;
+    sectionIndex += 1
+  ) {
     const section = sections[sectionIndex];
 
     if (!section) {
@@ -70,5 +78,7 @@ export function getEmojiGridPageOffset(options: {
     Math.floor(options.containerHeight / Math.max(options.rowHeight, 1)),
   );
 
-  return options.direction * Math.max(options.columns, pageRows * options.columns);
+  return (
+    options.direction * Math.max(options.columns, pageRows * options.columns)
+  );
 }

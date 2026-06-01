@@ -1,9 +1,10 @@
 // Styles are NOT auto-imported so that headless / unstyled usage doesn't
 // ship MojiX CSS to consumers who bring their own design system.
 // Styled usage: import 'mojix-picker/style.css' (or the local path when developing).
-export { EmojiPicker } from './components/EmojiPicker';
-export { EmojiGrid } from './components/EmojiGrid';
+
 export { EmojiCategoryIcon } from './components/EmojiCategoryIcon';
+export { EmojiGrid } from './components/EmojiGrid';
+export { EmojiPicker } from './components/EmojiPicker';
 export { EmojiPreview } from './components/EmojiPreview';
 export { EmojiSearchField } from './components/EmojiSearchField';
 export { EmojiSidebar } from './components/EmojiSidebar';
@@ -39,61 +40,40 @@ export {
   createSvgAssetSource,
   resolveEmojiAsset,
 } from './core/assets';
-export {
-  createEmojiSpriteSheet,
-  createEmojiCdnSpriteSheet,
-  createEmojiCdnUrl,
-  createEmojiLocalSpriteSheet,
-  createEmojiLocalUrl,
-  clearEmojiSpriteStyleCache,
-  defaultSpriteSheet,
-  resolveVendorPackageName,
-} from './core/sprites';
-export {
-  createBrowserSpriteSheetCacheAdapter,
-  preloadSpriteSheetUrl,
-  warmEmojiSpriteSheet,
-} from './core/sprite-cache';
-export {
-  createLocalStorageRecentStore,
-  pushRecentEmojiRecord,
-  pushRecentEmoji,
-  readRecentEmoji,
-  readStoredSkinTone,
-  writeRecentEmoji,
-  writeStoredSkinTone,
-} from './core/storage';
-export {
-  createEmojiIndex,
-  filterEmojiWithSearchConfig,
-  searchEmoji,
-} from './core/search';
 export type {
-  CreateEmojiIndexOptions,
-  EmojiIndex,
-  EmojiSearchConfig,
-  EmojiSearchOptions,
-} from './core/search';
-export { resolveEmojiSelection } from './core/engine';
+  EmojiDataInput,
+  EmojiDataPayload,
+  EmojiSkinVariantColumnRow,
+  UnicodeEmojiColumnData,
+  UnicodeEmojiDataRecord,
+} from './core/data';
+export {
+  getLoadedEmojiCategories,
+  getUnicodeEmojiData,
+  isEmojiCategoryLoaded,
+  loadEmojiCategoryShard,
+  loadEmojiCategoryShards,
+  loadEmojiData,
+  preloadEmojiData,
+} from './core/data';
+export type { EmojiSearchTokensInput } from './core/data-prepare-worker';
+export {
+  computeEmojiSearchTokensOnWorker,
+  disposeEmojiPreparationWorker,
+  isEmojiPreparationWorkerAvailable,
+} from './core/data-prepare-worker';
+export type {
+  EmojiDataBootstrapPayload,
+  MojiXDataFetcher,
+  MojiXDataFetchRequest,
+  MojiXDataSourceConfig,
+} from './core/data-source';
+export {
+  configureMojiXDataSource,
+  resetMojiXDataSource,
+} from './core/data-source';
 export type { ResolveEmojiSelectionOptions } from './core/engine';
-export { preloadEmojiPicker, usePreloadMojiX } from './preload';
-export type {
-  PreloadMojiXStatus,
-  PreloadEmojiPickerOptions,
-  PreloadEmojiPickerResult,
-  UsePreloadMojiXOptions,
-  UsePreloadMojiXResult,
-} from './preload';
-export {
-  createRecentEmojiStore,
-  createSkinToneStore,
-} from './core/stores';
-export type {
-  CreateRecentEmojiStoreOptions,
-  CreateSkinToneStoreOptions,
-  EmojiRecentStoreAdapter,
-  EmojiSkinToneStore,
-} from './core/stores';
+export { resolveEmojiSelection } from './core/engine';
 export {
   emojiPickerLocales,
   getLocalizedCategoryLabel,
@@ -107,78 +87,89 @@ export {
   registerEmojiLocaleSearchIndex,
   resolveLocaleDefinition,
 } from './core/i18n';
-export {
-  getLoadedEmojiCategories,
-  getUnicodeEmojiData,
-  isEmojiCategoryLoaded,
-  loadEmojiCategoryShard,
-  loadEmojiCategoryShards,
-  loadEmojiData,
-  preloadEmojiData,
-} from './core/data';
-export {
-  clearPreparedEmojiDataCache,
-} from './core/prepared-cache';
-export {
-  computeEmojiSearchTokensOnWorker,
-  disposeEmojiPreparationWorker,
-  isEmojiPreparationWorkerAvailable,
-} from './core/data-prepare-worker';
-export type { EmojiSearchTokensInput } from './core/data-prepare-worker';
-export {
-  configureMojiXDataSource,
-  resetMojiXDataSource,
-} from './core/data-source';
+export { clearPreparedEmojiDataCache } from './core/prepared-cache';
 export type {
-  EmojiDataBootstrapPayload,
-  MojiXDataFetchRequest,
-  MojiXDataFetcher,
-  MojiXDataSourceConfig,
-} from './core/data-source';
+  CreateEmojiIndexOptions,
+  EmojiIndex,
+  EmojiSearchConfig,
+  EmojiSearchOptions,
+} from './core/search';
+export {
+  createEmojiIndex,
+  filterEmojiWithSearchConfig,
+  searchEmoji,
+} from './core/search';
+export {
+  createBrowserSpriteSheetCacheAdapter,
+  preloadSpriteSheetUrl,
+  warmEmojiSpriteSheet,
+} from './core/sprite-cache';
+export {
+  clearEmojiSpriteStyleCache,
+  createEmojiCdnSpriteSheet,
+  createEmojiCdnUrl,
+  createEmojiLocalSpriteSheet,
+  createEmojiLocalUrl,
+  createEmojiSpriteSheet,
+  defaultSpriteSheet,
+  resolveVendorPackageName,
+} from './core/sprites';
+export {
+  createLocalStorageRecentStore,
+  pushRecentEmoji,
+  pushRecentEmojiRecord,
+  readRecentEmoji,
+  readStoredSkinTone,
+  writeRecentEmoji,
+  writeStoredSkinTone,
+} from './core/storage';
 export type {
-  EmojiDataInput,
-  EmojiDataPayload,
-  EmojiSkinVariantColumnRow,
-  UnicodeEmojiColumnData,
-  UnicodeEmojiDataRecord,
-} from './core/data';
+  CreateRecentEmojiStoreOptions,
+  CreateSkinToneStoreOptions,
+  EmojiRecentStoreAdapter,
+  EmojiSkinToneStore,
+} from './core/stores';
+export {
+  createRecentEmojiStore,
+  createSkinToneStore,
+} from './core/stores';
 export type {
   BuiltInEmojiCategoryId,
   CustomEmoji,
-  EmojiCategoryConfig,
   EmojiAssetRenderContext,
   EmojiAssetRequest,
   EmojiAssetSource,
+  EmojiCategoryConfig,
   EmojiCategoryIconConfig,
   EmojiCategoryIconGlyph,
   EmojiCategoryIconInput,
-  EmojiCategoryIconsMap,
   EmojiCategoryIconPreset,
   EmojiCategoryIconRenderProps,
+  EmojiCategoryIconsMap,
+  EmojiCategoryId,
   EmojiImageAsset,
   EmojiImageAssetSource,
-  EmojiCategoryId,
-  EmojiLocaleCode,
   EmojiLocaleCategoryLabels,
+  EmojiLocaleCode,
   EmojiLocaleDefinition,
   EmojiLocaleEmojiTranslation,
   EmojiLocaleSearchIndex,
   EmojiMixedAssetSource,
   EmojiNativeAsset,
   EmojiNativeAssetSource,
+  EmojiPickerClassNames,
   EmojiPickerColors,
   EmojiPickerLabels,
   EmojiPickerProps,
-  EmojiPickerClassNames,
   EmojiPickerScrollBehavior,
   EmojiPickerSlot,
   EmojiPickerStyles,
   EmojiPickerVirtualization,
-  EmojiRecentStore,
-  EmojiResolvedAsset,
-  EmojiRenderState,
-  EmojiRenderable,
   EmojiRecentCategoryConfig,
+  EmojiRecentStore,
+  EmojiRenderable,
+  EmojiRenderState,
+  EmojiResolvedAsset,
   EmojiSearchConfigLike,
   EmojiSearchRankContext,
   EmojiSearchTokenizeContext,
@@ -188,20 +179,28 @@ export type {
   EmojiSpriteSheetAssetSource,
   EmojiSpriteSheetCacheAdapter,
   EmojiSpriteSheetCacheConfig,
-  EmojiSpriteSheetCacheMode,
   EmojiSpriteSheetCachedAsset,
+  EmojiSpriteSheetCacheMode,
   EmojiSpriteSheetCacheRequest,
   EmojiSpriteSheetConfig,
   EmojiSpriteSheetContext,
   EmojiSpriteSheetSource,
   EmojiSpriteSheetVariant,
+  EmojiSvgAsset,
+  EmojiSvgAssetSource,
   EmojiSystemCategoryId,
   EmojiVendor,
   EmojiVendorAvailability,
   RecentEmojiRecord,
   ResolvedEmojiCategoryIcon,
-  EmojiSvgAsset,
-  EmojiSvgAssetSource,
   UnicodeEmoji,
   UnicodeEmojiAvailability,
 } from './core/types';
+export type {
+  PreloadEmojiPickerOptions,
+  PreloadEmojiPickerResult,
+  PreloadMojiXStatus,
+  UsePreloadMojiXOptions,
+  UsePreloadMojiXResult,
+} from './preload';
+export { preloadEmojiPicker, usePreloadMojiX } from './preload';

@@ -39,9 +39,7 @@ export type EmojiSystemCategoryId =
   | 'flags'
   | 'custom';
 
-export type EmojiCategoryId =
-  | EmojiSystemCategoryId
-  | (string & {});
+export type EmojiCategoryId = EmojiSystemCategoryId | (string & {});
 
 export type EmojiPickerScrollBehavior = 'instant' | 'smooth' | 'auto';
 
@@ -287,8 +285,7 @@ export interface EmojiLocaleEmojiTranslation {
 
 export type EmojiLocaleSearchIndex = Record<string, string[]>;
 
-export type EmojiLocaleCategoryLabels =
-  Record<EmojiSystemCategoryId, string> &
+export type EmojiLocaleCategoryLabels = Record<EmojiSystemCategoryId, string> &
   Record<string, string>;
 
 export interface EmojiLocaleDefinition {
@@ -397,16 +394,12 @@ export type EmojiResolvedAsset =
 
 export interface EmojiImageAssetSource {
   type: 'image';
-  resolveUrl: (
-    request: EmojiAssetRequest,
-  ) => string | null | undefined;
+  resolveUrl: (request: EmojiAssetRequest) => string | null | undefined;
 }
 
 export interface EmojiSvgAssetSource {
   type: 'svg';
-  resolveUrl: (
-    request: EmojiAssetRequest,
-  ) => string | null | undefined;
+  resolveUrl: (request: EmojiAssetRequest) => string | null | undefined;
 }
 
 export interface EmojiNativeAssetSource {
@@ -466,13 +459,9 @@ export type EmojiPickerSlot =
   | 'sidebar'
   | 'navButton';
 
-export type EmojiPickerClassNames = Partial<
-  Record<EmojiPickerSlot, string>
->;
+export type EmojiPickerClassNames = Partial<Record<EmojiPickerSlot, string>>;
 
-export type EmojiPickerStyles = Partial<
-  Record<EmojiPickerSlot, CSSProperties>
->;
+export type EmojiPickerStyles = Partial<Record<EmojiPickerSlot, CSSProperties>>;
 
 export interface EmojiPickerColors {
   accent?: string;
@@ -592,17 +581,12 @@ export interface EmojiPickerProps
   categoryScrollBehavior?: EmojiPickerScrollBehavior;
   trapFocus?: boolean;
   closeOnEscape?: boolean;
-  renderEmoji?: (
-    emoji: EmojiRenderable,
-    state: EmojiRenderState,
-  ) => ReactNode;
+  renderEmoji?: (emoji: EmojiRenderable, state: EmojiRenderState) => ReactNode;
   renderPreview?: (
     emoji: EmojiRenderable,
     selection: EmojiSelection,
   ) => ReactNode;
-  renderCategoryIcon?: (
-    props: EmojiCategoryIconRenderProps,
-  ) => ReactNode;
+  renderCategoryIcon?: (props: EmojiCategoryIconRenderProps) => ReactNode;
   onEmojiSelect?: (emoji: EmojiSelection) => void;
   style?: CSSProperties;
 }

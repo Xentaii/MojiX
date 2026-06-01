@@ -105,7 +105,7 @@ export function createPickerThemeStyle(
   const isDark = palette.mode === 'dark';
   const mix = palette.accentMix ?? (isDark ? 22 : 14);
   const border = withAlpha(palette.text, isDark ? 0.26 : 0.08);
-  const accentSoft = withAlpha(palette.accent, mix / 100);
+  const _accentSoft = withAlpha(palette.accent, mix / 100);
   const hover = withAlpha(palette.text, isDark ? 0.1 : 0.05);
   const toolbarBg = withAlpha(palette.panel, isDark ? 0.72 : 0.54);
   const searchBg = withAlpha(palette.panel, isDark ? 0.88 : 0.8);
@@ -148,7 +148,10 @@ export function createPickerThemeStyle(
     '--mx-category-hover': `color-mix(in srgb, ${palette.accent} ${mix}%, transparent)`,
     '--mx-category-active-bg': `color-mix(in srgb, ${palette.accent} ${mix}%, transparent)`,
     '--mx-chip-bg': withAlpha(palette.accent, Math.max(mix * 0.6, 6) / 100),
-    '--mx-chip-border': withAlpha(palette.accent, Math.max(mix * 1.1, 12) / 100),
+    '--mx-chip-border': withAlpha(
+      palette.accent,
+      Math.max(mix * 1.1, 12) / 100,
+    ),
     '--mx-chip-muted-bg': withAlpha(palette.text, isDark ? 0.14 : 0.04),
     '--mx-scrollbar-thumb': palette.scrollbar,
     '--mx-scrollbar-thumb-hover': `color-mix(in srgb, ${palette.scrollbar} 82%, ${palette.text} 18%)`,

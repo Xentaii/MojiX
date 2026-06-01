@@ -1,19 +1,16 @@
+import { spawnSync } from 'node:child_process';
 import { existsSync, rmSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const fixtureRoot = resolve(repoRoot, 'examples/tauri-react');
 const localTarballPath = resolve(repoRoot, '.tmp/mojix-picker-local.tgz');
-const localTarballSpec = `file:${relative(fixtureRoot, localTarballPath).replaceAll(
-  '\\',
-  '/',
-)}`;
-const installedPackagePath = resolve(
+const localTarballSpec = `file:${relative(
   fixtureRoot,
-  'node_modules/mojix-picker',
-);
+  localTarballPath,
+).replaceAll('\\', '/')}`;
+const installedPackagePath = resolve(fixtureRoot, 'node_modules/mojix-picker');
 const relativePackagePath = relative(repoRoot, installedPackagePath);
 
 if (
@@ -36,11 +33,7 @@ const command = npmCli
   : process.platform === 'win32'
     ? 'npm.cmd'
     : 'npm';
-const args = [
-  ...(npmCli ? [npmCli] : []),
-  'install',
-  localTarballSpec,
-];
+const args = [...(npmCli ? [npmCli] : []), 'install', localTarballSpec];
 const result = spawnSync(command, args, {
   cwd: fixtureRoot,
   stdio: 'inherit',
