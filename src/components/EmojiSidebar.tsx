@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useRef } from 'react';
 import type {
   EmojiCategoryIconRenderProps,
   EmojiCategoryId,
@@ -21,7 +21,9 @@ export interface EmojiSidebarProps {
   unstyled?: boolean;
   classNames?: EmojiPickerClassNames;
   styles?: EmojiPickerStyles;
-  resolveCategoryHoverColor?: (categoryId: EmojiCategoryId) => string | undefined;
+  resolveCategoryHoverColor?: (
+    categoryId: EmojiCategoryId,
+  ) => string | undefined;
   autoScrollOnHover?: boolean;
 }
 
@@ -161,6 +163,8 @@ export function EmojiSidebar({
       ref={sidebarRef}
       className={getSlotClassName('sidebar', slotOptions)}
       style={getSlotStyle('sidebar', slotOptions)}
+      role="toolbar"
+      aria-orientation="vertical"
       aria-label={labels?.categoryNavigation ?? 'Emoji categories'}
       data-mx-slot="sidebar"
     >
@@ -170,7 +174,7 @@ export function EmojiSidebar({
           'navButton',
           slotOptions,
           hoverColor
-            ? ({ ['--mx-category-hover']: hoverColor } as CSSProperties)
+            ? ({ '--mx-category-hover': hoverColor } as CSSProperties)
             : undefined,
         );
 
@@ -189,7 +193,8 @@ export function EmojiSidebar({
             style={buttonStyle}
             onPointerDown={(event) => {
               if (
-                (event.pointerType === 'mouse' || event.pointerType === 'pen') &&
+                (event.pointerType === 'mouse' ||
+                  event.pointerType === 'pen') &&
                 event.button === 0
               ) {
                 pointerActivatedCategoryRef.current = section.id;
@@ -211,9 +216,7 @@ export function EmojiSidebar({
             aria-label={section.label}
             title={section.label}
             data-mx-slot="navButton"
-            data-active={
-              activeCategory === section.id ? 'true' : undefined
-            }
+            data-active={activeCategory === section.id ? 'true' : undefined}
             data-category-id={section.id}
           >
             {renderCategoryIcon?.({

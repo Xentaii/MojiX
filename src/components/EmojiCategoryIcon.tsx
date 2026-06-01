@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import {
   createNativeAssetSource,
   createSpriteSheetAssetSource,
@@ -11,10 +12,9 @@ import type {
   EmojiSpriteSheetConfig,
   ResolvedEmojiCategoryIcon,
 } from '../core/types';
-import { getLucideCategoryIconDefinition } from './icons/lucideCategoryIconBodies';
 import { EmojiSprite } from './EmojiSprite';
+import { getLucideCategoryIconDefinition } from './icons/lucideCategoryIconBodies';
 import { createClassName } from './utils';
-import type { CSSProperties } from 'react';
 
 const NATIVE_SOURCE = createNativeAssetSource();
 const FILLED_CATEGORY_ICON_BODIES: Partial<Record<string, string>> = {
@@ -36,14 +36,18 @@ type ResolvedCategoryIconStyle =
   | 'outline'
   | 'solid'
   | 'native'
-  | Exclude<EmojiCategoryIconPreset, 'picker' | 'mono-filled' | 'mono-outline' | 'solid' | 'outline' | 'native'>;
+  | Exclude<
+      EmojiCategoryIconPreset,
+      'picker' | 'mono-filled' | 'mono-outline' | 'solid' | 'outline' | 'native'
+    >;
 
 function resolveIconStyle(
   style: EmojiCategoryIconPreset,
   spriteSheet?: EmojiSpriteSheetConfig,
 ): ResolvedCategoryIconStyle {
   if (style === 'picker') {
-    return resolveSpriteSheetConfig(spriteSheet).vendor as ResolvedCategoryIconStyle;
+    return resolveSpriteSheetConfig(spriteSheet)
+      .vendor as ResolvedCategoryIconStyle;
   }
 
   if (style === 'solid' || style === 'mono-filled') {
@@ -99,6 +103,7 @@ function renderMonochromeGlyph(
       >
         <g
           fill="currentColor"
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: static bundled lucide SVG path data, never user input
           dangerouslySetInnerHTML={{ __html: filledBody }}
         />
       </svg>
@@ -118,6 +123,7 @@ function renderMonochromeGlyph(
           strokeWidth="1.25"
           strokeLinecap="round"
           strokeLinejoin="round"
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: static bundled lucide SVG path data, never user input
           dangerouslySetInnerHTML={{ __html: definition.body }}
         />
       </svg>
@@ -136,6 +142,7 @@ function renderMonochromeGlyph(
         strokeWidth="1.9"
         strokeLinecap="round"
         strokeLinejoin="round"
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: static bundled lucide SVG path data, never user input
         dangerouslySetInnerHTML={{ __html: definition.body }}
       />
     </svg>
@@ -157,10 +164,7 @@ function renderNativeCategoryIcon(options: {
         emoji={icon.renderable}
         size={size}
         assetSource={NATIVE_SOURCE}
-        className={createClassName(
-          'mx-picker__category-icon',
-          className,
-        )}
+        className={createClassName('mx-picker__category-icon', className)}
         title={label}
       />
     );
@@ -171,10 +175,7 @@ function renderNativeCategoryIcon(options: {
       <EmojiSprite
         emoji={icon.renderable}
         size={size}
-        className={createClassName(
-          'mx-picker__category-icon',
-          className,
-        )}
+        className={createClassName('mx-picker__category-icon', className)}
         title={label}
       />
     );
@@ -259,10 +260,7 @@ export function EmojiCategoryIcon({
         assetSource={createSpriteSheetAssetSource({
           spriteSheet: vendorSheet,
         })}
-        className={createClassName(
-          'mx-picker__category-icon',
-          className,
-        )}
+        className={createClassName('mx-picker__category-icon', className)}
         title={label}
       />
     );
@@ -273,10 +271,7 @@ export function EmojiCategoryIcon({
       <EmojiSprite
         emoji={icon.renderable}
         size={size}
-        className={createClassName(
-          'mx-picker__category-icon',
-          className,
-        )}
+        className={createClassName('mx-picker__category-icon', className)}
         title={label}
       />
     );
