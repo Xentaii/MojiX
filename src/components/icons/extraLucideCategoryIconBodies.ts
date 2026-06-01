@@ -1,6 +1,6 @@
 import {
-  registerLucideCategoryIconBodies,
   type LucideCategoryIconBodies,
+  registerLucideCategoryIconBodies,
 } from './lucideCategoryIconBodies';
 
 // Derived from official lucide-static SVG files (ISC license).

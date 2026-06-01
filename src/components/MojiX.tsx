@@ -1,5 +1,5 @@
-import { useEffect, type HTMLAttributes } from 'react';
-import { SKIN_TONE_OPTIONS } from '../core/constants';
+import { type HTMLAttributes, useEffect } from 'react';
+import type { SKIN_TONE_OPTIONS } from '../core/constants';
 import type {
   EmojiCategoryId,
   EmojiPickerProps,
@@ -12,23 +12,20 @@ import { EmojiPreview } from './EmojiPreview';
 import { EmojiSearchField } from './EmojiSearchField';
 import { EmojiSidebar } from './EmojiSidebar';
 import { EmojiSkinToneButton } from './EmojiSkinToneButton';
-import { preloadVirtualizedEmojiGrid } from './virtualizedGridLoader';
 import {
-  getSlotClassName,
-  getSlotStyle,
-} from './utils';
-import {
-  MojiXRoot,
   getContextSlotOptions,
+  MojiXRoot,
+  type RenderChild,
   renderChild,
   useActiveEmoji,
   useEmojiCategories,
   useEmojiSearch,
   useMojiXContext,
   useSkinTone,
-  type RenderChild,
 } from './MojiXRoot';
 import type { EmojiPickerState } from './useEmojiPickerState';
+import { getSlotClassName, getSlotStyle } from './utils';
+import { preloadVirtualizedEmojiGrid } from './virtualizedGridLoader';
 
 function shouldPreloadVirtualizedGrid(
   virtualization: EmojiPickerProps['virtualization'],
@@ -39,6 +36,10 @@ function shouldPreloadVirtualizedGrid(
   );
 }
 
+export type {
+  MojiXRootProps,
+  UseEmojiAssetsResult,
+} from './MojiXRoot';
 export {
   MojiXRoot,
   useActiveEmoji,
@@ -48,10 +49,6 @@ export {
   useEmojiSelection,
   useMojiX,
   useSkinTone,
-} from './MojiXRoot';
-export type {
-  MojiXRootProps,
-  UseEmojiAssetsResult,
 } from './MojiXRoot';
 
 export interface MojiXSearchProps {
@@ -79,8 +76,7 @@ export function MojiXSearch({ children }: MojiXSearchProps) {
   );
 }
 
-export interface MojiXViewportProps
-  extends HTMLAttributes<HTMLDivElement> {}
+export interface MojiXViewportProps extends HTMLAttributes<HTMLDivElement> {}
 
 export function MojiXViewport({
   className,
@@ -118,8 +114,10 @@ export function MojiXList({
 
   useEffect(() => {
     if (shouldPreloadVirtualizedGrid(context.virtualization)) {
-      preloadVirtualizedEmojiGrid();
+      return preloadVirtualizedEmojiGrid({ idle: true });
     }
+
+    return undefined;
   }, [context.virtualization]);
 
   return (
@@ -139,6 +137,8 @@ export function MojiXList({
       onEmojiHover={context.handleEmojiHover}
       onActiveCategoryChange={context.handleActiveCategoryChange}
       hoveredEmojiId={context.hoveredEmoji?.id ?? null}
+      trackHoverActive={context.trackHoverActive}
+      categoryScrollBehavior={context.categoryScrollBehavior}
       virtualization={context.virtualization}
       emptyState={emptyState ?? context.emptyState}
       hideEmptyState={!showEmptyState}
@@ -218,8 +218,7 @@ export function MojiXLoading({
   );
 }
 
-export interface MojiXFooterProps
-  extends HTMLAttributes<HTMLDivElement> {}
+export interface MojiXFooterProps extends HTMLAttributes<HTMLDivElement> {}
 
 export function MojiXFooter({
   className,
@@ -247,6 +246,10 @@ export interface MojiXCategoryNavProps {
     sections: EmojiPickerState['sections'];
     activeCategory: EmojiCategoryId;
     setActiveCategory: (categoryId: EmojiCategoryId) => void;
+    selectedCategory: EmojiCategoryId;
+    setSelectedCategory: (categoryId: EmojiCategoryId) => void;
+    visibleCategory: EmojiCategoryId;
+    setVisibleCategory: (categoryId: EmojiCategoryId) => void;
     selectCategory: (categoryId: EmojiCategoryId) => void;
   }>;
 }
@@ -262,7 +265,8 @@ export function MojiXCategoryNav({ children }: MojiXCategoryNavProps) {
   return (
     <EmojiSidebar
       sections={context.sections}
-      activeCategory={context.activeCategory}
+      activeCategory={context.selectedCategory}
+      labels={context.labelSet}
       onCategoryClick={context.handleCategoryClick}
       renderCategoryIcon={context.renderCategoryIcon}
       spriteSheet={context.activeSpriteSheet}
@@ -321,11 +325,13 @@ export function MojiXSkinTone({ children }: MojiXSkinToneProps) {
 
   if (children) {
     return (
-      <>{children({
-        skinTone: skinToneState.skinTone,
-        setSkinTone: skinToneState.setSkinTone,
-        options: skinToneState.options,
-      })}</>
+      <>
+        {children({
+          skinTone: skinToneState.skinTone,
+          setSkinTone: skinToneState.setSkinTone,
+          options: skinToneState.options,
+        })}
+      </>
     );
   }
 

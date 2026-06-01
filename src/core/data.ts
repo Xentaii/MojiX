@@ -1,18 +1,19 @@
 import {
+  CATEGORY_META,
+  humanizeCategoryId,
+  isSystemCategoryId,
+} from './constants';
+import { computeEmojiSearchTokensOnWorker } from './data-prepare-worker';
+import {
   createMojiXDataAssetCacheInfo,
+  type EmojiDataBootstrapPayload,
   getPreparedEmojiDataCacheName,
   loadEmojiDataBootstrapFromCdn,
   loadEmojiDataFromCdn,
   loadEmojiDataShardFromCdn,
   shouldUsePreparedEmojiDataCache,
   shouldUseWorkerPreparation,
-  type EmojiDataBootstrapPayload,
 } from './data-source';
-import {
-  loadPreparedEmojiDataFromCache,
-  savePreparedEmojiDataToCache,
-} from './prepared-cache';
-import { computeEmojiSearchTokensOnWorker } from './data-prepare-worker';
 import {
   getEmojiLocaleRegistrySnapshot,
   getLocalizedCategoryLabel,
@@ -23,10 +24,9 @@ import {
   resolveLocaleDefinition,
 } from './i18n';
 import {
-  CATEGORY_META,
-  humanizeCategoryId,
-  isSystemCategoryId,
-} from './constants';
+  loadPreparedEmojiDataFromCache,
+  savePreparedEmojiDataToCache,
+} from './prepared-cache';
 import type {
   BuiltInEmojiCategoryId,
   CustomEmoji,
@@ -269,10 +269,7 @@ async function mapEmojiDataInChunks<T, R>(
   for (let index = 0; index < items.length; index += 1) {
     mapped[index] = mapper(items[index]!, index);
 
-    if (
-      (index + 1) % chunkSize === 0 &&
-      index + 1 < items.length
-    ) {
+    if ((index + 1) % chunkSize === 0 && index + 1 < items.length) {
       await waitForEmojiPreparationSlot();
     }
   }
@@ -298,7 +295,10 @@ function createSearchTokens(options: {
         ...options.aliases.map((alias) => `:${alias}:`),
         ...options.emoticons,
       ]
-        .filter((value): value is string => typeof value === 'string' && value.length > 0)
+        .filter(
+          (value): value is string =>
+            typeof value === 'string' && value.length > 0,
+        )
         .map((value) => normalizeQuery(value))
         .filter(Boolean),
     ),
@@ -335,10 +335,7 @@ function createColumnFieldIndexes(fields: readonly UnicodeEmojiColumnField[]) {
   const indexes: Partial<Record<UnicodeEmojiCanonicalColumnField, number>> = {};
 
   for (const [field, aliases] of Object.entries(COLUMN_FIELD_ALIASES) as Array<
-    [
-      UnicodeEmojiCanonicalColumnField,
-      readonly UnicodeEmojiColumnField[],
-    ]
+    [UnicodeEmojiCanonicalColumnField, readonly UnicodeEmojiColumnField[]]
   >) {
     const index = fields.findIndex((candidate) => aliases.includes(candidate));
 
@@ -494,9 +491,7 @@ function expandColumnSkins(
   }
 
   return value
-    .filter((skin): skin is EmojiSkinVariantColumnRow =>
-      Array.isArray(skin),
-    )
+    .filter((skin): skin is EmojiSkinVariantColumnRow => Array.isArray(skin))
     .map((skin) => expandColumnSkinVariant(skin, skinTones));
 }
 
@@ -527,10 +522,7 @@ function expandColumnEmojiData(
     availability: getColumnValue(row, indexes, 'availability') as
       | EmojiDataAvailabilityInput
       | undefined,
-    skins: expandColumnSkins(
-      getColumnValue(row, indexes, 'skins'),
-      skinTones,
-    ),
+    skins: expandColumnSkins(getColumnValue(row, indexes, 'skins'), skinTones),
   }));
 }
 
@@ -561,14 +553,13 @@ async function expandColumnEmojiDataAsync(
     availability: getColumnValue(row, indexes, 'availability') as
       | EmojiDataAvailabilityInput
       | undefined,
-    skins: expandColumnSkins(
-      getColumnValue(row, indexes, 'skins'),
-      skinTones,
-    ),
+    skins: expandColumnSkins(getColumnValue(row, indexes, 'skins'), skinTones),
   }));
 }
 
-function normalizeEmojiDataInput(raw: EmojiDataInput): UnicodeEmojiDataRecord[] {
+function normalizeEmojiDataInput(
+  raw: EmojiDataInput,
+): UnicodeEmojiDataRecord[] {
   const payload = unwrapEmojiDataInput(raw);
 
   return isColumnEmojiData(payload) ? expandColumnEmojiData(payload) : payload;
@@ -642,11 +633,7 @@ function normalizeAvailability(
 function normalizeUnicodeEmojiRecord(
   emoji: UnicodeEmojiDataRecord,
 ): PreparedUnicodeEmojiRecord {
-  const name = resolveEnglishEmojiName(
-    emoji.id,
-    emoji.name,
-    emoji.aliases,
-  );
+  const name = resolveEnglishEmojiName(emoji.id, emoji.name, emoji.aliases);
 
   return {
     ...emoji,
@@ -927,9 +914,7 @@ function createPreparedEmojiDataCacheKeys() {
   };
 }
 
-async function loadPreparedEmojiDataCache(
-  cacheKey: string,
-) {
+async function loadPreparedEmojiDataCache(cacheKey: string) {
   if (!shouldUsePreparedEmojiDataCache()) {
     return null;
   }
@@ -942,9 +927,7 @@ async function loadPreparedEmojiDataCache(
   return list ? createPreparedUnicodeEmojiDataFromList(list) : null;
 }
 
-async function loadAnyPreparedEmojiDataCache(
-  keys: readonly string[],
-) {
+async function loadAnyPreparedEmojiDataCache(keys: readonly string[]) {
   for (const key of keys) {
     const prepared = await loadPreparedEmojiDataCache(key);
 
@@ -991,12 +974,18 @@ function mergeEmojiShardIntoStore(
   return { list: prepared.list, inserted };
 }
 
-const pendingShardLoads = new Map<BuiltInEmojiCategoryId, Promise<UnicodeEmoji[]>>();
+const pendingShardLoads = new Map<
+  BuiltInEmojiCategoryId,
+  Promise<UnicodeEmoji[]>
+>();
 
 export function loadEmojiCategoryShard(
   categoryId: BuiltInEmojiCategoryId,
 ): Promise<UnicodeEmoji[]> {
-  if (emojiDataStore.loadedCategories.has(categoryId) && emojiDataStore.prepared) {
+  if (
+    emojiDataStore.loadedCategories.has(categoryId) &&
+    emojiDataStore.prepared
+  ) {
     return Promise.resolve(emojiDataStore.prepared.list);
   }
 
@@ -1090,9 +1079,7 @@ export function getLoadedEmojiCategories(): readonly BuiltInEmojiCategoryId[] {
   return Array.from(emojiDataStore.loadedCategories);
 }
 
-export function peekUnicodeEmojiByCategory(
-  categoryId: BuiltInEmojiCategoryId,
-) {
+export function peekUnicodeEmojiByCategory(categoryId: BuiltInEmojiCategoryId) {
   return emojiDataStore.prepared?.byCategory[categoryId] ?? [];
 }
 
@@ -1184,7 +1171,9 @@ export function filterEmoji<T extends { searchTokens: string[] }>(
         score: finalScore,
       };
     })
-    .filter((entry): entry is { emoji: T; index: number; score: number } => Boolean(entry))
+    .filter((entry): entry is { emoji: T; index: number; score: number } =>
+      Boolean(entry),
+    )
     .sort((left, right) => {
       if (right.score === left.score) {
         return left.index - right.index;
@@ -1206,14 +1195,16 @@ export function prepareCustomEmojis(customEmojis: CustomEmoji[] = []) {
     const shortcodes = Array.from(
       new Set(
         (emoji.shortcodes ?? []).filter(
-          (value): value is string => typeof value === 'string' && value.length > 0,
+          (value): value is string =>
+            typeof value === 'string' && value.length > 0,
         ),
       ),
     );
     const emoticons = Array.from(
       new Set(
         (emoji.emoticons ?? []).filter(
-          (value): value is string => typeof value === 'string' && value.length > 0,
+          (value): value is string =>
+            typeof value === 'string' && value.length > 0,
         ),
       ),
     );
@@ -1228,7 +1219,10 @@ export function prepareCustomEmojis(customEmojis: CustomEmoji[] = []) {
           ...(emoji.keywords ?? []),
           ...emoticons,
         ]
-          .filter((value): value is string => typeof value === 'string' && value.length > 0)
+          .filter(
+            (value): value is string =>
+              typeof value === 'string' && value.length > 0,
+          )
           .map((value) => normalizeQuery(value))
           .filter(Boolean),
       ),
@@ -1323,7 +1317,10 @@ export function getLocalizedSearchTokens(
 
   const tokens = createSearchTokens({
     name: getLocalizedEmojiName(emoji, localeDefinition),
-    categoryLabel: getLocalizedCategoryLabel(emoji.categoryId, localeDefinition),
+    categoryLabel: getLocalizedCategoryLabel(
+      emoji.categoryId,
+      localeDefinition,
+    ),
     subcategory: emoji.subcategory,
     aliases: emoji.aliases,
     emoticons: [

@@ -1,11 +1,4 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearPreparedEmojiDataCache,
   loadPreparedEmojiDataFromCache,
@@ -58,7 +51,10 @@ class FakeOpenRequest extends FakeRequest<FakeDb> {
 }
 
 class FakeObjectStore {
-  constructor(private store: FakeStore, private transaction: FakeTransaction) {}
+  constructor(
+    private store: FakeStore,
+    private transaction: FakeTransaction,
+  ) {}
 
   get(key: string) {
     return new FakeRequest<unknown>((request) => {
@@ -70,7 +66,7 @@ class FakeObjectStore {
   put(record: { key: string } & Record<string, unknown>) {
     return new FakeRequest<void>((request) => {
       this.store.records.set(record.key, { key: record.key, value: record });
-      request.succeed(undefined as unknown as void);
+      request.succeed(undefined as unknown as undefined);
       this.transaction.complete();
     });
   }
@@ -78,7 +74,7 @@ class FakeObjectStore {
   clear() {
     return new FakeRequest<void>((request) => {
       this.store.records.clear();
-      request.succeed(undefined as unknown as void);
+      request.succeed(undefined as unknown as undefined);
       this.transaction.complete();
     });
   }
@@ -89,7 +85,11 @@ class FakeTransaction {
   onerror: ((event: unknown) => void) | null = null;
   private completed = false;
 
-  constructor(private db: FakeDb, public mode: 'readonly' | 'readwrite', private storeName: string) {
+  constructor(
+    private db: FakeDb,
+    public mode: 'readonly' | 'readwrite',
+    private storeName: string,
+  ) {
     if (mode === 'readonly') {
       queueMicrotask(() => this.complete());
     }
@@ -200,7 +200,14 @@ const SAMPLE_EMOJI: UnicodeEmoji[] = [
     sheetY: 47,
     availability: { apple: true, google: true, twitter: true, facebook: true },
     skins: [],
-    searchTokens: ['grinning face', 'smileys', 'face smiling', 'grinning', ':grinning:', ':d'],
+    searchTokens: [
+      'grinning face',
+      'smileys',
+      'face smiling',
+      'grinning',
+      ':grinning:',
+      ':d',
+    ],
     categoryLabel: 'Smileys',
   },
 ];

@@ -39,9 +39,9 @@ export type EmojiSystemCategoryId =
   | 'flags'
   | 'custom';
 
-export type EmojiCategoryId =
-  | EmojiSystemCategoryId
-  | (string & {});
+export type EmojiCategoryId = EmojiSystemCategoryId | (string & {});
+
+export type EmojiPickerScrollBehavior = 'instant' | 'smooth' | 'auto';
 
 export type BuiltInEmojiCategoryId = Exclude<
   EmojiSystemCategoryId,
@@ -273,6 +273,7 @@ export interface EmojiPickerLabels {
   noResultsBody: string;
   recents: string;
   custom: string;
+  categoryNavigation?: string;
   skinToneButton: string;
   clearSearch: string;
 }
@@ -284,8 +285,7 @@ export interface EmojiLocaleEmojiTranslation {
 
 export type EmojiLocaleSearchIndex = Record<string, string[]>;
 
-export type EmojiLocaleCategoryLabels =
-  Record<EmojiSystemCategoryId, string> &
+export type EmojiLocaleCategoryLabels = Record<EmojiSystemCategoryId, string> &
   Record<string, string>;
 
 export interface EmojiLocaleDefinition {
@@ -394,16 +394,12 @@ export type EmojiResolvedAsset =
 
 export interface EmojiImageAssetSource {
   type: 'image';
-  resolveUrl: (
-    request: EmojiAssetRequest,
-  ) => string | null | undefined;
+  resolveUrl: (request: EmojiAssetRequest) => string | null | undefined;
 }
 
 export interface EmojiSvgAssetSource {
   type: 'svg';
-  resolveUrl: (
-    request: EmojiAssetRequest,
-  ) => string | null | undefined;
+  resolveUrl: (request: EmojiAssetRequest) => string | null | undefined;
 }
 
 export interface EmojiNativeAssetSource {
@@ -463,13 +459,9 @@ export type EmojiPickerSlot =
   | 'sidebar'
   | 'navButton';
 
-export type EmojiPickerClassNames = Partial<
-  Record<EmojiPickerSlot, string>
->;
+export type EmojiPickerClassNames = Partial<Record<EmojiPickerSlot, string>>;
 
-export type EmojiPickerStyles = Partial<
-  Record<EmojiPickerSlot, CSSProperties>
->;
+export type EmojiPickerStyles = Partial<Record<EmojiPickerSlot, CSSProperties>>;
 
 export interface EmojiPickerColors {
   accent?: string;
@@ -515,17 +507,46 @@ export interface EmojiPickerProps
   defaultSearchQuery?: string;
   onSearchQueryChange?: (query: string) => void;
   searchConfig?: EmojiSearchConfigLike;
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /**
+   * Category selected by the user or by app code. This is intentionally
+   * separate from `visibleCategory`, which tracks scroll position.
+   */
+  selectedCategory?: EmojiCategoryId;
+  defaultSelectedCategory?: EmojiCategoryId;
+  onSelectedCategoryChange?: (categoryId: EmojiCategoryId) => void;
+  /**
+   * Category currently visible in the grid viewport. Use this for scroll-spy
+   * indicators without moving the selected nav item during smooth scroll.
+   */
+  visibleCategory?: EmojiCategoryId;
+  defaultVisibleCategory?: EmojiCategoryId;
+  onVisibleCategoryChange?: (categoryId: EmojiCategoryId) => void;
+  /**
+   * Legacy alias for `selectedCategory`.
+   */
   activeCategory?: EmojiCategoryId;
   defaultActiveCategory?: EmojiCategoryId;
   onActiveCategoryChange?: (categoryId: EmojiCategoryId) => void;
   activeEmojiId?: string | null;
   defaultActiveEmojiId?: string | null;
   onActiveEmojiChange?: (emojiId: string | null) => void;
+  recentEmoji?: RecentEmojiRecord[];
+  defaultRecentEmoji?: RecentEmojiRecord[];
+  onRecentEmojiChange?: (records: RecentEmojiRecord[]) => void;
   emojiSize?: number;
   columns?: number;
   loading?: boolean;
   onDataError?: (error: unknown) => void;
   showPreview?: boolean;
+  /**
+   * When `false`, pointer hover stays CSS-only and does not update React
+   * active-cell state. Defaults to `showPreview`; keyboard focus is always
+   * tracked for accessibility.
+   */
+  trackHoverActive?: boolean;
   showRecents?: boolean;
   showSkinTones?: boolean;
   recentLimit?: number;
@@ -552,17 +573,20 @@ export interface EmojiPickerProps
   unstyled?: boolean;
   classNames?: EmojiPickerClassNames;
   styles?: EmojiPickerStyles;
-  renderEmoji?: (
-    emoji: EmojiRenderable,
-    state: EmojiRenderState,
-  ) => ReactNode;
+  /**
+   * Controls category navigation scroll. `instant` bypasses CSS
+   * `scroll-behavior`, `smooth` animates unless reduced motion is requested,
+   * and `auto` lets CSS decide.
+   */
+  categoryScrollBehavior?: EmojiPickerScrollBehavior;
+  trapFocus?: boolean;
+  closeOnEscape?: boolean;
+  renderEmoji?: (emoji: EmojiRenderable, state: EmojiRenderState) => ReactNode;
   renderPreview?: (
     emoji: EmojiRenderable,
     selection: EmojiSelection,
   ) => ReactNode;
-  renderCategoryIcon?: (
-    props: EmojiCategoryIconRenderProps,
-  ) => ReactNode;
+  renderCategoryIcon?: (props: EmojiCategoryIconRenderProps) => ReactNode;
   onEmojiSelect?: (emoji: EmojiSelection) => void;
   style?: CSSProperties;
 }

@@ -57,8 +57,7 @@ describe('sprite style helpers', () => {
       width: '22px',
       height: '22px',
       backgroundSize: '6600% 6600%',
-      backgroundPosition:
-        '3.1971153846153846% 4.783653846153846%',
+      backgroundPosition: '3.1971153846153846% 4.783653846153846%',
     });
   });
 
@@ -78,8 +77,7 @@ describe('sprite style helpers', () => {
       }),
     ).toMatchObject({
       backgroundSize: '6400% 6400%',
-      backgroundPosition:
-        '3.1746031746031744% 4.761904761904762%',
+      backgroundPosition: '3.1746031746031744% 4.761904761904762%',
     });
   });
 

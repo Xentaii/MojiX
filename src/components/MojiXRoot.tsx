@@ -1,7 +1,7 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
 import { createContext, useContext, useMemo } from 'react';
-import { SKIN_TONE_OPTIONS } from '../core/constants';
 import { resolveEmojiAsset } from '../core/assets';
+import { SKIN_TONE_OPTIONS } from '../core/constants';
 import type {
   EmojiAssetRenderContext,
   EmojiAssetSource,
@@ -12,14 +12,10 @@ import type {
   EmojiSkinTone,
 } from '../core/types';
 import {
-  getSlotClassName,
-  getSlotStyle,
-  type SlotStyleOptions,
-} from './utils';
-import {
   type EmojiPickerState,
   useEmojiPickerState,
 } from './useEmojiPickerState';
+import { getSlotClassName, getSlotStyle, type SlotStyleOptions } from './utils';
 
 const MojiXContext = createContext<EmojiPickerState | null>(null);
 
@@ -31,6 +27,67 @@ const retainedSpriteSheetStyle = {
   pointerEvents: 'none',
   transform: 'translate(-9999px, -9999px)',
 } satisfies CSSProperties;
+
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+function getFocusableElements(root: HTMLElement) {
+  return Array.from(
+    root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+  ).filter((element) => {
+    if (element.hidden || element.getAttribute('aria-hidden') === 'true') {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function handleFocusTrapKeyDown(
+  event: KeyboardEvent<HTMLDivElement>,
+  options: {
+    trapFocus: boolean;
+    closeOnEscape: boolean;
+    setOpen: (open: boolean) => void;
+  },
+) {
+  if (event.key === 'Escape' && options.closeOnEscape) {
+    event.stopPropagation();
+    options.setOpen(false);
+    return;
+  }
+
+  if (event.key !== 'Tab' || !options.trapFocus) {
+    return;
+  }
+
+  const root = event.currentTarget;
+  const focusable = getFocusableElements(root);
+
+  if (focusable.length === 0) {
+    event.preventDefault();
+    root.focus();
+    return;
+  }
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const activeElement = document.activeElement;
+
+  if (!event.shiftKey && activeElement === last) {
+    event.preventDefault();
+    first?.focus();
+  } else if (event.shiftKey && activeElement === first) {
+    event.preventDefault();
+    last?.focus();
+  }
+}
 
 export function useMojiXContext() {
   const context = useContext(MojiXContext);
@@ -71,13 +128,13 @@ function getRootColorStyles(colors: EmojiPickerColors | undefined) {
   }
 
   return {
+    ['--mojix-accent' as string]: colors.accent,
+    ['--mojix-bg-hover' as string]: colors.hover,
     ['--mx-accent' as string]: colors.accent,
     ['--mx-accent-soft' as string]: colors.accentSoft,
     ['--mx-hover' as string]: colors.hover,
     ['--mx-emoji-hover' as string]:
-      typeof colors.emojiHover === 'string'
-        ? colors.emojiHover
-        : undefined,
+      typeof colors.emojiHover === 'string' ? colors.emojiHover : undefined,
     ['--mx-category-hover' as string]:
       typeof colors.categoryHover === 'string'
         ? colors.categoryHover
@@ -93,29 +150,41 @@ function getRootColorStyles(colors: EmojiPickerColors | undefined) {
   };
 }
 
-export interface MojiXRootProps
-  extends Omit<EmojiPickerProps, 'children'> {
+export interface MojiXRootProps extends Omit<EmojiPickerProps, 'children'> {
   children?: ReactNode | RenderChild<EmojiPickerState>;
 }
 
 export function MojiXRoot({
   children,
   value,
+  open,
+  defaultOpen,
+  onOpenChange,
   searchQuery,
   defaultSearchQuery,
   onSearchQueryChange,
   searchConfig,
+  selectedCategory,
+  defaultSelectedCategory,
+  onSelectedCategoryChange,
+  visibleCategory,
+  defaultVisibleCategory,
+  onVisibleCategoryChange,
   activeCategory,
   defaultActiveCategory,
   onActiveCategoryChange,
   activeEmojiId,
   defaultActiveEmojiId,
   onActiveEmojiChange,
+  recentEmoji,
+  defaultRecentEmoji,
+  onRecentEmojiChange,
   emojiSize,
   columns,
   loading,
   onDataError,
   showPreview,
+  trackHoverActive,
   showRecents,
   showSkinTones,
   recentLimit,
@@ -134,6 +203,9 @@ export function MojiXRoot({
   virtualization,
   loadCategoryShards,
   autoScrollCategoriesOnHover,
+  categoryScrollBehavior,
+  trapFocus,
+  closeOnEscape,
   categories,
   categoryIcons,
   categoryIconStyle,
@@ -156,21 +228,34 @@ export function MojiXRoot({
 }: MojiXRootProps) {
   const state = useEmojiPickerState({
     value,
+    open,
+    defaultOpen,
+    onOpenChange,
     searchQuery,
     defaultSearchQuery,
     onSearchQueryChange,
     searchConfig,
+    selectedCategory,
+    defaultSelectedCategory,
+    onSelectedCategoryChange,
+    visibleCategory,
+    defaultVisibleCategory,
+    onVisibleCategoryChange,
     activeCategory,
     defaultActiveCategory,
     onActiveCategoryChange,
     activeEmojiId,
     defaultActiveEmojiId,
     onActiveEmojiChange,
+    recentEmoji,
+    defaultRecentEmoji,
+    onRecentEmojiChange,
     emojiSize,
     columns,
     loading,
     onDataError,
     showPreview,
+    trackHoverActive,
     showRecents,
     showSkinTones,
     recentLimit,
@@ -189,6 +274,9 @@ export function MojiXRoot({
     virtualization,
     loadCategoryShards,
     autoScrollCategoriesOnHover,
+    categoryScrollBehavior,
+    trapFocus,
+    closeOnEscape,
     categories,
     categoryIcons,
     categoryIconStyle,
@@ -225,8 +313,23 @@ export function MojiXRoot({
           style,
         )}
         data-mx-slot="root"
+        data-open={state.open ? 'true' : 'false'}
         data-mx-unstyled={state.unstyled ? 'true' : undefined}
         data-loading={state.loading ? 'true' : undefined}
+        tabIndex={state.trapFocus ? -1 : rest.tabIndex}
+        onKeyDown={(event) => {
+          rest.onKeyDown?.(event);
+
+          if (event.defaultPrevented) {
+            return;
+          }
+
+          handleFocusTrapKeyDown(event, {
+            trapFocus: state.open && state.trapFocus,
+            closeOnEscape: state.open && state.closeOnEscape,
+            setOpen: state.setOpen,
+          });
+        }}
       >
         {state.retainedSpriteSheetUrl ? (
           <img
@@ -266,6 +369,10 @@ export function useEmojiCategories() {
     sections: context.sections,
     activeCategory: context.activeCategory,
     setActiveCategory: context.setActiveCategory,
+    selectedCategory: context.selectedCategory,
+    setSelectedCategory: context.setSelectedCategory,
+    visibleCategory: context.visibleCategory,
+    setVisibleCategory: context.setVisibleCategory,
     selectCategory: context.handleCategoryClick,
   };
 }

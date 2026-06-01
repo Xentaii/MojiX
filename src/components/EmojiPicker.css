@@ -4,22 +4,25 @@
 }
 
 .mx-picker {
-  --mx-bg: rgba(255, 250, 244, 0.92);
+  --mojix-bg: rgba(255, 250, 244, 0.92);
+  --mojix-bg-hover: rgba(32, 24, 18, 0.05);
+  --mojix-accent: #ee7848;
+  --mojix-text: #201813;
+  --mojix-border: rgba(32, 24, 18, 0.08);
+  --mx-bg: var(--mojix-bg);
   --mx-panel: rgba(255, 255, 255, 0.94);
-  --mx-border: rgba(32, 24, 18, 0.08);
-  --mx-text: #201813;
+  --mx-border: var(--mojix-border);
+  --mx-text: var(--mojix-text);
   --mx-muted: #7b6e66;
-  --mx-accent: #ee7848;
+  --mx-accent: var(--mojix-accent);
   --mx-accent-soft: color-mix(in srgb, var(--mx-accent) 14%, transparent);
-  --mx-hover: rgba(32, 24, 18, 0.05);
+  --mx-hover: var(--mojix-bg-hover);
   --mx-shadow: 0 18px 44px rgba(67, 41, 26, 0.12);
   --mx-shadow-floating: 0 18px 34px rgba(49, 32, 20, 0.16);
-  --mx-font:
-    "Satoshi", "Manrope", "Avenir Next", "Segoe UI", sans-serif;
+  --mx-font: "Satoshi", "Manrope", "Avenir Next", "Segoe UI", sans-serif;
   --mx-emoji-font:
-    "Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji",
-    "Twemoji Mozilla", "Noto Color Emoji", "EmojiOne Color",
-    "Android Emoji", sans-serif;
+    "Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji", "Twemoji Mozilla",
+    "Noto Color Emoji", "EmojiOne Color", "Android Emoji", sans-serif;
   --mx-radius: 24px;
   --mx-emoji-size: 24px;
   --mx-columns: 8;
@@ -37,12 +40,19 @@
   --mx-chip-muted-bg: rgba(32, 24, 18, 0.04);
   --mx-emoji-hover: var(--mx-hover);
   --mx-category-hover: var(--mx-accent-soft);
-  --mx-category-active-bg: color-mix(in srgb, var(--mx-accent) 14%, transparent);
+  --mx-category-active-bg: color-mix(
+    in srgb,
+    var(--mx-accent) 14%,
+    transparent
+  );
   --mx-category-active-color: var(--mx-accent);
   --mx-scrollbar-size: 4px;
   --mx-scrollbar-thumb: var(--mx-muted);
-  --mx-scrollbar-thumb-hover:
-    color-mix(in srgb, var(--mx-scrollbar-thumb) 78%, var(--mx-text) 22%);
+  --mx-scrollbar-thumb-hover: color-mix(
+    in srgb,
+    var(--mx-scrollbar-thumb) 78%,
+    var(--mx-text) 22%
+  );
   display: flex;
   flex-direction: column;
   width: min(100%, 428px);
@@ -188,13 +198,13 @@
 
 .mx-picker__emoji:hover,
 .mx-picker__emoji:focus-visible,
-.mx-picker__emoji[data-active='true'] {
+.mx-picker__emoji[data-active="true"] {
   outline: none;
   background: var(--mx-emoji-hover);
 }
 
 .mx-picker__nav-button.is-active,
-.mx-picker__nav-button[data-active='true'] {
+.mx-picker__nav-button[data-active="true"] {
   background: var(--mx-category-active-bg);
   color: var(--mx-category-active-color);
 }
@@ -282,7 +292,7 @@
 }
 
 .mx-picker__tone-button.is-open,
-.mx-picker__tone-button[data-open='true'] {
+.mx-picker__tone-button[data-open="true"] {
   background: var(--mx-accent-soft);
 }
 
@@ -312,7 +322,7 @@
 }
 
 .mx-picker__tone-option.is-active,
-.mx-picker__tone-option[data-active='true'] {
+.mx-picker__tone-option[data-active="true"] {
   background: var(--mx-accent-soft);
 }
 
@@ -425,7 +435,7 @@
 }
 
 .mx-picker__emoji.is-selected,
-.mx-picker__emoji[data-selected='true'] {
+.mx-picker__emoji[data-selected="true"] {
   background: transparent;
   box-shadow: none;
 }

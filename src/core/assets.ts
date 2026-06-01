@@ -59,8 +59,7 @@ function resolveDefaultEmojiAsset(
     vendorCanRenderEmoji(spriteSheet.vendor, emoji.availability, {
       emojiId: emoji.id,
       missingEmojiIds: spriteSheet.availability,
-    }) ||
-    !spriteSheet.fallbackNative;
+    }) || !spriteSheet.fallbackNative;
 
   if (!canUseSprite) {
     return {
@@ -137,9 +136,7 @@ function resolveFromSource(
 
     case 'mixed': {
       const primarySource =
-        request.emoji.kind === 'custom'
-          ? source.custom
-          : source.unicode;
+        request.emoji.kind === 'custom' ? source.custom : source.unicode;
 
       return (
         (primarySource && resolveFromSource(primarySource, request)) ||
@@ -159,9 +156,9 @@ export function createNativeAssetSource(): EmojiNativeAssetSource {
   };
 }
 
-export function createSpriteSheetAssetSource(options: {
-  spriteSheet?: EmojiAssetRequest['spriteSheet'];
-} = {}): EmojiSpriteSheetAssetSource {
+export function createSpriteSheetAssetSource(
+  options: { spriteSheet?: EmojiAssetRequest['spriteSheet'] } = {},
+): EmojiSpriteSheetAssetSource {
   return {
     type: 'spriteSheet',
     spriteSheet: options.spriteSheet,

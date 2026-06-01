@@ -102,9 +102,14 @@ To hide first-open latency in web apps, warm the picker before the popover
 mounts:
 
 ```tsx
-import { preloadEmojiPicker } from 'mojix-picker';
+import { preloadEmojiPicker, usePreloadMojiX } from 'mojix-picker';
 
 void preloadEmojiPicker({ locale: 'ru' });
+
+function ComposerShell() {
+  usePreloadMojiX({ locale: 'ru' });
+  return <button type="button">Emoji</button>;
+}
 ```
 
 Browser builds also keep a prepared IndexedDB cache for CDN-loaded emoji data
@@ -174,6 +179,18 @@ The default picker includes:
 - skin tone selection
 - active emoji preview
 - loading and empty states
+
+Integration controls:
+
+- `trackHoverActive` defaults to `showPreview`, so hover is CSS-only when the
+  preview is hidden.
+- `categoryScrollBehavior="instant" | "smooth" | "auto"` controls category
+  jumps without relying on global CSS.
+- `selectedCategory` and `visibleCategory` are separate, so nav UI can stay on
+  the user-selected category while smooth scroll passes through other sections.
+- Theme variables such as `--mojix-bg`, `--mojix-bg-hover`,
+  `--mojix-accent`, `--mojix-text`, and `--mojix-border` can be set on the
+  picker root.
 
 <a id="headless-api"></a>
 
@@ -445,6 +462,8 @@ examples/
 - [Migration Guide](./docs/MIGRATION.md)
 - [Package Delivery](./docs/guides/package-delivery.md)
 - [Custom Layouts](./docs/guides/custom-layouts.md)
+- [Performance Recipes](./docs/guides/performance-recipes.md)
+- [Integration Examples](./docs/guides/integration-examples.md)
 - [Tauri and WebView2](./docs/guides/tauri-webview.md)
 - [Release notes: 1.0.0-beta.2](./docs/releases/1.0.0-beta.2.md)
 - [Generation rules](./scripts/README.md)

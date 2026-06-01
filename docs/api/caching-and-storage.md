@@ -69,6 +69,7 @@ pack does that for you.
 | --- | --- | --- |
 | `createLocalStorageRecentStore` | Function | Creates a recent-emoji store backed by `localStorage`. |
 | `pushRecentEmoji` | Function | Inserts or updates a recent record and trims to a limit. |
+| `pushRecentEmojiRecord` | Function | Pure helper for deriving the next recent list from controlled `recentEmoji` state. |
 | `readRecentEmoji` | Function | Reads recent emoji records from storage. |
 | `writeRecentEmoji` | Function | Writes recent emoji records to storage. |
 | `readStoredSkinTone` | Function | Reads a persisted skin tone with fallback handling. |

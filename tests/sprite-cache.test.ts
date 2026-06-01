@@ -1,11 +1,4 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createBrowserSpriteSheetCacheAdapter,
   peekWarmedEmojiSpriteSheetUrl,
@@ -46,7 +39,7 @@ describe('peekWarmedEmojiSpriteSheetUrl + warmEmojiSpriteSheet (non-remote)', ()
   it('returns null before any warming has occurred', () => {
     const config = {
       source: 'custom' as const,
-      url: 'data:image/png;base64,unwarmed-' + Math.random().toString(36).slice(2),
+      url: `data:image/png;base64,unwarmed-${Math.random().toString(36).slice(2)}`,
     };
 
     expect(peekWarmedEmojiSpriteSheetUrl(config)).toBeNull();
@@ -72,14 +65,17 @@ describe('warmEmojiSpriteSheet (remote)', () => {
   it('shares the warmed object URL across calls (retained sprite sheet)', async () => {
     const sharedConfig = {
       source: 'custom' as const,
-      url: 'https://example.test/retained-shared-' + Math.random().toString(36).slice(2) + '.png',
+      url:
+        'https://example.test/retained-shared-' +
+        Math.random().toString(36).slice(2) +
+        '.png',
       cache: {
         enabled: true,
         mode: 'custom' as const,
         adapter: {
           load: vi.fn().mockResolvedValue(null),
           save: vi.fn().mockImplementation(async () => ({
-            url: 'blob:mojix:shared-' + Math.random().toString(36).slice(2),
+            url: `blob:mojix:shared-${Math.random().toString(36).slice(2)}`,
             cached: true,
           })),
         },
@@ -112,7 +108,7 @@ describe('warmEmojiSpriteSheet (remote)', () => {
   });
 
   it('reuses the cached adapter response without invoking fetch', async () => {
-    const cachedUrl = 'blob:mojix:cache-hit-' + Math.random().toString(36).slice(2);
+    const cachedUrl = `blob:mojix:cache-hit-${Math.random().toString(36).slice(2)}`;
     const adapter = {
       load: vi.fn().mockResolvedValue({ url: cachedUrl, cached: true }),
       save: vi.fn(),
@@ -123,7 +119,10 @@ describe('warmEmojiSpriteSheet (remote)', () => {
 
     const config = {
       source: 'custom' as const,
-      url: 'https://example.test/cache-hit-' + Math.random().toString(36).slice(2) + '.png',
+      url:
+        'https://example.test/cache-hit-' +
+        Math.random().toString(36).slice(2) +
+        '.png',
       cache: {
         enabled: true,
         mode: 'custom' as const,
@@ -150,7 +149,7 @@ describe('warmEmojiSpriteSheet (remote)', () => {
           }),
       ),
       save: vi.fn().mockImplementation(async () => ({
-        url: 'blob:mojix:concurrent-' + Math.random().toString(36).slice(2),
+        url: `blob:mojix:concurrent-${Math.random().toString(36).slice(2)}`,
         cached: true,
       })),
     };
@@ -169,7 +168,10 @@ describe('warmEmojiSpriteSheet (remote)', () => {
 
     const config = {
       source: 'custom' as const,
-      url: 'https://example.test/concurrent-' + Math.random().toString(36).slice(2) + '.png',
+      url:
+        'https://example.test/concurrent-' +
+        Math.random().toString(36).slice(2) +
+        '.png',
       cache: {
         enabled: true,
         mode: 'custom' as const,
@@ -220,7 +222,10 @@ describe('createBrowserSpriteSheetCacheAdapter', () => {
 
 describe('preloadSpriteSheetUrl', () => {
   it('decodes the same URL only once across repeated calls', async () => {
-    const url = 'https://example.test/decode-once-' + Math.random().toString(36).slice(2) + '.png';
+    const url =
+      'https://example.test/decode-once-' +
+      Math.random().toString(36).slice(2) +
+      '.png';
     const decodeSpy = vi.fn().mockResolvedValue(undefined);
 
     class MockImage {

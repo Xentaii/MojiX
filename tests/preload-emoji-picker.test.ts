@@ -1,23 +1,11 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest';
-import { preloadEmojiPicker } from '../src/preload';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   configureMojiXDataSource,
   resetMojiXDataSource,
 } from '../src/core/data-source';
-import {
-  registerEmojiLocaleSearchIndex,
-} from '../src/core/i18n';
-import type {
-  EmojiLocaleSearchIndex,
-  MojiXDataFetcher,
-} from '../src/index';
+import { registerEmojiLocaleSearchIndex } from '../src/core/i18n';
+import type { EmojiLocaleSearchIndex, MojiXDataFetcher } from '../src/index';
+import { preloadEmojiPicker } from '../src/preload';
 
 class InstantImage {
   decoding = '';
@@ -72,7 +60,7 @@ describe('preloadEmojiPicker', () => {
     const customAdapter = {
       load: vi.fn().mockResolvedValue(null),
       save: vi.fn().mockImplementation(async () => ({
-        url: 'blob:mojix:preload-' + Math.random().toString(36).slice(2),
+        url: `blob:mojix:preload-${Math.random().toString(36).slice(2)}`,
         cached: true,
       })),
     };
@@ -135,7 +123,7 @@ describe('preloadEmojiPicker', () => {
           '1f600': { name: 'Visage souriant', keywords: ['sourire'] },
         } as never;
       }
-      throw new Error('Unexpected request: ' + request.kind);
+      throw new Error(`Unexpected request: ${request.kind}`);
     };
     const fetcherSpy = vi.fn(fetcher);
 

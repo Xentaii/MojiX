@@ -57,6 +57,20 @@ export function EmojiSearchField({
           const nextValue = event.currentTarget.value;
           startTransition(() => onSearchChange(nextValue));
         }}
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+
+          if (searchQuery) {
+            event.preventDefault();
+            event.stopPropagation();
+            onSearchChange('');
+            return;
+          }
+
+          event.currentTarget.blur();
+        }}
         data-mx-slot="searchInput"
       />
       {searchQuery && (

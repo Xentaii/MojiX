@@ -13,6 +13,7 @@ export const russianLabels: EmojiPickerLabels = {
   noResultsBody: 'Попробуйте короче запрос, алиас или смайлик.',
   recents: 'Недавние',
   custom: 'Кастомные',
+  categoryNavigation: 'Emoji categories',
   skinToneButton: 'Оттенок кожи',
   clearSearch: 'Очистить поиск',
 };

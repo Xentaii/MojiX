@@ -6,7 +6,9 @@ import type {
 } from './types';
 
 function canUseStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+  return (
+    typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
+  );
 }
 
 export function readRecentEmoji(storageKey: string) {
@@ -31,7 +33,10 @@ export function readRecentEmoji(storageKey: string) {
   }
 }
 
-export function writeRecentEmoji(storageKey: string, entries: RecentEmojiRecord[]) {
+export function writeRecentEmoji(
+  storageKey: string,
+  entries: RecentEmojiRecord[],
+) {
   if (!canUseStorage()) {
     return;
   }
@@ -48,7 +53,22 @@ export function pushRecentEmoji(
   entry: Pick<RecentEmojiRecord, 'id' | 'custom' | 'skinTone'>,
   limit: number = DEFAULT_RECENT_LIMIT,
 ) {
-  const next = [...readRecentEmoji(storageKey)];
+  const deduped = pushRecentEmojiRecord(
+    readRecentEmoji(storageKey),
+    entry,
+    limit,
+  );
+
+  writeRecentEmoji(storageKey, deduped);
+  return deduped;
+}
+
+export function pushRecentEmojiRecord(
+  records: readonly RecentEmojiRecord[],
+  entry: Pick<RecentEmojiRecord, 'id' | 'custom' | 'skinTone'>,
+  limit: number = DEFAULT_RECENT_LIMIT,
+) {
+  const next = [...records];
   const existingIndex = next.findIndex(
     (recent) =>
       recent.id === entry.id &&
@@ -82,7 +102,6 @@ export function pushRecentEmoji(
     .sort((left, right) => right.usedAt - left.usedAt)
     .slice(0, limit);
 
-  writeRecentEmoji(storageKey, deduped);
   return deduped;
 }
 
@@ -122,10 +141,7 @@ export function readStoredSkinTone(
   }
 }
 
-export function writeStoredSkinTone(
-  storageKey: string,
-  tone: EmojiSkinTone,
-) {
+export function writeStoredSkinTone(storageKey: string, tone: EmojiSkinTone) {
   if (!canUseStorage()) {
     return;
   }

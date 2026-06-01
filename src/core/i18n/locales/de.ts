@@ -8,10 +8,10 @@ import { createChromeLocaleDefinition } from './createChromeLocale';
 export const germanLabels: EmojiPickerLabels = {
   searchPlaceholder: 'Emoji, Aliase oder Emoticons suchen',
   noResultsTitle: 'Nichts gefunden',
-  noResultsBody:
-    'Versuche ein kürzeres Wort, einen Alias oder ein Emoticon.',
+  noResultsBody: 'Versuche ein kürzeres Wort, einen Alias oder ein Emoticon.',
   recents: 'Zuletzt verwendet',
   custom: 'Eigene',
+  categoryNavigation: 'Emoji categories',
   skinToneButton: 'Hautfarbe',
   clearSearch: 'Suche löschen',
 };

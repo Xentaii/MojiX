@@ -8,10 +8,10 @@ import { createChromeLocaleDefinition } from './createChromeLocale';
 export const frenchLabels: EmojiPickerLabels = {
   searchPlaceholder: 'Rechercher un emoji, un alias ou une émoticône',
   noResultsTitle: 'Aucun résultat',
-  noResultsBody:
-    'Essaie un terme, un alias ou une émoticône plus court.',
+  noResultsBody: 'Essaie un terme, un alias ou une émoticône plus court.',
   recents: 'Récents',
   custom: 'Personnalisés',
+  categoryNavigation: 'Emoji categories',
   skinToneButton: 'Teinte de peau',
   clearSearch: 'Effacer la recherche',
 };

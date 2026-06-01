@@ -5,12 +5,10 @@ import {
 } from '../data-source';
 import type {
   EmojiCategoryId,
-  EmojiLocaleCategoryLabels,
   EmojiLocaleCode,
   EmojiLocaleDefinition,
   EmojiLocaleEmojiTranslation,
   EmojiLocaleSearchIndex,
-  EmojiPickerLabels,
   EmojiRenderable,
   EmojiSkinTone,
 } from '../types';
@@ -115,8 +113,8 @@ function createLocaleCandidates(locale?: EmojiLocaleCode) {
 
   return Array.from(
     new Set(
-      [lowerLocale, baseLocale].filter(
-        (value): value is string => Boolean(value),
+      [lowerLocale, baseLocale].filter((value): value is string =>
+        Boolean(value),
       ),
     ),
   );
@@ -128,8 +126,7 @@ function getRegisteredLocaleDefinition(locale: string) {
 
 function getLocaleDefinition(locale: string) {
   return (
-    getRegisteredLocaleDefinition(locale) ??
-    getBuiltinLocaleDefinition(locale)
+    getRegisteredLocaleDefinition(locale) ?? getBuiltinLocaleDefinition(locale)
   );
 }
 
@@ -289,7 +286,10 @@ function isLocaleDefinitionPack(
   return (
     typeof pack === 'object' &&
     pack !== null &&
-    ('labels' in pack || 'categories' in pack || 'skinTones' in pack || 'emoji' in pack)
+    ('labels' in pack ||
+      'categories' in pack ||
+      'skinTones' in pack ||
+      'emoji' in pack)
   );
 }
 
@@ -331,11 +331,13 @@ export function resolveLocaleDefinition(
 
   for (const localeCode of [...localeChain].reverse()) {
     const baseLocale =
-      getLocaleDefinition(localeCode) ??
-      fallbackLocaleDefinition;
+      getLocaleDefinition(localeCode) ?? fallbackLocaleDefinition;
     const override = locales?.[localeCode];
 
-    nextDefinition.labels = mergeRecord(nextDefinition.labels, baseLocale.labels);
+    nextDefinition.labels = mergeRecord(
+      nextDefinition.labels,
+      baseLocale.labels,
+    );
     nextDefinition.categories = mergeRecord(
       nextDefinition.categories,
       baseLocale.categories,
@@ -345,10 +347,7 @@ export function resolveLocaleDefinition(
       nextDefinition.skinTones,
       baseLocale.skinTones,
     );
-    nextDefinition.emoji = mergeRecord(
-      nextDefinition.emoji,
-      baseLocale.emoji,
-    );
+    nextDefinition.emoji = mergeRecord(nextDefinition.emoji, baseLocale.emoji);
 
     if (override) {
       nextDefinition.labels = mergeRecord(
@@ -364,10 +363,7 @@ export function resolveLocaleDefinition(
         nextDefinition.skinTones,
         override.skinTones,
       );
-      nextDefinition.emoji = mergeRecord(
-        nextDefinition.emoji,
-        override.emoji,
-      );
+      nextDefinition.emoji = mergeRecord(nextDefinition.emoji, override.emoji);
     }
   }
 
@@ -411,8 +407,9 @@ export function getLocalizedEmojiKeywords(
     return [];
   }
 
-  const indexedKeywords =
-    localeKeywordIndexes.get(localeDefinition.code)?.[emoji.id];
+  const indexedKeywords = localeKeywordIndexes.get(localeDefinition.code)?.[
+    emoji.id
+  ];
 
   if (indexedKeywords) {
     return indexedKeywords;
@@ -440,7 +437,10 @@ export function getLocalizedSkinToneLabel(
   skinTone: EmojiSkinTone,
   localeDefinition: EmojiLocaleDefinition,
 ) {
-  return localeDefinition.skinTones[skinTone] ?? fallbackLocaleDefinition.skinTones[skinTone];
+  return (
+    localeDefinition.skinTones[skinTone] ??
+    fallbackLocaleDefinition.skinTones[skinTone]
+  );
 }
 
 function extractKeywordIndex(
@@ -461,10 +461,7 @@ function extractKeywordIndex(
   return entries.length > 0 ? Object.fromEntries(entries) : null;
 }
 
-function mergeSearchIndexInto(
-  locale: string,
-  partial: EmojiLocaleSearchIndex,
-) {
+function mergeSearchIndexInto(locale: string, partial: EmojiLocaleSearchIndex) {
   const existing = localeKeywordIndexes.get(locale) ?? {};
   localeKeywordIndexes.set(locale, { ...existing, ...partial });
 }
@@ -517,9 +514,7 @@ export async function loadEmojiLocaleSearchIndex(
 
     try {
       return await loadPromise;
-    } catch {
-      continue;
-    }
+    } catch {}
   }
 
   throw new Error(`Unable to load search index for "${locale}".`);
@@ -532,27 +527,19 @@ export function registerEmojiLocalePack(
     | Partial<EmojiLocaleDefinition>,
 ) {
   const normalizedLocale = locale.toLowerCase();
-  const existing = getRegisteredLocaleDefinition(normalizedLocale) ??
+  const existing =
+    getRegisteredLocaleDefinition(normalizedLocale) ??
     createRegisteredLocaleDefinition(normalizedLocale);
 
   if (isLocaleDefinitionPack(pack)) {
-    existing.labels = mergeRecord(
-      existing.labels,
-      pack.labels,
-    );
+    existing.labels = mergeRecord(existing.labels, pack.labels);
     existing.categories = mergeRecord(
       existing.categories,
       pack.categories,
       (value) => typeof value === 'string',
     );
-    existing.skinTones = mergeRecord(
-      existing.skinTones,
-      pack.skinTones,
-    );
-    existing.emoji = mergeRecord(
-      existing.emoji,
-      pack.emoji,
-    );
+    existing.skinTones = mergeRecord(existing.skinTones, pack.skinTones);
+    existing.emoji = mergeRecord(existing.emoji, pack.emoji);
 
     const definitionKeywords = extractKeywordIndex(pack.emoji);
 
@@ -592,9 +579,11 @@ export async function loadLocale(
       return pendingLoad;
     }
 
-    const loadPromise: Promise<EmojiLocaleDefinition> = (candidate === 'en'
-      ? Promise.resolve()
-      : loadLocale('en').then(() => undefined))
+    const loadPromise: Promise<EmojiLocaleDefinition> = (
+      candidate === 'en'
+        ? Promise.resolve()
+        : loadLocale('en').then(() => undefined)
+    )
       .then(() => loadEmojiLocalePackFromCdn(candidate))
       .then((pack: Record<string, EmojiLocaleEmojiTranslation>) => {
         registerEmojiLocalePack(candidate, pack);
@@ -608,9 +597,7 @@ export async function loadLocale(
 
     try {
       return await loadPromise;
-    } catch {
-      continue;
-    }
+    } catch {}
   }
 
   throw new Error(`Unable to load locale pack for "${locale}".`);

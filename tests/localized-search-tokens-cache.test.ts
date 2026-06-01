@@ -51,7 +51,7 @@ describe('getLocalizedSearchTokens cache', () => {
     // Re-registering a pack bumps the registry version, which should
     // invalidate the cache and force a fresh computation. Use a single token
     // (no separators) so normalization keeps it intact.
-    const sentinel = 'freshkeyword' + Date.now();
+    const sentinel = `freshkeyword${Date.now()}`;
     registerEmojiLocalePack('en', {
       '1f600': {
         name: 'Grinning face',

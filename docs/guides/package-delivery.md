@@ -25,6 +25,21 @@ The main entry does not inline the unicode emoji dataset. Apps only pay for
 large data assets when they explicitly import offline data or when the runtime
 fetches data on demand.
 
+## Smaller Bundle Paths
+
+Use the narrowest entry that matches the integration:
+
+| Import | Pulls in | Avoids |
+| --- | --- | --- |
+| `mojix-picker/headless` | `MojiX.Root` and state hooks | Default picker layout, sidebar/search/preview components, bundled icon bodies, and CSS side effects. |
+| `mojix-picker` | Ready-made components, headless primitives, data/sprite helpers | CSS, unless the app imports `mojix-picker/style.css`. |
+| `mojix-picker/style.css` | Bundled styles only | JavaScript. |
+| `mojix-picker/sprites/<vendor>` | One sprite config preset | Other vendor presets. |
+
+The library build emits `dist/lib/headless.js` as its own entry. After
+`npm run build:lib:only`, inspect that file or your app bundle analyzer to
+confirm a headless integration is not importing `EmojiPicker` or `style.css`.
+
 ## Current Size
 
 The `1.0.0-beta.2` dry-run package size is:

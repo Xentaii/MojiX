@@ -11,6 +11,7 @@ export const ukrainianLabels: EmojiPickerLabels = {
   noResultsBody: 'Спробуйте коротше слово, аліас або смайлик.',
   recents: 'Нещодавні',
   custom: 'Користувацькі',
+  categoryNavigation: 'Emoji categories',
   skinToneButton: 'Тон шкіри',
   clearSearch: 'Очистити пошук',
 };

@@ -35,11 +35,11 @@ describe('loadEmojiCategoryShard', () => {
         const categoryId = request.key.slice('emoji-shard:'.length);
         const payload = payloads[categoryId];
         if (!payload) {
-          throw new Error('No fixture for shard ' + categoryId);
+          throw new Error(`No fixture for shard ${categoryId}`);
         }
         return payload as never;
       }
-      throw new Error('Unexpected fetch request: ' + request.key);
+      throw new Error(`Unexpected fetch request: ${request.key}`);
     };
     return vi.fn(fetcher);
   }
@@ -61,19 +61,7 @@ describe('loadEmojiCategoryShard', () => {
       categories: ['smileys'],
       subcategories: ['face-smiling'],
       skinTones: ['light'],
-      rows: [
-        [
-          '1f600',
-          '\u{1F600}',
-          ['grinning'],
-          [':D'],
-          0,
-          0,
-          32,
-          47,
-          null,
-        ],
-      ],
+      rows: [['1f600', '\u{1F600}', ['grinning'], [':D'], 0, 0, 32, 47, null]],
     };
   }
 
@@ -154,7 +142,7 @@ describe('loadEmojiCategoryShard', () => {
           resolveFetch = resolve;
         });
       }
-      throw new Error('Unexpected fetch ' + request.key);
+      throw new Error(`Unexpected fetch ${request.key}`);
     });
 
     const { dataModule } = await setupFreshModules(
@@ -180,7 +168,10 @@ describe('loadEmojiCategoryShard', () => {
 
     const { dataModule } = await setupFreshModules(fetcher);
 
-    const list = await dataModule.loadEmojiCategoryShards(['smileys', 'people']);
+    const list = await dataModule.loadEmojiCategoryShards([
+      'smileys',
+      'people',
+    ]);
 
     expect(list).toHaveLength(2);
     const ids = list.map((emoji) => emoji.id).sort();
@@ -228,21 +219,11 @@ describe('preloadEmojiPicker with shards', () => {
           subcategories: ['face-smiling'],
           skinTones: ['light'],
           rows: [
-            [
-              '1f600',
-              '\u{1F600}',
-              ['grinning'],
-              [':D'],
-              0,
-              0,
-              32,
-              47,
-              null,
-            ],
+            ['1f600', '\u{1F600}', ['grinning'], [':D'], 0, 0, 32, 47, null],
           ],
         } as never;
       }
-      throw new Error('Unexpected fetch: ' + request.key);
+      throw new Error(`Unexpected fetch: ${request.key}`);
     });
 
     dataSourceModule.configureMojiXDataSource({

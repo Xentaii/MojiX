@@ -9,6 +9,7 @@ This file lists the TypeScript types exported from the package root.
 | `EmojiPickerProps` | Main prop surface for `EmojiPicker` and `MojiXRoot`. |
 | `EmojiPickerClassNames` | Slot-to-className map for built-in UI parts. |
 | `EmojiPickerColors` | High-level theme color tokens and hover-color overrides for the default UI. |
+| `EmojiPickerScrollBehavior` | Category scroll behavior union: `instant`, `smooth`, or `auto`. |
 | `EmojiPickerSlot` | All styleable slot ids in the default UI. |
 | `EmojiPickerStyles` | Slot-to-inline-style map for built-in UI parts. |
 | `EmojiRenderState` | State passed to custom emoji renderers. |
@@ -41,6 +42,7 @@ This file lists the TypeScript types exported from the package root.
 | `UnicodeEmoji` | Bundled unicode emoji record shape. |
 | `EmojiRecentCategoryConfig` | Config block for the recent category behavior. |
 | `EmojiRecentStore` | Storage interface for reading and writing recent emoji. |
+| `RecentEmojiRecord` | Recent-entry record used by controlled `recentEmoji` state and stores. |
 | `EmojiLocaleCode` | Locale code union used by the picker. |
 | `EmojiLocaleCategoryLabels` | Category label map for locale definitions. |
 | `EmojiLocaleDefinition` | Fully resolved locale definition shape. |
@@ -49,6 +51,9 @@ This file lists the TypeScript types exported from the package root.
 | `MojiXDataSourceConfig` | Runtime data-source config, including CDN base URL, custom fetcher, raw cache controls, prepared IndexedDB cache controls, and `workerPreparation` opt-in. |
 | `PreloadEmojiPickerOptions` | Options for warming data, locales, search indexes, virtualized grid code, sprites, and per-category shard preloading before mount. |
 | `PreloadEmojiPickerResult` | Result returned from `preloadEmojiPicker(...)`. |
+| `PreloadMojiXStatus` | Status union returned by `usePreloadMojiX(...)`. |
+| `UsePreloadMojiXOptions` | Hook options for component-level preload warmup. |
+| `UsePreloadMojiXResult` | Hook result with `status`, `result`, `error`, and `preload`. |
 
 ## Asset Resolution
 

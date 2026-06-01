@@ -102,9 +102,9 @@ export async function preloadSpriteSheetUrl(url: string) {
   return decodePromise;
 }
 
-export function createBrowserAssetCacheAdapter(options: {
-  cacheName?: string;
-} = {}) {
+export function createBrowserAssetCacheAdapter(
+  options: { cacheName?: string } = {},
+) {
   const cacheName = options.cacheName ?? DEFAULT_SPRITE_CACHE_NAME;
 
   return {
@@ -188,9 +188,9 @@ function storeSharedSpriteSheetAsset(
   } satisfies EmojiSpriteSheetCachedAsset;
 }
 
-export function createBrowserSpriteSheetCacheAdapter(options: {
-  cacheName?: string;
-} = {}): EmojiSpriteSheetCacheAdapter {
+export function createBrowserSpriteSheetCacheAdapter(
+  options: { cacheName?: string } = {},
+): EmojiSpriteSheetCacheAdapter {
   const assetCache = createBrowserAssetCacheAdapter({
     cacheName: options.cacheName ?? DEFAULT_SPRITE_CACHE_NAME,
   });
@@ -315,5 +315,4 @@ export async function warmEmojiSpriteSheet(
   } finally {
     pendingSpriteSheetWarmups.delete(request.key);
   }
-
 }

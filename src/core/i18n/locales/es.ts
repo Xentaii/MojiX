@@ -8,10 +8,10 @@ import { createChromeLocaleDefinition } from './createChromeLocale';
 export const spanishLabels: EmojiPickerLabels = {
   searchPlaceholder: 'Buscar emoji, alias o emoticonos',
   noResultsTitle: 'No se encontró nada',
-  noResultsBody:
-    'Prueba una palabra, un alias o un emoticono más corto.',
+  noResultsBody: 'Prueba una palabra, un alias o un emoticono más corto.',
   recents: 'Recientes',
   custom: 'Personalizados',
+  categoryNavigation: 'Emoji categories',
   skinToneButton: 'Tono de piel',
   clearSearch: 'Borrar búsqueda',
 };

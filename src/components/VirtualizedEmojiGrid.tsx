@@ -1,6 +1,6 @@
 import {
-  memo,
   type CSSProperties,
+  memo,
   type ReactNode,
   type Ref,
   useCallback,
@@ -18,6 +18,7 @@ import type {
   EmojiCategoryId,
   EmojiLocaleDefinition,
   EmojiPickerClassNames,
+  EmojiPickerScrollBehavior,
   EmojiPickerStyles,
   EmojiPickerVirtualization,
   EmojiRenderable,
@@ -29,32 +30,32 @@ import type {
 import { EmojiCategoryIcon } from './EmojiCategoryIcon';
 import { EmojiSprite } from './EmojiSprite';
 import {
+  getEmojiGridPageOffset,
+  getEmojiGridTabStopByOffset,
+} from './gridNavigation';
+import {
   computeAdaptiveOverscanRows,
   computeEmojiGridPlaceholderHeight,
   computeEmojiGridVirtualWindow,
   createFullEmojiGridVirtualWindow,
+  type EmojiGridVirtualWindow,
   estimateEmojiGridRowHeight,
   expandEmojiGridVirtualWindow,
   findEmojiGridActiveSectionId,
   getEmojiGridRowCount,
   resolveEmojiGridVirtualization,
-  type EmojiGridVirtualWindow,
 } from './gridVirtualization';
-import {
-  formatEmojiName,
-  getSlotClassName,
-  getSlotStyle,
-} from './utils';
+import { formatEmojiName, getSlotClassName, getSlotStyle } from './utils';
 
 export interface EmojiGridHandle {
   scrollToCategory: (
     id: EmojiCategoryId,
-    options?: { behavior?: 'instant' | 'smooth' },
+    options?: { behavior?: EmojiPickerScrollBehavior },
   ) => void;
 }
 
 export interface EmojiGridProps {
-  ref?: Ref<EmojiGridHandle>;
+  ref?: Ref<EmojiGridHandle | null>;
   sections: EmojiSection[];
   emojiSize: number;
   columns: number;
@@ -63,17 +64,14 @@ export interface EmojiGridProps {
   spriteSheet: EmojiSpriteSheetConfig;
   assetSource?: EmojiAssetSource;
   localeDefinition: EmojiLocaleDefinition;
-  renderEmoji?: (
-    emoji: EmojiRenderable,
-    state: EmojiRenderState,
-  ) => ReactNode;
-  renderCategoryIcon?: (
-    props: EmojiCategoryIconRenderProps,
-  ) => ReactNode;
+  renderEmoji?: (emoji: EmojiRenderable, state: EmojiRenderState) => ReactNode;
+  renderCategoryIcon?: (props: EmojiCategoryIconRenderProps) => ReactNode;
   onEmojiSelect: (emoji: EmojiRenderable) => void;
   onEmojiHover: (emoji: EmojiRenderable | null) => void;
   onActiveCategoryChange: (id: EmojiCategoryId) => void;
   hoveredEmojiId: string | null;
+  trackHoverActive?: boolean;
+  categoryScrollBehavior?: EmojiPickerScrollBehavior;
   virtualization?: boolean | EmojiPickerVirtualization;
   emptyState?: ReactNode;
   hideEmptyState?: boolean;
@@ -125,8 +123,8 @@ function getContainerPaddingTop(container: HTMLDivElement) {
   return Number.parseFloat(window.getComputedStyle(container).paddingTop) || 0;
 }
 
-function getScrollBehavior(mode: 'instant' | 'smooth' = 'smooth') {
-  if (mode === 'instant') {
+function getScrollBehavior(mode: EmojiPickerScrollBehavior = 'smooth') {
+  if (mode === 'instant' || mode === 'auto') {
     return 'auto' as const;
   }
 
@@ -143,7 +141,7 @@ function getScrollBehavior(mode: 'instant' | 'smooth' = 'smooth') {
 function setContainerScrollTop(
   container: HTMLDivElement,
   top: number,
-  behavior: 'instant' | 'smooth',
+  behavior: EmojiPickerScrollBehavior,
 ) {
   if (behavior === 'instant') {
     const previousInlineBehavior = container.style.scrollBehavior;
@@ -158,13 +156,10 @@ function setContainerScrollTop(
     return;
   }
 
-  container.scrollTo({ top, behavior: getScrollBehavior('smooth') });
+  container.scrollTo({ top, behavior: getScrollBehavior(behavior) });
 }
 
-function getElementScrollTop(
-  container: HTMLDivElement,
-  element: HTMLElement,
-) {
+function getElementScrollTop(container: HTMLDivElement, element: HTMLElement) {
   const containerRect = container.getBoundingClientRect();
   const elementRect = element.getBoundingClientRect();
   const paddingTop = getContainerPaddingTop(container);
@@ -261,16 +256,11 @@ function createLayoutMetrics(
   return {
     paddingTop,
     sections,
-    byId: Object.fromEntries(
-      sections.map((section) => [section.id, section]),
-    ),
+    byId: Object.fromEntries(sections.map((section) => [section.id, section])),
   } satisfies EmojiGridLayoutMetrics;
 }
 
-function getGridGap(
-  grid: HTMLDivElement,
-  property: 'rowGap' | 'columnGap',
-) {
+function getGridGap(grid: HTMLDivElement, property: 'rowGap' | 'columnGap') {
   const computed = window.getComputedStyle(grid);
   const value = computed[property] || computed.gap;
 
@@ -340,14 +330,12 @@ interface EmojiCellProps {
   spriteSheet: EmojiSpriteSheetConfig;
   assetSource?: EmojiAssetSource;
   localeDefinition: EmojiLocaleDefinition;
-  renderEmoji?: (
-    emoji: EmojiRenderable,
-    state: EmojiRenderState,
-  ) => ReactNode;
+  renderEmoji?: (emoji: EmojiRenderable, state: EmojiRenderState) => ReactNode;
   onEmojiSelect: (emoji: EmojiRenderable) => void;
   onEmojiHover: (
     emoji: EmojiRenderable | null,
     target?: TabStop,
+    reason?: 'pointer' | 'focus',
   ) => void;
   onEmojiFocus: (
     event: React.FocusEvent<HTMLButtonElement>,
@@ -399,7 +387,7 @@ function EmojiCell({
     'emoji',
     slotOptions,
     hoverColor
-      ? ({ ['--mx-emoji-hover']: hoverColor } as CSSProperties)
+      ? ({ '--mx-emoji-hover': hoverColor } as CSSProperties)
       : undefined,
   );
 
@@ -418,16 +406,24 @@ function EmojiCell({
       tabIndex={initiallyFocusable ? 0 : -1}
       onClick={() => onEmojiSelect(emoji)}
       onMouseEnter={() =>
-        onEmojiHover(emoji, {
-          sectionIndex,
-          emojiIndex,
-        })
+        onEmojiHover(
+          emoji,
+          {
+            sectionIndex,
+            emojiIndex,
+          },
+          'pointer',
+        )
       }
       onMouseLeave={() =>
-        onEmojiHover(null, {
-          sectionIndex,
-          emojiIndex,
-        })
+        onEmojiHover(
+          null,
+          {
+            sectionIndex,
+            emojiIndex,
+          },
+          'pointer',
+        )
       }
       onFocus={(event) => {
         onEmojiFocus(event, emoji, {
@@ -436,10 +432,14 @@ function EmojiCell({
         });
       }}
       onBlur={() =>
-        onEmojiHover(null, {
-          sectionIndex,
-          emojiIndex,
-        })
+        onEmojiHover(
+          null,
+          {
+            sectionIndex,
+            emojiIndex,
+          },
+          'focus',
+        )
       }
       title={displayName}
       aria-label={displayName}
@@ -471,8 +471,7 @@ const MemoEmojiCell = memo(
     previousProps.sectionId === nextProps.sectionId &&
     previousProps.sectionIndex === nextProps.sectionIndex &&
     previousProps.emojiIndex === nextProps.emojiIndex &&
-    previousProps.initiallyFocusable ===
-      nextProps.initiallyFocusable &&
+    previousProps.initiallyFocusable === nextProps.initiallyFocusable &&
     previousProps.spriteSheet === nextProps.spriteSheet &&
     previousProps.assetSource === nextProps.assetSource &&
     previousProps.localeDefinition === nextProps.localeDefinition &&
@@ -481,8 +480,7 @@ const MemoEmojiCell = memo(
     previousProps.onEmojiHover === nextProps.onEmojiHover &&
     previousProps.onEmojiFocus === nextProps.onEmojiFocus &&
     previousProps.slotOptions === nextProps.slotOptions &&
-    previousProps.resolveEmojiHoverColor ===
-      nextProps.resolveEmojiHoverColor,
+    previousProps.resolveEmojiHoverColor === nextProps.resolveEmojiHoverColor,
 );
 
 export function VirtualizedEmojiGrid({
@@ -500,6 +498,8 @@ export function VirtualizedEmojiGrid({
   onEmojiSelect,
   onEmojiHover,
   onActiveCategoryChange,
+  trackHoverActive = true,
+  categoryScrollBehavior = 'smooth',
   virtualization,
   emptyState,
   hideEmptyState,
@@ -530,9 +530,7 @@ export function VirtualizedEmojiGrid({
   });
   const scrollIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suppressHoverDuringScrollRef = useRef(false);
-  const layoutMetricsRef = useRef<EmojiGridLayoutMetrics>(
-    EMPTY_LAYOUT_METRICS,
-  );
+  const layoutMetricsRef = useRef<EmojiGridLayoutMetrics>(EMPTY_LAYOUT_METRICS);
   const slotOptions = useMemo(
     () => ({ unstyled, classNames, styles }),
     [classNames, styles, unstyled],
@@ -636,14 +634,12 @@ export function VirtualizedEmojiGrid({
         previousWindow?.rowHeight ??
         lastMeasuredRowHeightRef.current;
       const fallbackRowGap =
-        previousSection?.rowGap ??
-        previousWindow?.rowGap ??
-        4;
+        previousSection?.rowGap ?? previousWindow?.rowGap ?? 4;
       const sectionElement = sectionRefs.current[section.id];
       const gridElement = gridRefs.current[section.id];
       const sectionTop = sectionElement
         ? getElementScrollTop(container, sectionElement)
-        : previousSection?.sectionTop ?? 0;
+        : (previousSection?.sectionTop ?? 0);
       const rowGap = gridElement
         ? getGridGap(gridElement, 'rowGap') || fallbackRowGap
         : fallbackRowGap;
@@ -664,7 +660,7 @@ export function VirtualizedEmojiGrid({
         sectionTop,
         gridTop: gridElement
           ? getElementScrollTop(container, gridElement)
-          : previousSection?.gridTop ?? sectionTop,
+          : (previousSection?.gridTop ?? sectionTop),
         rowHeight,
         rowGap,
       } satisfies MeasuredSectionLayout;
@@ -681,101 +677,100 @@ export function VirtualizedEmojiGrid({
     return layoutMetricsRef.current;
   }, [columns, emojiSize, preparedSections]);
 
-  const measureVirtualWindows = useCallback((
-    layoutMetrics: EmojiGridLayoutMetrics = layoutMetricsRef.current,
-  ) => {
-    const container = scrollRef.current;
+  const measureVirtualWindows = useCallback(
+    (layoutMetrics: EmojiGridLayoutMetrics = layoutMetricsRef.current) => {
+      const container = scrollRef.current;
 
-    if (!container) {
-      return;
-    }
+      if (!container) {
+        return;
+      }
 
-    if (!virtualizationConfig.enabled) {
-      const nextWindows = getFullVirtualWindows(
-        preparedSections,
-        virtualWindowsRef.current,
-        lastMeasuredRowHeightRef.current,
-      );
+      if (!virtualizationConfig.enabled) {
+        const nextWindows = getFullVirtualWindows(
+          preparedSections,
+          virtualWindowsRef.current,
+          lastMeasuredRowHeightRef.current,
+        );
+
+        if (!areVirtualWindowsEqual(virtualWindowsRef.current, nextWindows)) {
+          virtualWindowsRef.current = nextWindows;
+          setVirtualWindows(nextWindows);
+        }
+
+        return;
+      }
+
+      const nextWindows = Object.fromEntries(
+        preparedSections.map(({ section, sectionIndex, rowCount }) => {
+          const previousWindow = virtualWindowsRef.current[section.id];
+          const sectionLayout = layoutMetrics.byId[section.id];
+          const fallbackRowHeight =
+            sectionLayout?.rowHeight ??
+            previousWindow?.rowHeight ??
+            lastMeasuredRowHeightRef.current;
+          const fallbackRowGap =
+            sectionLayout?.rowGap ?? previousWindow?.rowGap ?? 4;
+
+          if (!sectionLayout) {
+            return [
+              section.id,
+              createFullEmojiGridVirtualWindow({
+                rowCount,
+                rowHeight: fallbackRowHeight,
+                rowGap: fallbackRowGap,
+              }),
+            ];
+          }
+
+          const effectiveOverscanRows = virtualizationConfig.adaptiveOverscan
+            ? computeAdaptiveOverscanRows({
+                baseOverscanRows: virtualizationConfig.overscanRows,
+                velocityPxPerMs: scrollVelocityRef.current.velocityPxPerMs,
+                rowHeight: sectionLayout.rowHeight,
+              })
+            : virtualizationConfig.overscanRows;
+
+          let window = computeEmojiGridVirtualWindow({
+            rowCount,
+            scrollTop: container.scrollTop,
+            viewportHeight: container.clientHeight,
+            gridTop: sectionLayout.gridTop,
+            rowHeight: sectionLayout.rowHeight,
+            rowGap: sectionLayout.rowGap,
+            overscanRows: effectiveOverscanRows,
+          });
+
+          const pinnedRows = [
+            tabStop?.sectionIndex === sectionIndex
+              ? getEmojiRowIndex(tabStop.emojiIndex, columns)
+              : null,
+            pendingFocusRef.current?.sectionIndex === sectionIndex
+              ? getEmojiRowIndex(pendingFocusRef.current.emojiIndex, columns)
+              : null,
+          ];
+
+          for (const targetRow of pinnedRows) {
+            window = expandEmojiGridVirtualWindow(window, rowCount, targetRow);
+          }
+
+          return [section.id, window];
+        }),
+      ) satisfies Record<string, EmojiGridVirtualWindow>;
 
       if (!areVirtualWindowsEqual(virtualWindowsRef.current, nextWindows)) {
         virtualWindowsRef.current = nextWindows;
         setVirtualWindows(nextWindows);
       }
-
-      return;
-    }
-
-    const nextWindows = Object.fromEntries(
-      preparedSections.map(({ section, sectionIndex, rowCount }) => {
-        const previousWindow = virtualWindowsRef.current[section.id];
-        const sectionLayout = layoutMetrics.byId[section.id];
-        const fallbackRowHeight =
-          sectionLayout?.rowHeight ??
-          previousWindow?.rowHeight ??
-          lastMeasuredRowHeightRef.current;
-        const fallbackRowGap =
-          sectionLayout?.rowGap ??
-          previousWindow?.rowGap ??
-          4;
-
-        if (!sectionLayout) {
-          return [
-            section.id,
-            createFullEmojiGridVirtualWindow({
-              rowCount,
-              rowHeight: fallbackRowHeight,
-              rowGap: fallbackRowGap,
-            }),
-          ];
-        }
-
-        const effectiveOverscanRows = virtualizationConfig.adaptiveOverscan
-          ? computeAdaptiveOverscanRows({
-              baseOverscanRows: virtualizationConfig.overscanRows,
-              velocityPxPerMs: scrollVelocityRef.current.velocityPxPerMs,
-              rowHeight: sectionLayout.rowHeight,
-            })
-          : virtualizationConfig.overscanRows;
-
-        let window = computeEmojiGridVirtualWindow({
-          rowCount,
-          scrollTop: container.scrollTop,
-          viewportHeight: container.clientHeight,
-          gridTop: sectionLayout.gridTop,
-          rowHeight: sectionLayout.rowHeight,
-          rowGap: sectionLayout.rowGap,
-          overscanRows: effectiveOverscanRows,
-        });
-
-        const pinnedRows = [
-          tabStop?.sectionIndex === sectionIndex
-            ? getEmojiRowIndex(tabStop.emojiIndex, columns)
-            : null,
-          pendingFocusRef.current?.sectionIndex === sectionIndex
-            ? getEmojiRowIndex(pendingFocusRef.current.emojiIndex, columns)
-            : null,
-        ];
-
-        for (const targetRow of pinnedRows) {
-          window = expandEmojiGridVirtualWindow(window, rowCount, targetRow);
-        }
-
-        return [section.id, window];
-      }),
-    ) satisfies Record<string, EmojiGridVirtualWindow>;
-
-    if (!areVirtualWindowsEqual(virtualWindowsRef.current, nextWindows)) {
-      virtualWindowsRef.current = nextWindows;
-      setVirtualWindows(nextWindows);
-    }
-  }, [
-    columns,
-    preparedSections,
-    tabStop,
-    virtualizationConfig.adaptiveOverscan,
-    virtualizationConfig.enabled,
-    virtualizationConfig.overscanRows,
-  ]);
+    },
+    [
+      columns,
+      preparedSections,
+      tabStop,
+      virtualizationConfig.adaptiveOverscan,
+      virtualizationConfig.enabled,
+      virtualizationConfig.overscanRows,
+    ],
+  );
 
   const scheduleVirtualWindowMeasure = useCallback(() => {
     if (virtualizationFrameRef.current !== null) {
@@ -806,7 +801,8 @@ export function VirtualizedEmojiGrid({
 
     const tracking = scrollVelocityRef.current;
     const now =
-      typeof performance !== 'undefined' && typeof performance.now === 'function'
+      typeof performance !== 'undefined' &&
+      typeof performance.now === 'function'
         ? performance.now()
         : Date.now();
     const dt = now - tracking.lastScrollTime;
@@ -889,10 +885,7 @@ export function VirtualizedEmojiGrid({
       window.removeEventListener('resize', scheduleLayoutMeasure);
       resizeObserver?.disconnect();
     };
-  }, [
-    preparedSections,
-    scheduleLayoutMeasure,
-  ]);
+  }, [preparedSections, scheduleLayoutMeasure]);
 
   useEffect(() => {
     const container = scrollRef.current;
@@ -906,15 +899,9 @@ export function VirtualizedEmojiGrid({
     });
 
     return () => {
-      container.removeEventListener(
-        'scroll',
-        handleVirtualizedScroll,
-      );
+      container.removeEventListener('scroll', handleVirtualizedScroll);
     };
-  }, [
-    handleVirtualizedScroll,
-    virtualizationConfig.enabled,
-  ]);
+  }, [handleVirtualizedScroll, virtualizationConfig.enabled]);
 
   useEffect(() => {
     return () => {
@@ -934,10 +921,7 @@ export function VirtualizedEmojiGrid({
   }, []);
 
   const scrollEmojiIntoView = useCallback(
-    (
-      target: TabStop,
-      behavior: 'instant' | 'smooth' = 'instant',
-    ) => {
+    (target: TabStop, behavior: EmojiPickerScrollBehavior = 'instant') => {
       const container = scrollRef.current;
       const preparedSection = preparedSections[target.sectionIndex];
       const sectionId = preparedSection?.section.id;
@@ -1022,47 +1006,50 @@ export function VirtualizedEmojiGrid({
     nextTarget.focus();
   }, [virtualWindows]);
 
-  const scrollToCategory = useCallback((
-    id: EmojiCategoryId,
-    options?: { behavior?: 'instant' | 'smooth' },
-  ) => {
-    const container = scrollRef.current;
-    const target = sectionRefs.current[id];
-    if (!container || !target) {
-      return;
-    }
-
-    const behavior = options?.behavior ?? 'smooth';
-    const nextTop =
-      layoutMetricsRef.current.byId[id]?.sectionTop ??
-      getElementScrollTop(container, target);
-    pendingCategoryScrollRef.current = {
-      id,
-      top: nextTop,
-    };
-    setContainerScrollTop(container, nextTop, behavior);
-
-    requestAnimationFrame(() => {
-      const nextContainer = scrollRef.current;
-      const nextTarget = sectionRefs.current[id];
-      if (!nextContainer || !nextTarget) {
+  const scrollToCategory = useCallback(
+    (
+      id: EmojiCategoryId,
+      options?: { behavior?: EmojiPickerScrollBehavior },
+    ) => {
+      const container = scrollRef.current;
+      const target = sectionRefs.current[id];
+      if (!container || !target) {
         return;
       }
 
-      const settledTop =
+      const behavior = options?.behavior ?? categoryScrollBehavior;
+      const nextTop =
         layoutMetricsRef.current.byId[id]?.sectionTop ??
-        getElementScrollTop(nextContainer, nextTarget);
-      if (Math.abs(nextContainer.scrollTop - settledTop) <= 1) {
-        return;
-      }
-
+        getElementScrollTop(container, target);
       pendingCategoryScrollRef.current = {
         id,
-        top: settledTop,
+        top: nextTop,
       };
-      setContainerScrollTop(nextContainer, settledTop, behavior);
-    });
-  }, []);
+      setContainerScrollTop(container, nextTop, behavior);
+
+      requestAnimationFrame(() => {
+        const nextContainer = scrollRef.current;
+        const nextTarget = sectionRefs.current[id];
+        if (!nextContainer || !nextTarget) {
+          return;
+        }
+
+        const settledTop =
+          layoutMetricsRef.current.byId[id]?.sectionTop ??
+          getElementScrollTop(nextContainer, nextTarget);
+        if (Math.abs(nextContainer.scrollTop - settledTop) <= 1) {
+          return;
+        }
+
+        pendingCategoryScrollRef.current = {
+          id,
+          top: settledTop,
+        };
+        setContainerScrollTop(nextContainer, settledTop, behavior);
+      });
+    },
+    [categoryScrollBehavior],
+  );
 
   useImperativeHandle(
     ref,
@@ -1087,14 +1074,9 @@ export function VirtualizedEmojiGrid({
       const pendingScroll = pendingCategoryScrollRef.current;
 
       if (pendingScroll) {
-        if (
-          Math.abs(activeContainer.scrollTop - pendingScroll.top) <= 2
-        ) {
+        if (Math.abs(activeContainer.scrollTop - pendingScroll.top) <= 2) {
           pendingCategoryScrollRef.current = null;
         }
-
-        onActiveCategoryChangeRef.current(pendingScroll.id);
-        return;
       }
 
       const layoutMetrics = layoutMetricsRef.current;
@@ -1103,9 +1085,7 @@ export function VirtualizedEmojiGrid({
           ? findEmojiGridActiveSectionId({
               sections: layoutMetrics.sections,
               thresholdTop:
-                activeContainer.scrollTop +
-                layoutMetrics.paddingTop +
-                48,
+                activeContainer.scrollTop + layoutMetrics.paddingTop + 48,
               fallbackId: initialCategory,
             })
           : initialCategory;
@@ -1208,6 +1188,41 @@ export function VirtualizedEmojiGrid({
       case 'End':
         nextIndex = currentSection.emojis.length - 1;
         break;
+      case 'PageDown':
+      case 'PageUp': {
+        const container = scrollRef.current;
+        const currentLayout = layoutMetricsRef.current.sections[sectionIdx];
+        const offset = getEmojiGridPageOffset({
+          columns,
+          containerHeight: container?.clientHeight ?? emojiSize,
+          rowHeight:
+            currentLayout?.rowHeight ??
+            Math.max(lastMeasuredRowHeightRef.current, emojiSize),
+          direction: event.key === 'PageDown' ? 1 : -1,
+        });
+        const nextTarget = getEmojiGridTabStopByOffset(
+          sections,
+          {
+            sectionIndex: sectionIdx,
+            emojiIndex: emojiIdx,
+          },
+          offset,
+        );
+
+        if (!nextTarget) {
+          return;
+        }
+
+        nextSection = nextTarget.sectionIndex;
+        nextIndex = nextTarget.emojiIndex;
+        break;
+      }
+      case 'Escape':
+        pendingFocusRef.current = null;
+        setActiveCellTarget(null);
+        onEmojiHover(null);
+        target.blur();
+        return;
       case 'Enter':
       case ' ':
         event.preventDefault();
@@ -1246,40 +1261,67 @@ export function VirtualizedEmojiGrid({
     scheduleVirtualWindowMeasure();
   }
 
-  const handleEmojiFocus = useCallback((
-    _event: React.FocusEvent<HTMLButtonElement>,
-    emoji: EmojiRenderable,
-    target: TabStop,
-  ) => {
-    pendingFocusRef.current = null;
-    setActiveCellTarget(target);
-    setTabStop((current) =>
-      isSameTabStop(current, target) ? current : target,
-    );
-    onEmojiHover(emoji);
-  }, [onEmojiHover, setActiveCellTarget]);
-
-  const handleEmojiHover = useCallback((
-    emoji: EmojiRenderable | null,
-    target?: TabStop,
-  ) => {
-    if (suppressHoverDuringScrollRef.current) {
-      return;
-    }
-
-    if (emoji && target) {
+  const handleEmojiFocus = useCallback(
+    (
+      _event: React.FocusEvent<HTMLButtonElement>,
+      emoji: EmojiRenderable,
+      target: TabStop,
+    ) => {
+      pendingFocusRef.current = null;
       setActiveCellTarget(target);
+      setTabStop((current) =>
+        isSameTabStop(current, target) ? current : target,
+      );
       onEmojiHover(emoji);
-      return;
-    }
+    },
+    [onEmojiHover, setActiveCellTarget],
+  );
 
-    if (target && !isSameTabStop(activeCellRef.current, target)) {
-      return;
-    }
+  const handleEmojiHover = useCallback(
+    (
+      emoji: EmojiRenderable | null,
+      target?: TabStop,
+      reason: 'pointer' | 'focus' = 'pointer',
+    ) => {
+      if (reason === 'focus') {
+        if (emoji && target) {
+          setActiveCellTarget(target);
+          onEmojiHover(emoji);
+          return;
+        }
 
-    setActiveCellTarget(null);
-    onEmojiHover(null);
-  }, [onEmojiHover, setActiveCellTarget]);
+        if (target && !isSameTabStop(activeCellRef.current, target)) {
+          return;
+        }
+
+        setActiveCellTarget(null);
+        onEmojiHover(null);
+        return;
+      }
+
+      if (suppressHoverDuringScrollRef.current) {
+        return;
+      }
+
+      if (!trackHoverActive) {
+        return;
+      }
+
+      if (emoji && target) {
+        setActiveCellTarget(target);
+        onEmojiHover(emoji);
+        return;
+      }
+
+      if (target && !isSameTabStop(activeCellRef.current, target)) {
+        return;
+      }
+
+      setActiveCellTarget(null);
+      onEmojiHover(null);
+    },
+    [onEmojiHover, setActiveCellTarget, trackHoverActive],
+  );
 
   return (
     <div
@@ -1393,10 +1435,7 @@ export function VirtualizedEmojiGrid({
             >
               {beforeHeight > 0 && (
                 <div
-                  className={getSlotClassName(
-                    'gridPlaceholder',
-                    slotOptions,
-                  )}
+                  className={getSlotClassName('gridPlaceholder', slotOptions)}
                   style={getSlotStyle(
                     'gridPlaceholder',
                     slotOptions,
@@ -1444,10 +1483,7 @@ export function VirtualizedEmojiGrid({
 
               {afterHeight > 0 && (
                 <div
-                  className={getSlotClassName(
-                    'gridPlaceholder',
-                    slotOptions,
-                  )}
+                  className={getSlotClassName('gridPlaceholder', slotOptions)}
                   style={getSlotStyle(
                     'gridPlaceholder',
                     slotOptions,

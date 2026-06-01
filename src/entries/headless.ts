@@ -1,13 +1,4 @@
-import {
-  MojiXRoot,
-  useActiveEmoji,
-  useEmojiAssets,
-  useEmojiCategories,
-  useEmojiSearch,
-  useEmojiSelection,
-  useMojiX,
-  useSkinTone,
-} from '../components/MojiXRoot';
+import { MojiXRoot } from '../components/MojiXRoot';
 
 export {
   MojiXRoot,
@@ -41,7 +32,9 @@ export type {
   EmojiLocaleCode,
   EmojiLocaleDefinition,
   EmojiPickerColors,
+  EmojiPickerLabels,
   EmojiPickerProps,
+  EmojiPickerScrollBehavior,
   EmojiRecentCategoryConfig,
   EmojiRenderable,
   EmojiResolvedAsset,
@@ -53,4 +46,5 @@ export type {
   EmojiSpriteSheetConfig,
   EmojiVendor,
   EmojiVendorAvailability,
+  RecentEmojiRecord,
 } from '../core/types';

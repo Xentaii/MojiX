@@ -12,6 +12,7 @@ export const englishLabels: EmojiPickerLabels = {
   noResultsBody: 'Try a shorter word, alias, or emoticon.',
   recents: 'Recent',
   custom: 'Custom',
+  categoryNavigation: 'Emoji categories',
   skinToneButton: 'Skin tone',
   clearSearch: 'Clear search',
 };
@@ -39,9 +40,10 @@ export const englishSkinTones: Record<EmojiSkinTone, string> = {
   dark: 'Dark',
 };
 
-export const englishLocale: EmojiLocaleDefinition = createChromeLocaleDefinition({
-  code: 'en',
-  labels: englishLabels,
-  categories: englishCategories,
-  skinTones: englishSkinTones,
-});
+export const englishLocale: EmojiLocaleDefinition =
+  createChromeLocaleDefinition({
+    code: 'en',
+    labels: englishLabels,
+    categories: englishCategories,
+    skinTones: englishSkinTones,
+  });

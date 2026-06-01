@@ -1,6 +1,6 @@
 import {
-  startTransition,
   type RefObject,
+  startTransition,
   useCallback,
   useDeferredValue,
   useEffect,
@@ -10,6 +10,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
+import { createNativeAssetSource } from '../core/assets';
 import {
   CATEGORY_GLYPH_META,
   CATEGORY_ICON_GLYPHS,
@@ -38,7 +39,6 @@ import {
   prepareCustomEmojis,
   subscribeEmojiDataStore,
 } from '../core/data';
-import { filterEmojiWithSearchConfig } from '../core/search';
 import {
   getEmojiLocaleRegistrySnapshot,
   getLocalizedCategoryLabel,
@@ -47,7 +47,8 @@ import {
   resolveLocaleDefinition,
   subscribeEmojiLocaleRegistry,
 } from '../core/i18n';
-import { createNativeAssetSource } from '../core/assets';
+import { scheduleIdleTask } from '../core/idle';
+import { filterEmojiWithSearchConfig } from '../core/search';
 import { warmEmojiSpriteSheet } from '../core/sprite-cache';
 import {
   createSpriteSheetCacheKey,
@@ -57,6 +58,7 @@ import {
 } from '../core/sprites';
 import {
   createLocalStorageRecentStore,
+  pushRecentEmojiRecord,
   readStoredSkinTone,
   writeStoredSkinTone,
 } from '../core/storage';
@@ -64,30 +66,31 @@ import {
 // Used as the default asset source when the caller provides no sprite sheet
 // and no explicit asset source, so "just works" uses native OS emoji.
 const DEFAULT_NATIVE_SOURCE = createNativeAssetSource();
+
+import { peekWarmedEmojiSpriteSheetUrl } from '../core/sprite-cache';
 import type {
   EmojiAssetSource,
-  EmojiCategoryConfig,
   EmojiCategoryIconConfig,
-  EmojiCategoryIconInput,
   EmojiCategoryIconGlyph,
-  EmojiCategoryId,
+  EmojiCategoryIconInput,
   EmojiCategoryIconPreset,
-  EmojiPickerLabels,
+  EmojiCategoryId,
   EmojiPickerColors,
+  EmojiPickerLabels,
   EmojiPickerProps,
+  EmojiPickerScrollBehavior,
+  EmojiRecentStore,
   EmojiRenderable,
   EmojiRenderState,
   EmojiSearchConfigLike,
   EmojiSection,
   EmojiSelection,
   EmojiSkinTone,
-  EmojiRecentStore,
   PreparedCustomEmoji,
   RecentEmojiRecord,
   ResolvedEmojiCategoryIcon,
 } from '../core/types';
 import type { EmojiGridHandle } from './EmojiGrid';
-import { peekWarmedEmojiSpriteSheetUrl } from '../core/sprite-cache';
 
 function resolveRecentEmoji(
   recent: RecentEmojiRecord,
@@ -131,9 +134,7 @@ function resolveCategoryIconConfig(
 
   if (typeof icon === 'string') {
     if (CATEGORY_ICON_GLYPH_SET.has(icon)) {
-      const glyphMeta = CATEGORY_GLYPH_META[
-        icon as EmojiCategoryIconGlyph
-      ];
+      const glyphMeta = CATEGORY_GLYPH_META[icon as EmojiCategoryIconGlyph];
 
       return {
         ...fallbackIcon,
@@ -154,14 +155,8 @@ function resolveCategoryIconConfig(
 
   return {
     glyph: icon.glyph ?? glyphFallback?.glyph ?? fallbackIcon.glyph,
-    emoji:
-      icon.emoji ??
-      glyphFallback?.emoji ??
-      fallbackIcon.emoji,
-    emojiId:
-      icon.emojiId ??
-      glyphFallback?.emojiId ??
-      fallbackIcon.emojiId,
+    emoji: icon.emoji ?? glyphFallback?.emoji ?? fallbackIcon.emoji,
+    emojiId: icon.emojiId ?? glyphFallback?.emojiId ?? fallbackIcon.emojiId,
     style: icon.style ?? fallbackIcon.style,
   };
 }
@@ -209,9 +204,7 @@ function buildResolvedCategoryIcon(options: {
       '\u2728',
     emojiId: resolvedIconConfig.emojiId ?? options.fallbackIcon.emojiId,
     style:
-      resolvedIconConfig.style ??
-      options.iconStyle ??
-      options.defaultStyle,
+      resolvedIconConfig.style ?? options.iconStyle ?? options.defaultStyle,
     renderable: resolveCategoryIconRenderable(
       resolvedIconConfig,
       options.customEmojiById,
@@ -221,6 +214,10 @@ function buildResolvedCategoryIcon(options: {
 
 export interface EmojiPickerState {
   searchId: string;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  trapFocus: boolean;
+  closeOnEscape: boolean;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   searchConfig: EmojiSearchConfigLike | undefined;
@@ -228,6 +225,10 @@ export interface EmojiPickerState {
   setSkinTone: (tone: EmojiSkinTone) => void;
   activeCategory: EmojiCategoryId;
   setActiveCategory: (categoryId: EmojiCategoryId) => void;
+  selectedCategory: EmojiCategoryId;
+  setSelectedCategory: (categoryId: EmojiCategoryId) => void;
+  visibleCategory: EmojiCategoryId;
+  setVisibleCategory: (categoryId: EmojiCategoryId) => void;
   activeEmojiId: string | null;
   setActiveEmojiId: (emojiId: string | null) => void;
   hoveredEmoji: EmojiRenderable | null;
@@ -271,8 +272,11 @@ export interface EmojiPickerState {
     categoryId: EmojiCategoryId,
   ) => string | undefined;
   autoScrollCategoriesOnHover: boolean;
+  trackHoverActive: boolean;
+  categoryScrollBehavior: EmojiPickerScrollBehavior;
   loading: boolean;
   recentStore: EmojiRecentStore;
+  recentEmoji: RecentEmojiRecord[];
 }
 
 function resolveRuntimeSpriteAsset(
@@ -302,21 +306,34 @@ function sourceCanUseSpriteSheet(source: EmojiAssetSource | undefined) {
 
 export function useEmojiPickerState({
   value,
+  open: controlledOpen,
+  defaultOpen = true,
+  onOpenChange,
   searchQuery: controlledSearchQuery,
   defaultSearchQuery = '',
   onSearchQueryChange,
   searchConfig,
+  selectedCategory: controlledSelectedCategory,
+  defaultSelectedCategory,
+  onSelectedCategoryChange,
+  visibleCategory: controlledVisibleCategory,
+  defaultVisibleCategory,
+  onVisibleCategoryChange,
   activeCategory: controlledActiveCategory,
   defaultActiveCategory,
   onActiveCategoryChange,
   activeEmojiId: controlledActiveEmojiId,
   defaultActiveEmojiId,
   onActiveEmojiChange,
+  recentEmoji: controlledRecentEmoji,
+  defaultRecentEmoji,
+  onRecentEmojiChange,
   emojiSize = DEFAULT_EMOJI_SIZE,
   columns = DEFAULT_COLUMNS,
   loading = false,
   onDataError,
   showPreview = true,
+  trackHoverActive,
   showRecents = true,
   showSkinTones = true,
   recentLimit = DEFAULT_RECENT_LIMIT,
@@ -335,6 +352,9 @@ export function useEmojiPickerState({
   virtualization,
   loadCategoryShards = false,
   autoScrollCategoriesOnHover = true,
+  categoryScrollBehavior = 'smooth',
+  trapFocus = false,
+  closeOnEscape,
   categories,
   categoryIcons,
   categoryIconStyle = DEFAULT_CATEGORY_ICON_STYLE,
@@ -353,8 +373,13 @@ export function useEmojiPickerState({
   previewAssetSource,
 }: EmojiPickerProps): EmojiPickerState {
   const isSearchControlled = controlledSearchQuery !== undefined;
+  const isOpenControlled = controlledOpen !== undefined;
   const isSkinToneControlled = controlledSkinTone !== undefined;
-  const isActiveCategoryControlled = controlledActiveCategory !== undefined;
+  const isRecentEmojiControlled = controlledRecentEmoji !== undefined;
+  const controlledCategory =
+    controlledSelectedCategory ?? controlledActiveCategory;
+  const isSelectedCategoryControlled = controlledCategory !== undefined;
+  const isVisibleCategoryControlled = controlledVisibleCategory !== undefined;
   const isActiveEmojiControlled = controlledActiveEmojiId !== undefined;
   const emojiDataSnapshot = useSyncExternalStore(
     subscribeEmojiDataStore,
@@ -417,31 +442,34 @@ export function useEmojiPickerState({
       storageKey: recent?.storageKey ?? recentStorageKey,
       store: recent?.store ?? recentStore,
     }),
-    [
-      recent,
-      recentLimit,
-      recentStorageKey,
-      recentStore,
-      showRecents,
-    ],
+    [recent, recentLimit, recentStorageKey, recentStore, showRecents],
   );
   const resolvedDefaultActiveCategory =
+    defaultSelectedCategory ??
     defaultActiveCategory ??
     (resolvedRecentConfig.enabled && resolvedRecentConfig.defaultActive
       ? 'recent'
       : 'smileys');
+  const resolvedDefaultVisibleCategory =
+    defaultVisibleCategory ?? resolvedDefaultActiveCategory;
 
   const [uncontrolledSearchQuery, setUncontrolledSearchQuery] =
     useState(defaultSearchQuery);
-  const [recentEmoji, setRecentEmoji] = useState<RecentEmojiRecord[]>([]);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
+  const [uncontrolledRecentEmoji, setUncontrolledRecentEmoji] = useState<
+    RecentEmojiRecord[]
+  >(defaultRecentEmoji ?? []);
   const [uncontrolledSkinTone, setUncontrolledSkinTone] =
     useState<EmojiSkinTone>(() =>
       readStoredSkinTone(skinToneStorageKey, defaultSkinTone),
     );
-  const [uncontrolledActiveCategory, setUncontrolledActiveCategory] =
+  const [uncontrolledSelectedCategory, setUncontrolledSelectedCategory] =
     useState<EmojiCategoryId>(resolvedDefaultActiveCategory);
-  const [uncontrolledActiveEmojiId, setUncontrolledActiveEmojiId] =
-    useState<string | null>(defaultActiveEmojiId ?? null);
+  const [uncontrolledVisibleCategory, setUncontrolledVisibleCategory] =
+    useState<EmojiCategoryId>(resolvedDefaultVisibleCategory);
+  const [uncontrolledActiveEmojiId, setUncontrolledActiveEmojiId] = useState<
+    string | null
+  >(defaultActiveEmojiId ?? null);
   const [hoveredEmoji, setHoveredEmoji] = useState<EmojiRenderable | null>(
     null,
   );
@@ -450,8 +478,8 @@ export function useEmojiPickerState({
   const [runtimeSpriteAsset, setRuntimeSpriteAsset] = useState<{
     key: string;
     url: string;
-  } | null>(
-    () => resolveRuntimeSpriteAsset(resolvedSpriteSheet, spriteSheetCacheKey),
+  } | null>(() =>
+    resolveRuntimeSpriteAsset(resolvedSpriteSheet, spriteSheetCacheKey),
   );
   const lastDataErrorRef = useRef<unknown>(null);
   const didRequestEmojiDataRef = useRef(false);
@@ -459,16 +487,26 @@ export function useEmojiPickerState({
   const searchQuery = isSearchControlled
     ? controlledSearchQuery
     : uncontrolledSearchQuery;
+  const open = controlledOpen ?? uncontrolledOpen;
   const ready = emojiDataSnapshot.ready;
   const skinTone = isSkinToneControlled
     ? controlledSkinTone
     : uncontrolledSkinTone;
-  const activeCategory = isActiveCategoryControlled
-    ? controlledActiveCategory
-    : uncontrolledActiveCategory;
+  const recentEmoji = controlledRecentEmoji ?? uncontrolledRecentEmoji;
+  const selectedCategory = isSelectedCategoryControlled
+    ? controlledCategory
+    : uncontrolledSelectedCategory;
+  const visibleCategory = isVisibleCategoryControlled
+    ? controlledVisibleCategory
+    : uncontrolledVisibleCategory;
+  const activeCategory = selectedCategory;
   const activeEmojiId = isActiveEmojiControlled
     ? controlledActiveEmojiId
     : uncontrolledActiveEmojiId;
+  const shouldTrackHoverActive = trackHoverActive ?? showPreview;
+  const shouldCloseOnEscape =
+    closeOnEscape ??
+    (controlledOpen !== undefined || defaultOpen !== true || trapFocus);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const searchId = useId();
   const gridRef = useRef<EmojiGridHandle>(null);
@@ -480,8 +518,24 @@ export function useEmojiPickerState({
   );
 
   useEffect(() => {
-    setRecentEmoji(resolvedRecentStore.read());
-  }, [resolvedRecentStore]);
+    if (isRecentEmojiControlled || defaultRecentEmoji) {
+      return;
+    }
+
+    setUncontrolledRecentEmoji(resolvedRecentStore.read());
+  }, [defaultRecentEmoji, isRecentEmojiControlled, resolvedRecentStore]);
+
+  useEffect(() => {
+    if (!isOpenControlled) {
+      setUncontrolledOpen(defaultOpen);
+    }
+  }, [defaultOpen, isOpenControlled]);
+
+  useEffect(() => {
+    if (!isRecentEmojiControlled && defaultRecentEmoji) {
+      setUncontrolledRecentEmoji(defaultRecentEmoji);
+    }
+  }, [defaultRecentEmoji, isRecentEmojiControlled]);
 
   useEffect(() => {
     if (loadCategoryShards) {
@@ -516,22 +570,28 @@ export function useEmojiPickerState({
       return;
     }
 
-    if (
-      isBuiltInCategoryId(activeCategory) &&
-      !isEmojiCategoryLoaded(activeCategory) &&
-      !requestedShardsRef.current.has(activeCategory)
-    ) {
-      requestedShardsRef.current.add(activeCategory);
-      loadEmojiCategoryShard(activeCategory).catch(() => {
-        requestedShardsRef.current.delete(activeCategory);
-      });
+    const candidateCategories = Array.from(
+      new Set([selectedCategory, visibleCategory]),
+    );
+
+    for (const categoryId of candidateCategories) {
+      if (
+        isBuiltInCategoryId(categoryId) &&
+        !isEmojiCategoryLoaded(categoryId) &&
+        !requestedShardsRef.current.has(categoryId)
+      ) {
+        requestedShardsRef.current.add(categoryId);
+        loadEmojiCategoryShard(categoryId).catch(() => {
+          requestedShardsRef.current.delete(categoryId);
+        });
+      }
     }
 
-    // Default activeCategory is often 'recent', which has no shard. If the
+    // Default selectedCategory is often 'recent', which has no shard. If the
     // store is still empty we kick off 'smileys' so the picker has something
     // to show as the user opens it.
     if (
-      !isBuiltInCategoryId(activeCategory) &&
+      !candidateCategories.some(isBuiltInCategoryId) &&
       !isEmojiCategoryLoaded('smileys') &&
       !requestedShardsRef.current.has('smileys')
     ) {
@@ -540,7 +600,12 @@ export function useEmojiPickerState({
         requestedShardsRef.current.delete('smileys');
       });
     }
-  }, [activeCategory, emojiDataSnapshot.version, loadCategoryShards]);
+  }, [
+    emojiDataSnapshot.version,
+    loadCategoryShards,
+    selectedCategory,
+    visibleCategory,
+  ]);
 
   useEffect(() => {
     if (
@@ -619,17 +684,19 @@ export function useEmojiPickerState({
         readStoredSkinTone(skinToneStorageKey, defaultSkinTone),
       );
     }
-  }, [
-    defaultSkinTone,
-    isSkinToneControlled,
-    skinToneStorageKey,
-  ]);
+  }, [defaultSkinTone, isSkinToneControlled, skinToneStorageKey]);
 
   useEffect(() => {
-    if (!isActiveCategoryControlled) {
-      setUncontrolledActiveCategory(resolvedDefaultActiveCategory);
+    if (!isSelectedCategoryControlled) {
+      setUncontrolledSelectedCategory(resolvedDefaultActiveCategory);
     }
-  }, [isActiveCategoryControlled, resolvedDefaultActiveCategory]);
+  }, [isSelectedCategoryControlled, resolvedDefaultActiveCategory]);
+
+  useEffect(() => {
+    if (!isVisibleCategoryControlled) {
+      setUncontrolledVisibleCategory(resolvedDefaultVisibleCategory);
+    }
+  }, [isVisibleCategoryControlled, resolvedDefaultVisibleCategory]);
 
   // When the caller provides no spriteSheet and no explicit asset source, fall
   // back to native OS emoji so <EmojiPicker /> works with zero config.
@@ -640,17 +707,20 @@ export function useEmojiPickerState({
       ? DEFAULT_NATIVE_SOURCE
       : undefined;
 
-  const resolvedGridAssetSource = gridAssetSource ?? assetSource ?? zeroConfigSource;
+  const resolvedGridAssetSource =
+    gridAssetSource ?? assetSource ?? zeroConfigSource;
   const resolvedPreviewAssetSource =
-    previewAssetSource ?? assetSource ?? zeroConfigSource ?? resolvedGridAssetSource;
+    previewAssetSource ??
+    assetSource ??
+    zeroConfigSource ??
+    resolvedGridAssetSource;
   const shouldRetainSpriteSheet =
     zeroConfigSource === undefined &&
     (sourceCanUseSpriteSheet(resolvedGridAssetSource) ||
       sourceCanUseSpriteSheet(resolvedPreviewAssetSource));
   const shouldWarmSpriteSheetOnMount =
     resolvedSpriteSheet.cache.preload !== 'manual' &&
-    (resolvedSpriteSheet.cache.enabled ||
-      shouldRetainSpriteSheet);
+    (resolvedSpriteSheet.cache.enabled || shouldRetainSpriteSheet);
 
   useEffect(() => {
     let cancelled = false;
@@ -663,23 +733,26 @@ export function useEmojiPickerState({
       return;
     }
 
-    warmEmojiSpriteSheet(resolvedSpriteSheet)
-      .then((asset) => {
-        if (cancelled || !asset.cached) {
-          return;
-        }
+    const cancelIdleWarmup = scheduleIdleTask(() => {
+      warmEmojiSpriteSheet(resolvedSpriteSheet)
+        .then((asset) => {
+          if (cancelled || !asset.cached) {
+            return;
+          }
 
-        setRuntimeSpriteAsset({
-          key: spriteSheetCacheKey,
-          url: asset.url,
+          setRuntimeSpriteAsset({
+            key: spriteSheetCacheKey,
+            url: asset.url,
+          });
+        })
+        .catch(() => {
+          return;
         });
-      })
-      .catch(() => {
-        return;
-      });
+    });
 
     return () => {
       cancelled = true;
+      cancelIdleWarmup();
     };
   }, [resolvedSpriteSheet, shouldWarmSpriteSheetOnMount, spriteSheetCacheKey]);
 
@@ -692,9 +765,7 @@ export function useEmojiPickerState({
   );
   const retainedSpriteSheetUrl = useMemo(
     () =>
-      shouldRetainSpriteSheet
-        ? resolveSpriteSheetUrl(activeSpriteSheet)
-        : null,
+      shouldRetainSpriteSheet ? resolveSpriteSheetUrl(activeSpriteSheet) : null,
     [activeSpriteSheet, shouldRetainSpriteSheet],
   );
   const recentSectionEmojis = useMemo(() => {
@@ -757,9 +828,7 @@ export function useEmojiPickerState({
       }
 
       nextSections.push({
-        order:
-          categoryConfig?.order ??
-          options.fallbackOrder,
+        order: categoryConfig?.order ?? options.fallbackOrder,
         index: nextSections.length,
         section: {
           id: options.categoryId,
@@ -825,9 +894,7 @@ export function useEmojiPickerState({
       // Clicking it triggers the per-category shard fetch via the active
       // category effect.
       const keepEmptyPlaceholder =
-        loadCategoryShards &&
-        isBuiltInCategoryId(categoryId) &&
-        !isSearching;
+        loadCategoryShards && isBuiltInCategoryId(categoryId) && !isSearching;
 
       if (visibleEmoji.length === 0 && !keepEmptyPlaceholder) {
         continue;
@@ -904,8 +971,7 @@ export function useEmojiPickerState({
     resolvedRecentConfig.showWhenEmpty,
   ]);
   const categoryLabelById = useMemo(
-    () =>
-      new Map(sections.map((section) => [section.id, section.label])),
+    () => new Map(sections.map((section) => [section.id, section.label])),
     [sections],
   );
   const resolveEmojiHoverColor = useCallback(
@@ -929,19 +995,25 @@ export function useEmojiPickerState({
     [colors],
   );
 
-  const setActiveCategory = useCallback(
+  const setSelectedCategory = useCallback(
     (nextCategory: EmojiCategoryId) => {
-      if (activeCategory === nextCategory) {
+      if (selectedCategory === nextCategory) {
         return;
       }
 
-      if (!isActiveCategoryControlled) {
-        setUncontrolledActiveCategory(nextCategory);
+      if (!isSelectedCategoryControlled) {
+        setUncontrolledSelectedCategory(nextCategory);
       }
 
+      onSelectedCategoryChange?.(nextCategory);
       onActiveCategoryChange?.(nextCategory);
     },
-    [activeCategory, isActiveCategoryControlled, onActiveCategoryChange],
+    [
+      isSelectedCategoryControlled,
+      onActiveCategoryChange,
+      onSelectedCategoryChange,
+      selectedCategory,
+    ],
   );
 
   useEffect(() => {
@@ -950,11 +1022,40 @@ export function useEmojiPickerState({
     const firstSection = sections[0];
     if (
       firstSection &&
-      !sections.some((section) => section.id === activeCategory)
+      !sections.some((section) => section.id === selectedCategory)
     ) {
-      setActiveCategory(firstSection.id);
+      setSelectedCategory(firstSection.id);
     }
-  }, [activeCategory, sections, setActiveCategory]);
+  }, [sections, selectedCategory, setSelectedCategory]);
+
+  const setVisibleCategory = useCallback(
+    (nextCategory: EmojiCategoryId) => {
+      if (visibleCategory === nextCategory) {
+        return;
+      }
+
+      if (!isVisibleCategoryControlled) {
+        setUncontrolledVisibleCategory(nextCategory);
+      }
+
+      onVisibleCategoryChange?.(nextCategory);
+    },
+    [isVisibleCategoryControlled, onVisibleCategoryChange, visibleCategory],
+  );
+
+  useEffect(() => {
+    if (sections.length === 0) return;
+
+    const firstSection = sections[0];
+    if (
+      firstSection &&
+      !sections.some((section) => section.id === visibleCategory)
+    ) {
+      setVisibleCategory(firstSection.id);
+    }
+  }, [sections, setVisibleCategory, visibleCategory]);
+
+  const setActiveCategory = setSelectedCategory;
 
   const setSearchQuery = useCallback(
     (nextSearchQuery: string) => {
@@ -979,9 +1080,24 @@ export function useEmojiPickerState({
 
   const handleActiveCategoryChange = useCallback(
     (id: EmojiCategoryId) => {
-      setActiveCategory(id);
+      setVisibleCategory(id);
     },
-    [setActiveCategory],
+    [setVisibleCategory],
+  );
+
+  const setOpen = useCallback(
+    (nextOpen: boolean) => {
+      if (open === nextOpen) {
+        return;
+      }
+
+      if (!isOpenControlled) {
+        setUncontrolledOpen(nextOpen);
+      }
+
+      onOpenChange?.(nextOpen);
+    },
+    [isOpenControlled, onOpenChange, open],
   );
 
   const setActiveEmojiId = useCallback(
@@ -998,7 +1114,9 @@ export function useEmojiPickerState({
   const flushHoveredEmoji = useCallback(
     (nextEmoji: EmojiRenderable | null) => {
       startTransition(() => {
-        setHoveredEmoji((current) => (current === nextEmoji ? current : nextEmoji));
+        setHoveredEmoji((current) =>
+          current === nextEmoji ? current : nextEmoji,
+        );
         setActiveEmojiId(nextEmoji?.id ?? null);
       });
     },
@@ -1053,22 +1171,33 @@ export function useEmojiPickerState({
       onEmojiSelect?.(selection);
 
       if (resolvedRecentConfig.enabled) {
-        setRecentEmoji(
-          resolvedRecentStore.push(
-            {
-              id: emoji.id,
-              custom: emoji.kind === 'custom',
-              skinTone,
-            },
-            resolvedRecentConfig.limit,
-          ),
-        );
+        const recentEntry = {
+          id: emoji.id,
+          custom: emoji.kind === 'custom',
+          skinTone,
+        };
+        const nextRecentEmoji = isRecentEmojiControlled
+          ? pushRecentEmojiRecord(
+              recentEmoji,
+              recentEntry,
+              resolvedRecentConfig.limit,
+            )
+          : resolvedRecentStore.push(recentEntry, resolvedRecentConfig.limit);
+
+        if (!isRecentEmojiControlled) {
+          setUncontrolledRecentEmoji(nextRecentEmoji);
+        }
+
+        onRecentEmojiChange?.(nextRecentEmoji);
       }
     },
     [
       categoryLabelById,
+      isRecentEmojiControlled,
       localeDefinition,
       onEmojiSelect,
+      onRecentEmojiChange,
+      recentEmoji,
       resolvedRecentConfig.enabled,
       resolvedRecentConfig.limit,
       resolvedRecentStore,
@@ -1077,10 +1206,15 @@ export function useEmojiPickerState({
     ],
   );
 
-  const handleCategoryClick = useCallback((categoryId: EmojiCategoryId) => {
-    setActiveCategory(categoryId);
-    gridRef.current?.scrollToCategory(categoryId);
-  }, [setActiveCategory]);
+  const handleCategoryClick = useCallback(
+    (categoryId: EmojiCategoryId) => {
+      setSelectedCategory(categoryId);
+      gridRef.current?.scrollToCategory(categoryId, {
+        behavior: categoryScrollBehavior,
+      });
+    },
+    [categoryScrollBehavior, setSelectedCategory],
+  );
 
   const firstVisibleEmoji =
     sections.find((section) => section.emojis.length > 0)?.emojis[0] ?? null;
@@ -1103,8 +1237,7 @@ export function useEmojiPickerState({
     activeEmojiFromId ??
     hoveredEmoji ??
     sections.find(
-      (section) =>
-        section.id === activeCategory && section.emojis.length > 0,
+      (section) => section.id === activeCategory && section.emojis.length > 0,
     )?.emojis[0] ??
     firstVisibleEmoji;
 
@@ -1116,6 +1249,10 @@ export function useEmojiPickerState({
 
   return {
     searchId,
+    open,
+    setOpen,
+    trapFocus,
+    closeOnEscape: shouldCloseOnEscape,
     searchQuery,
     setSearchQuery,
     searchConfig,
@@ -1123,6 +1260,10 @@ export function useEmojiPickerState({
     setSkinTone,
     activeCategory,
     setActiveCategory,
+    selectedCategory,
+    setSelectedCategory,
+    visibleCategory,
+    setVisibleCategory,
     activeEmojiId,
     setActiveEmojiId,
     hoveredEmoji,
@@ -1161,7 +1302,10 @@ export function useEmojiPickerState({
     resolveEmojiHoverColor,
     resolveCategoryHoverColor,
     autoScrollCategoriesOnHover,
+    trackHoverActive: shouldTrackHoverActive,
+    categoryScrollBehavior,
     loading: loading || !ready,
     recentStore: resolvedRecentStore,
+    recentEmoji,
   };
 }

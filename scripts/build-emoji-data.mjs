@@ -8,7 +8,9 @@ const EN_BOOTSTRAP_OUTPUT_PATH = resolve(
 );
 const LOCALE_OUTPUT_PATH = resolve('src/core/generated/emoji-locales.json');
 const META_OUTPUT_PATH = resolve('src/core/generated/emoji-meta.json');
-const CLDR_BASE_PATH = resolve('node_modules/cldr-annotations-full/annotations');
+const CLDR_BASE_PATH = resolve(
+  'node_modules/cldr-annotations-full/annotations',
+);
 const PACKAGE_PATH = resolve('node_modules/emoji-datasource/package.json');
 const SUPPORTED_LOCALES = ['de', 'en', 'es', 'fr', 'ja', 'pt', 'ru', 'uk'];
 
@@ -102,7 +104,9 @@ function normalizeKeywords(keywords) {
 }
 
 function parseRegionalIndicatorCode(unified) {
-  const parts = unified.split('-').map((segment) => Number.parseInt(segment, 16));
+  const parts = unified
+    .split('-')
+    .map((segment) => Number.parseInt(segment, 16));
 
   if (parts.length !== 2) {
     return null;
@@ -208,9 +212,7 @@ function createLocaleNameDelta(localeNames, baseNames) {
 
 function lookupAnnotation(annotations, native) {
   return (
-    annotations[native] ??
-    annotations[native.replace(/\uFE0F/g, '')] ??
-    null
+    annotations[native] ?? annotations[native.replace(/\uFE0F/g, '')] ?? null
   );
 }
 
@@ -267,7 +269,9 @@ const sheetCoordinates = emojiData.flatMap((emoji) => [
 ]);
 
 const gridSize =
-  Math.max(...sheetCoordinates.flat().filter((value) => Number.isFinite(value))) + 1;
+  Math.max(
+    ...sheetCoordinates.flat().filter((value) => Number.isFinite(value)),
+  ) + 1;
 
 const emojiMeta = {
   version: packageJson.version,
@@ -277,7 +281,11 @@ const emojiMeta = {
 const localeData = Object.fromEntries(
   await Promise.all(
     SUPPORTED_LOCALES.map(async (locale) => {
-      const annotationPath = resolve(CLDR_BASE_PATH, locale, 'annotations.json');
+      const annotationPath = resolve(
+        CLDR_BASE_PATH,
+        locale,
+        'annotations.json',
+      );
       const annotationJson = JSON.parse(await readFile(annotationPath, 'utf8'));
       const annotations = annotationJson.annotations.annotations;
 
@@ -368,17 +376,16 @@ await writeFile(
   LOCALE_OUTPUT_PATH,
   JSON.stringify(
     Object.fromEntries(
-      Object.entries(deltaLocaleData).map(([code, pack]) => [
-        code,
-        pack.names,
-      ]),
+      Object.entries(deltaLocaleData).map(([code, pack]) => [code, pack.names]),
     ),
   ),
 );
 await writeFile(META_OUTPUT_PATH, JSON.stringify(emojiMeta));
 
 for (const [locale, pack] of Object.entries(deltaLocaleData)) {
-  const perLocalePath = resolve(`src/core/generated/emoji-locale.${locale}.json`);
+  const perLocalePath = resolve(
+    `src/core/generated/emoji-locale.${locale}.json`,
+  );
   const perLocaleSearchPath = resolve(
     `src/core/generated/emoji-locale.${locale}.search.json`,
   );
@@ -386,12 +393,12 @@ for (const [locale, pack] of Object.entries(deltaLocaleData)) {
   await writeFile(perLocalePath, JSON.stringify(pack.names));
   await writeFile(perLocaleSearchPath, JSON.stringify(pack.keywords));
   console.log(`Generated '${locale}' locale pack to ${perLocalePath}`);
-  console.log(
-    `Generated '${locale}' search index to ${perLocaleSearchPath}`,
-  );
+  console.log(`Generated '${locale}' search index to ${perLocaleSearchPath}`);
 }
 
-for (const [vendor, missingEmojiIds] of Object.entries(vendorAvailabilityData)) {
+for (const [vendor, missingEmojiIds] of Object.entries(
+  vendorAvailabilityData,
+)) {
   const vendorAvailabilityPath = resolve(
     `src/core/generated/availability.${vendor}.json`,
   );

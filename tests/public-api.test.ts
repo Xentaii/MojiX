@@ -49,8 +49,10 @@ describe('public API surface', () => {
     expect(api.resolveEmojiSelection).toBeTypeOf('function');
     expect(api.createRecentEmojiStore).toBeTypeOf('function');
     expect(api.createSkinToneStore).toBeTypeOf('function');
+    expect(api.pushRecentEmojiRecord).toBeTypeOf('function');
     expect(api.useEmojiAssets).toBeTypeOf('function');
     expect(api.preloadEmojiPicker).toBeTypeOf('function');
+    expect(api.usePreloadMojiX).toBeTypeOf('function');
     expect(api.configureMojiXDataSource).toBeTypeOf('function');
     expect(api.clearPreparedEmojiDataCache).toBeTypeOf('function');
     expect(api.clearEmojiSpriteStyleCache).toBeTypeOf('function');
@@ -171,19 +173,7 @@ describe('public API surface', () => {
       categories: ['smileys'],
       subcategories: ['face-smiling'],
       skinTones: ['light'],
-      rows: [
-        [
-          '1f600',
-          '\u{1F600}',
-          ['grinning'],
-          [':D'],
-          0,
-          0,
-          32,
-          47,
-          null,
-        ],
-      ],
+      rows: [['1f600', '\u{1F600}', ['grinning'], [':D'], 0, 0, 32, 47, null]],
     });
 
     expect(emoji?.name).toBe('Grinning face');

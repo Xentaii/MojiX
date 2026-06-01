@@ -37,8 +37,7 @@ export function EmojiSprite({
   // Empty-string title/alt are treated as decorative; render no DOM
   // attribute so the closest ancestor's tooltip / a11y label can take over.
   const ariaLabelAttr = alt === '' ? undefined : (alt ?? emoji.name);
-  const spanTitle =
-    title === '' ? undefined : (title ?? alt ?? emoji.name);
+  const spanTitle = title === '' ? undefined : (title ?? alt ?? emoji.name);
 
   if (assetSource?.type === 'native') {
     const native =

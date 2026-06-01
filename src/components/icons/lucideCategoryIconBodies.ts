@@ -57,12 +57,9 @@ const registeredLucideCategoryIconBodies: LucideCategoryIconBodies = {
   },
 };
 
-export const LUCIDE_CATEGORY_ICON_BODIES =
-  registeredLucideCategoryIconBodies;
+export const LUCIDE_CATEGORY_ICON_BODIES = registeredLucideCategoryIconBodies;
 
-export function getLucideCategoryIconDefinition(
-  glyph: EmojiCategoryIconGlyph,
-) {
+export function getLucideCategoryIconDefinition(glyph: EmojiCategoryIconGlyph) {
   return registeredLucideCategoryIconBodies[glyph];
 }
 
