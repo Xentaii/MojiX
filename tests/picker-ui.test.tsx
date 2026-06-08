@@ -179,9 +179,9 @@ describe('picker UI theming hooks', () => {
     expect(initialPartyRenders).toBeGreaterThan(0);
     expect(initialRocketRenders).toBeGreaterThan(0);
 
-    fireEvent.mouseEnter(emojis[0]!);
+    fireEvent.mouseOver(emojis[0]!);
 
-    fireEvent.mouseEnter(emojis[1]!);
+    fireEvent.mouseOver(emojis[1]!);
 
     await new Promise((resolve) => setTimeout(resolve, 20));
 
@@ -223,7 +223,7 @@ describe('picker UI theming hooks', () => {
 
     expect(emojis).toHaveLength(3);
 
-    fireEvent.mouseEnter(emojis[0]!);
+    fireEvent.mouseOver(emojis[0]!);
 
     await waitFor(() => {
       expect(renderCounts.get('wave')).toBe(initialWaveRenders + 1);
@@ -232,7 +232,7 @@ describe('picker UI theming hooks', () => {
     expect(renderCounts.get('party')).toBe(initialPartyRenders);
     expect(renderCounts.get('rocket')).toBe(initialRocketRenders);
 
-    fireEvent.mouseEnter(emojis[1]!);
+    fireEvent.mouseOver(emojis[1]!);
 
     await waitFor(() => {
       expect(renderCounts.get('wave')).toBe(initialWaveRenders + 2);
@@ -265,7 +265,7 @@ describe('picker UI theming hooks', () => {
       return buttons;
     });
 
-    fireEvent.mouseEnter(grinningFaceButtons[0]!);
+    fireEvent.mouseOver(grinningFaceButtons[0]!);
 
     await new Promise((resolve) => setTimeout(resolve, 20));
 
@@ -297,7 +297,7 @@ describe('picker UI theming hooks', () => {
       return buttons;
     });
 
-    fireEvent.mouseEnter(grinningFaceButtons[0]!);
+    fireEvent.mouseOver(grinningFaceButtons[0]!);
 
     await waitFor(() => {
       expect(grinningFaceButtons[0]).toHaveAttribute('data-active', 'true');

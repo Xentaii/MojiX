@@ -4,6 +4,7 @@ import {
   memo,
   type FocusEvent as ReactFocusEvent,
   type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
   Suspense,
   useCallback,
@@ -34,6 +35,7 @@ import { EmojiSprite } from './EmojiSprite';
 import {
   getEmojiGridPageOffset,
   getEmojiGridTabStopByOffset,
+  getEmojiGridTabStopFromTarget,
 } from './gridNavigation';
 import { formatEmojiName, getSlotClassName, getSlotStyle } from './utils';
 import type { EmojiGridProps } from './VirtualizedEmojiGrid';
@@ -243,17 +245,6 @@ interface EmojiCellProps {
   assetSource?: EmojiAssetSource;
   localeDefinition: EmojiLocaleDefinition;
   renderEmoji?: (emoji: EmojiRenderable, state: EmojiRenderState) => ReactNode;
-  onEmojiSelect: (emoji: EmojiRenderable) => void;
-  onEmojiHover: (
-    emoji: EmojiRenderable | null,
-    target?: TabStop,
-    reason?: 'pointer' | 'focus',
-  ) => void;
-  onEmojiFocus: (
-    event: ReactFocusEvent<HTMLButtonElement>,
-    emoji: EmojiRenderable,
-    target: TabStop,
-  ) => void;
   slotOptions: {
     unstyled?: boolean;
     classNames?: EmojiPickerClassNames;
@@ -279,9 +270,6 @@ function EmojiCell({
   assetSource,
   localeDefinition,
   renderEmoji,
-  onEmojiSelect,
-  onEmojiHover,
-  onEmojiFocus,
   slotOptions,
   resolveEmojiHoverColor,
 }: EmojiCellProps) {
@@ -316,43 +304,6 @@ function EmojiCell({
       data-active={active ? 'true' : undefined}
       data-selected={selected ? 'true' : undefined}
       tabIndex={initiallyFocusable ? 0 : -1}
-      onClick={() => onEmojiSelect(emoji)}
-      onMouseEnter={() =>
-        onEmojiHover(
-          emoji,
-          {
-            sectionIndex,
-            emojiIndex,
-          },
-          'pointer',
-        )
-      }
-      onMouseLeave={() =>
-        onEmojiHover(
-          null,
-          {
-            sectionIndex,
-            emojiIndex,
-          },
-          'pointer',
-        )
-      }
-      onFocus={(event) => {
-        onEmojiFocus(event, emoji, {
-          sectionIndex,
-          emojiIndex,
-        });
-      }}
-      onBlur={() =>
-        onEmojiHover(
-          null,
-          {
-            sectionIndex,
-            emojiIndex,
-          },
-          'focus',
-        )
-      }
       title={displayName}
       aria-label={displayName}
     >
@@ -388,9 +339,6 @@ const MemoEmojiCell = memo(
     previousProps.assetSource === nextProps.assetSource &&
     previousProps.localeDefinition === nextProps.localeDefinition &&
     previousProps.renderEmoji === nextProps.renderEmoji &&
-    previousProps.onEmojiSelect === nextProps.onEmojiSelect &&
-    previousProps.onEmojiHover === nextProps.onEmojiHover &&
-    previousProps.onEmojiFocus === nextProps.onEmojiFocus &&
     previousProps.slotOptions === nextProps.slotOptions &&
     previousProps.resolveEmojiHoverColor === nextProps.resolveEmojiHoverColor,
 );
@@ -427,6 +375,7 @@ function NaiveEmojiGrid({
     id: EmojiCategoryId;
     top: number;
   } | null>(null);
+  const lastPointerHoverCellRef = useRef<string | null>(null);
   const slotOptions = useMemo(
     () => ({ unstyled, classNames, styles }),
     [classNames, styles, unstyled],
@@ -758,11 +707,7 @@ function NaiveEmojiGrid({
   }
 
   const handleEmojiFocus = useCallback(
-    (
-      _event: ReactFocusEvent<HTMLButtonElement>,
-      emoji: EmojiRenderable,
-      target: TabStop,
-    ) => {
+    (emoji: EmojiRenderable, target: TabStop) => {
       setActiveCellTarget(target);
       setTabStop((current) =>
         isSameTabStop(current, target) ? current : target,
@@ -814,12 +759,95 @@ function NaiveEmojiGrid({
     [onEmojiHover, setActiveCellTarget, trackHoverActive],
   );
 
+  const getEmojiForTarget = useCallback(
+    (target: EventTarget | null) => {
+      const tabStopTarget = getEmojiGridTabStopFromTarget(target);
+
+      if (!tabStopTarget) {
+        return null;
+      }
+
+      const emoji =
+        sections[tabStopTarget.sectionIndex]?.emojis[tabStopTarget.emojiIndex];
+
+      if (!emoji) {
+        return null;
+      }
+
+      return { emoji, target: tabStopTarget };
+    },
+    [sections],
+  );
+
+  const handleGridClick = useCallback(
+    (event: ReactMouseEvent) => {
+      const hit = getEmojiForTarget(event.target);
+
+      if (hit) {
+        onEmojiSelect(hit.emoji);
+      }
+    },
+    [getEmojiForTarget, onEmojiSelect],
+  );
+
+  const handleGridPointerOver = useCallback(
+    (event: ReactMouseEvent) => {
+      const hit = getEmojiForTarget(event.target);
+      const key = hit
+        ? `${hit.target.sectionIndex}:${hit.target.emojiIndex}`
+        : null;
+
+      if (key === lastPointerHoverCellRef.current) {
+        return;
+      }
+
+      lastPointerHoverCellRef.current = key;
+
+      if (hit) {
+        handleEmojiHover(hit.emoji, hit.target, 'pointer');
+      } else {
+        handleEmojiHover(null);
+      }
+    },
+    [getEmojiForTarget, handleEmojiHover],
+  );
+
+  const handleGridPointerLeave = useCallback(() => {
+    lastPointerHoverCellRef.current = null;
+    handleEmojiHover(null);
+  }, [handleEmojiHover]);
+
+  const handleGridFocus = useCallback(
+    (event: ReactFocusEvent<HTMLDivElement>) => {
+      const hit = getEmojiForTarget(event.target);
+
+      if (hit) {
+        handleEmojiFocus(hit.emoji, hit.target);
+      }
+    },
+    [getEmojiForTarget, handleEmojiFocus],
+  );
+
+  const handleGridBlur = useCallback(
+    (event: ReactFocusEvent<HTMLDivElement>) => {
+      const tabStopTarget = getEmojiGridTabStopFromTarget(event.target);
+      handleEmojiHover(null, tabStopTarget ?? undefined, 'focus');
+    },
+    [handleEmojiHover],
+  );
+
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: this is an event-delegation container, not an interactive widget — the focusable controls are the <button role="gridcell"> cells; the container only forwards their bubbled pointer/focus events to avoid per-cell listeners.
     <div
       className={getSlotClassName('content', slotOptions)}
       style={getSlotStyle('content', slotOptions)}
       ref={scrollRef}
       onKeyDown={handleKeyDown}
+      onClick={handleGridClick}
+      onMouseOver={handleGridPointerOver}
+      onMouseLeave={handleGridPointerLeave}
+      onFocus={handleGridFocus}
+      onBlur={handleGridBlur}
       data-mx-slot="content"
     >
       {!hasRenderableEmoji && !hideEmptyState && (
@@ -912,9 +940,6 @@ function NaiveEmojiGrid({
                   assetSource={assetSource}
                   localeDefinition={localeDefinition}
                   renderEmoji={renderEmoji}
-                  onEmojiSelect={onEmojiSelect}
-                  onEmojiHover={handleEmojiHover}
-                  onEmojiFocus={handleEmojiFocus}
                   slotOptions={slotOptions}
                   resolveEmojiHoverColor={resolveEmojiHoverColor}
                 />

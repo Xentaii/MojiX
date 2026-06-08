@@ -12,6 +12,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   (now Node 20/22). Node 18 reached end-of-life in April 2025 and the Vite 8
   build toolchain requires Node 20.19+. `engines.node` is now `>=20.19`.
 
+### Performance
+
+- Memoized resolved sprite-sheet configs by input identity, so the per-cell
+  resolve/style/url path no longer reallocates a defaulted config on every
+  render. This cuts allocation churn while scrolling and with several pickers
+  mounted.
+- The emoji grid now sets `content-visibility: auto` with a remembered
+  `contain-intrinsic-size` on each category grid, letting the browser skip
+  layout/paint for grids scrolled out of view (complements the JS row
+  virtualization; the sticky section header stays outside the contained
+  subtree).
+- Reworked grid interaction to event delegation on the scroll container
+  instead of attaching click/hover/focus/blur listeners to every emoji
+  button. Cells are now purely presentational, lowering per-cell mount cost
+  and memory for large categories and multiple pickers.
+
 ## [1.0.0-beta.3] - 2026-06-08
 
 > Beta release. No breaking changes relative to `1.0.0-beta.2`; the public API

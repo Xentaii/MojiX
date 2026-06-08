@@ -5,6 +5,35 @@ export interface EmojiGridTabStop {
   emojiIndex: number;
 }
 
+/**
+ * Resolves the grid tab stop for the emoji cell containing an event target, or
+ * `null` when the event did not originate inside a cell. Used by the grids to
+ * delegate click/hover/focus handling to the scroll container instead of
+ * attaching listeners to every cell button.
+ */
+export function getEmojiGridTabStopFromTarget(
+  target: EventTarget | null,
+): EmojiGridTabStop | null {
+  if (!(target instanceof Element)) {
+    return null;
+  }
+
+  const cell = target.closest<HTMLElement>('[data-mx-slot="emoji"]');
+
+  if (!cell) {
+    return null;
+  }
+
+  const sectionIndex = Number(cell.dataset.section);
+  const emojiIndex = Number(cell.dataset.index);
+
+  if (!Number.isInteger(sectionIndex) || !Number.isInteger(emojiIndex)) {
+    return null;
+  }
+
+  return { sectionIndex, emojiIndex } satisfies EmojiGridTabStop;
+}
+
 export function getEmojiGridTabStopByOffset(
   sections: EmojiSection[],
   current: EmojiGridTabStop,
