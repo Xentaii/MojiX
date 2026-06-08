@@ -6,6 +6,40 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [1.0.0-beta.3] - 2026-06-08
+
+> Beta release. No breaking changes relative to `1.0.0-beta.2`; the public API
+> surface is unchanged. This release focuses on tooling, quality gates,
+> accessibility, and documentation ahead of promoting the 1.0 line.
+
+### Added
+
+- Biome configuration (`biome.json`) as the single formatter/linter, applied
+  across the codebase, with `lint`/`lint:fix`/`format` scripts and a CI step.
+- v8 coverage reporting with thresholds, run in CI via `test:coverage`.
+- CI compatibility matrix covering Node 18/20/22 against React 18/19 for
+  library typecheck and unit tests.
+- `publint --strict` as a release gate, with `attw` kept as informational
+  output for the known nodenext type-resolution debt.
+- Keyboard grid-navigation helpers and an idle-scheduling utility backing the
+  picker integration ergonomics work.
+- Integration examples and performance-recipes guides, a React scenarios
+  example set, and a `PRODUCTION_READINESS.md` tracker.
+
+### Changed
+
+- Picker integration ergonomics were improved for embedding in host layouts.
+- Accessibility and integration documentation was polished and expanded.
+
+### Fixed
+
+- Resolved a React 18 ref-type incompatibility in `EmojiGrid` and
+  `VirtualizedEmojiGrid`.
+- `EmojiSidebar` now uses `role="toolbar"` so its `aria-label` is exposed to
+  assistive technology.
+- Raised the Testing Library `asyncUtilTimeout` to stabilise picker tests on
+  CI.
+
 ## [1.0.0-beta.2] - 2026-05-10
 
 ### Added
