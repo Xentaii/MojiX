@@ -46,9 +46,7 @@ export interface SlotStyleOptions {
   styles?: EmojiPickerStyles;
 }
 
-export function createClassName(
-  ...values: Array<string | undefined | false>
-) {
+export function createClassName(...values: Array<string | undefined | false>) {
   return values.filter(Boolean).join(' ');
 }
 

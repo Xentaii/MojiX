@@ -98,12 +98,14 @@ function getOrCreateWorker(): Worker | null {
     const objectUrl = URL.createObjectURL(blob);
     const worker = new Worker(objectUrl);
 
-    worker.onmessage = (event: MessageEvent<{
-      id: number;
-      ok: boolean;
-      result?: string[][];
-      error?: string;
-    }>) => {
+    worker.onmessage = (
+      event: MessageEvent<{
+        id: number;
+        ok: boolean;
+        result?: string[][];
+        error?: string;
+      }>,
+    ) => {
       const data = event.data;
       const pending = pendingRequests.get(data.id);
 

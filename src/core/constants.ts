@@ -1,11 +1,11 @@
 import emojiMeta from './generated/emoji-meta.json';
 import type {
   EmojiCategoryIconGlyph,
-  EmojiCategoryMeta,
   EmojiCategoryIconPreset,
+  EmojiCategoryMeta,
   EmojiPickerLabels,
-  EmojiSpriteSheetCacheMode,
   EmojiSkinTone,
+  EmojiSpriteSheetCacheMode,
   EmojiSystemCategoryId,
 } from './types';
 
@@ -23,8 +23,7 @@ export const DEFAULT_COLUMNS = 8;
 export const DEFAULT_RECENT_LIMIT = 28;
 export const DEFAULT_RECENT_STORAGE_KEY = 'mojix:recent';
 export const DEFAULT_SKIN_TONE_STORAGE_KEY = 'mojix:skin-tone';
-export const DEFAULT_CATEGORY_ICON_STYLE: EmojiCategoryIconPreset =
-  'outline';
+export const DEFAULT_CATEGORY_ICON_STYLE: EmojiCategoryIconPreset = 'outline';
 
 export const CATEGORY_ICON_GLYPHS = [
   'recent',
@@ -193,9 +192,7 @@ export function humanizeCategoryId(categoryId: string) {
     return CATEGORY_META.custom.label;
   }
 
-  return normalized.replace(/\b([a-z])/g, (letter) =>
-    letter.toUpperCase(),
-  );
+  return normalized.replace(/\b([a-z])/g, (letter) => letter.toUpperCase());
 }
 
 export const DEFAULT_LABELS: EmojiPickerLabels = {

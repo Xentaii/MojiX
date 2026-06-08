@@ -1,16 +1,9 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   computeEmojiSearchTokensOnWorker,
   disposeEmojiPreparationWorker,
-  isEmojiPreparationWorkerAvailable,
   type EmojiSearchTokensInput,
+  isEmojiPreparationWorkerAvailable,
 } from '../src/core/data-prepare-worker';
 
 const SAMPLE_INPUTS: EmojiSearchTokensInput[] = [
@@ -134,10 +127,7 @@ describe('computeEmojiSearchTokensOnWorker', () => {
 
     expect(MockWorker.lastInstance).not.toBeNull();
     expect(MockWorker.lastInstance?.posted).toHaveLength(1);
-    expect(tokens).toEqual([
-      ['worker:grinning face'],
-      ['worker:waving hand'],
-    ]);
+    expect(tokens).toEqual([['worker:grinning face'], ['worker:waving hand']]);
   });
 
   it('reuses the same Worker instance across calls (singleton)', async () => {
@@ -245,9 +235,7 @@ describe('computeEmojiSearchTokensOnWorker', () => {
               ...aliases.map((a) => `:${a}:`),
               ...input.emoticons,
             ]
-              .filter(
-                (v): v is string => typeof v === 'string' && v.length > 0,
-              )
+              .filter((v): v is string => typeof v === 'string' && v.length > 0)
               .map((v) =>
                 v
                   .trim()

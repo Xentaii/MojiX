@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { EmojiPicker, MojiX } from '../src/index';
 
 const hiddenSystemCategories = {

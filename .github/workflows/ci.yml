@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -19,14 +19,49 @@ jobs:
 
       - run: npm ci
 
+      - run: npm run lint
+
       - run: npx playwright install --with-deps chromium
 
       - run: npm run typecheck
 
-      - run: npm run test
+      - run: npm run test:coverage
 
       - run: npm run test:e2e
 
       - run: npm run build:package
 
       - run: npm run pack:check
+
+      - run: npm run publint
+
+      # Informational: surfaces type-resolution gaps under node16/nodenext
+      # (the package is bundler-first / ESM-only). Not gating yet.
+      - run: npm run attw
+        continue-on-error: true
+
+  compat:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['18', '20', '22']
+        react: ['18', '19']
+    name: compat (node ${{ matrix.node-version }}, react ${{ matrix.react }})
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Pin React ${{ matrix.react }}
+        if: matrix.react == '18'
+        run: npm install --no-save react@^18 react-dom@^18 @types/react@^18 @types/react-dom@^18
+
+      - run: npm run typecheck:lib
+
+      - run: npm run test:unit

@@ -1,6 +1,6 @@
+import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, normalize } from 'node:path';
-import { execSync } from 'node:child_process';
 
 const packageRoot = process.cwd();
 const packageJson = JSON.parse(
@@ -36,9 +36,7 @@ function ensureExportTargetsExist() {
     const absoluteTarget = join(packageRoot, normalizedTarget);
 
     if (!existsSync(absoluteTarget)) {
-      throw new Error(
-        `Export target is missing on disk: ${normalizedTarget}`,
-      );
+      throw new Error(`Export target is missing on disk: ${normalizedTarget}`);
     }
   }
 }
@@ -132,9 +130,7 @@ function ensurePrecompressedAssets(packEntries) {
       const variant = `${original}${suffix}`;
 
       if (!files.has(variant)) {
-        throw new Error(
-          `Tarball is missing pre-compressed asset: ${variant}`,
-        );
+        throw new Error(`Tarball is missing pre-compressed asset: ${variant}`);
       }
     }
   }

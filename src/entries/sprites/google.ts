@@ -1,5 +1,5 @@
-import { createEmojiCdnSpriteSheet } from '../../core/sprites';
 import availability from '../../core/generated/availability.google.json';
+import { createEmojiCdnSpriteSheet } from '../../core/sprites';
 
 const googleSprites = createEmojiCdnSpriteSheet({
   vendor: 'google',

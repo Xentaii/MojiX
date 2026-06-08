@@ -8,8 +8,7 @@ import { createChromeLocaleDefinition } from './createChromeLocale';
 export const portugueseLabels: EmojiPickerLabels = {
   searchPlaceholder: 'Pesquisar emoji, alias ou emoticons',
   noResultsTitle: 'Nada encontrado',
-  noResultsBody:
-    'Tente uma palavra, um alias ou um emoticon mais curto.',
+  noResultsBody: 'Tente uma palavra, um alias ou um emoticon mais curto.',
   recents: 'Recentes',
   custom: 'Personalizados',
   categoryNavigation: 'Emoji categories',

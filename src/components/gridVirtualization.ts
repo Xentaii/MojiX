@@ -82,10 +82,7 @@ export function computeAdaptiveOverscanRows(options: {
   return Math.min(ADAPTIVE_OVERSCAN_MAX_ROWS, Math.max(base, adaptive));
 }
 
-export function getEmojiGridRowCount(
-  emojiCount: number,
-  columns: number,
-) {
+export function getEmojiGridRowCount(emojiCount: number, columns: number) {
   if (emojiCount <= 0 || columns <= 0) {
     return 0;
   }
@@ -128,7 +125,9 @@ export function estimateEmojiGridRowHeight(options: {
   return estimatedCellSize;
 }
 
-export function findEmojiGridActiveSectionId<TSectionId extends string>(options: {
+export function findEmojiGridActiveSectionId<
+  TSectionId extends string,
+>(options: {
   sections: Array<{ id: TSectionId; sectionTop: number }>;
   thresholdTop: number;
   fallbackId: TSectionId;
@@ -222,10 +221,7 @@ export function computeEmojiGridVirtualWindow(options: {
     } satisfies EmojiGridVirtualWindow;
   }
 
-  const startRow = Math.max(
-    0,
-    Math.floor(Math.max(0, visibleTop) / rowStride),
-  );
+  const startRow = Math.max(0, Math.floor(Math.max(0, visibleTop) / rowStride));
   const endRow = Math.min(
     rowCount - 1,
     Math.ceil(Math.max(0, visibleBottom) / rowStride) - 1,

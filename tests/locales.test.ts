@@ -5,13 +5,13 @@ import frLocale from '../src/entries/locales/fr';
 import jaLocale from '../src/entries/locales/ja';
 import ptLocale from '../src/entries/locales/pt';
 import ukLocale from '../src/entries/locales/uk';
+import type { EmojiRenderable } from '../src/index';
 import {
   emojiPickerLocales,
   getLocalizedEmojiName,
   registerEmojiLocalePack,
   resolveLocaleDefinition,
 } from '../src/index';
-import type { EmojiRenderable } from '../src/index';
 
 describe('expanded locales', () => {
   it('ships additional chrome locales out of the box', () => {

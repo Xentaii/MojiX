@@ -14,10 +14,7 @@ interface PreparedEmojiDataCacheRecord {
 const pendingPreparedCacheDbs = new Map<string, Promise<IDBDatabase | null>>();
 
 function canUsePreparedDataCache() {
-  return (
-    typeof indexedDB !== 'undefined' &&
-    typeof window !== 'undefined'
-  );
+  return typeof indexedDB !== 'undefined' && typeof window !== 'undefined';
 }
 
 function openPreparedDataDb(cacheName: string) {
@@ -60,10 +57,7 @@ function openPreparedDataDb(cacheName: string) {
   return dbPromise;
 }
 
-function readPreparedDataRecord(
-  db: IDBDatabase,
-  key: string,
-) {
+function readPreparedDataRecord(db: IDBDatabase, key: string) {
   return new Promise<PreparedEmojiDataCacheRecord | null>((resolve) => {
     const transaction = db.transaction(PREPARED_EMOJI_STORE, 'readonly');
     const store = transaction.objectStore(PREPARED_EMOJI_STORE);
@@ -145,9 +139,9 @@ export async function savePreparedEmojiDataToCache(options: {
   });
 }
 
-export async function clearPreparedEmojiDataCache(options: {
-  cacheName?: string;
-} = {}) {
+export async function clearPreparedEmojiDataCache(
+  options: { cacheName?: string } = {},
+) {
   const db = await openPreparedDataDb(
     options.cacheName ?? DEFAULT_PREPARED_DATA_CACHE_NAME,
   );

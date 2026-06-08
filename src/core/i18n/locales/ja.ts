@@ -8,8 +8,7 @@ import { createChromeLocaleDefinition } from './createChromeLocale';
 export const japaneseLabels: EmojiPickerLabels = {
   searchPlaceholder: '絵文字、エイリアス、顔文字を検索',
   noResultsTitle: '見つかりませんでした',
-  noResultsBody:
-    'もっと短い単語、エイリアス、または顔文字で試してください。',
+  noResultsBody: 'もっと短い単語、エイリアス、または顔文字で試してください。',
   recents: '最近使ったもの',
   custom: 'カスタム',
   categoryNavigation: 'Emoji categories',

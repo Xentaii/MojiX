@@ -63,7 +63,9 @@ describe('emoji data store accessors', () => {
 });
 
 describe('loadEmojiData chunked preparation (idle scheduling)', () => {
-  let originalRequestIdleCallback: typeof globalThis.requestIdleCallback | undefined;
+  let originalRequestIdleCallback:
+    | typeof globalThis.requestIdleCallback
+    | undefined;
 
   beforeEach(() => {
     originalRequestIdleCallback = globalThis.requestIdleCallback;
@@ -74,7 +76,8 @@ describe('loadEmojiData chunked preparation (idle scheduling)', () => {
     if (originalRequestIdleCallback) {
       globalThis.requestIdleCallback = originalRequestIdleCallback;
     } else {
-      delete (globalThis as { requestIdleCallback?: unknown }).requestIdleCallback;
+      delete (globalThis as { requestIdleCallback?: unknown })
+        .requestIdleCallback;
     }
   });
 
@@ -101,13 +104,12 @@ describe('loadEmojiData chunked preparation (idle scheduling)', () => {
     // The fixture is in column-oriented format. Slice its rows down to a
     // size that still spans at least two preparation chunks (chunk size is
     // 192 records).
-    const slicedPayload =
-      Array.isArray(fullPayload)
-        ? fullPayload.slice(0, 220)
-        : {
-            ...fullPayload,
-            rows: fullPayload.rows.slice(0, 220),
-          };
+    const slicedPayload = Array.isArray(fullPayload)
+      ? fullPayload.slice(0, 220)
+      : {
+          ...fullPayload,
+          rows: fullPayload.rows.slice(0, 220),
+        };
 
     const fetcher: MojiXDataFetcher = async (request) => {
       if (
@@ -116,7 +118,7 @@ describe('loadEmojiData chunked preparation (idle scheduling)', () => {
       ) {
         return { data: slicedPayload } as never;
       }
-      throw new Error('Unexpected fetch request: ' + request.key);
+      throw new Error(`Unexpected fetch request: ${request.key}`);
     };
     const fetcherSpy = vi.fn(fetcher);
 

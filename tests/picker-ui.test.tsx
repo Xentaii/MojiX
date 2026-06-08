@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EmojiPicker } from '../src/index';
 
 const hiddenSystemCategories = {
@@ -101,9 +101,9 @@ describe('picker UI theming hooks', () => {
     );
 
     await waitFor(() => {
-      expect(
-        container.querySelectorAll('[data-mx-slot="emoji"]'),
-      ).toHaveLength(customEmojis.length);
+      expect(container.querySelectorAll('[data-mx-slot="emoji"]')).toHaveLength(
+        customEmojis.length,
+      );
     });
     expect(
       container.querySelector('[data-mx-slot="gridPlaceholder"]'),
@@ -147,10 +147,7 @@ describe('picker UI theming hooks', () => {
   it('does not re-render emoji cells on hover when preview is hidden', async () => {
     const renderCounts = new Map<string, number>();
     const renderEmoji = vi.fn((emoji: { id: string; name: string }) => {
-      renderCounts.set(
-        emoji.id,
-        (renderCounts.get(emoji.id) ?? 0) + 1,
-      );
+      renderCounts.set(emoji.id, (renderCounts.get(emoji.id) ?? 0) + 1);
 
       return <span>{emoji.name}</span>;
     });
@@ -196,10 +193,7 @@ describe('picker UI theming hooks', () => {
   it('keeps hover active tracking as an explicit opt-in', async () => {
     const renderCounts = new Map<string, number>();
     const renderEmoji = vi.fn((emoji: { id: string; name: string }) => {
-      renderCounts.set(
-        emoji.id,
-        (renderCounts.get(emoji.id) ?? 0) + 1,
-      );
+      renderCounts.set(emoji.id, (renderCounts.get(emoji.id) ?? 0) + 1);
 
       return <span>{emoji.name}</span>;
     });
@@ -306,10 +300,7 @@ describe('picker UI theming hooks', () => {
     fireEvent.mouseEnter(grinningFaceButtons[0]!);
 
     await waitFor(() => {
-      expect(grinningFaceButtons[0]).toHaveAttribute(
-        'data-active',
-        'true',
-      );
+      expect(grinningFaceButtons[0]).toHaveAttribute('data-active', 'true');
     });
 
     expect(grinningFaceButtons[1]).not.toHaveAttribute('data-active');

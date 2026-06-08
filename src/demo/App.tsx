@@ -1,13 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AccessibilityFixture } from './AccessibilityFixture';
-import { CdnDefaultFixture } from './CdnDefaultFixture';
-import { OfflinePresetFixture } from './OfflinePresetFixture';
-import {
-  EmojiPicker,
-  createNativeAssetSource,
-  createEmojiSpriteSheet,
-  warmEmojiSpriteSheet,
-} from '../index';
 import type {
   CustomEmoji,
   EmojiCategoryIconGlyph,
@@ -16,18 +7,27 @@ import type {
   EmojiSelection,
   EmojiVendor,
 } from '../index';
+import {
+  createEmojiSpriteSheet,
+  createNativeAssetSource,
+  EmojiPicker,
+  warmEmojiSpriteSheet,
+} from '../index';
+import { AccessibilityFixture } from './AccessibilityFixture';
 import orbitEmoji from './assets/mojix-orbit.svg';
 import sparkEmoji from './assets/mojix-spark.svg';
 import waveEmoji from './assets/mojix-wave.svg';
+import { CdnDefaultFixture } from './CdnDefaultFixture';
+import { OfflinePresetFixture } from './OfflinePresetFixture';
 import {
   BUILTIN_DEMO_THEMES,
-  DEMO_THEME_STORAGE_KEY,
   cloneDemoThemePalette,
   createCustomDemoThemeId,
   createPickerThemeStyle,
-  isCustomDemoTheme,
+  DEMO_THEME_STORAGE_KEY,
   type DemoThemeDefinition,
   type DemoThemePalette,
+  isCustomDemoTheme,
 } from './themePresets';
 
 const CUSTOM_EMOJIS: CustomEmoji[] = [
@@ -165,7 +165,10 @@ const SHOWCASE_PRESETS: ShowcasePreset[] = [
   },
 ];
 
-const SHOWCASE_SPRITE_SHEETS: Record<EmojiVendor, ReturnType<typeof createEmojiSpriteSheet>> = {
+const SHOWCASE_SPRITE_SHEETS: Record<
+  EmojiVendor,
+  ReturnType<typeof createEmojiSpriteSheet>
+> = {
   twitter: createEmojiSpriteSheet({
     source: 'cdn',
     vendor: 'twitter',
@@ -351,7 +354,9 @@ function readStoredCustomThemes() {
       }
 
       const candidate = theme as Partial<DemoThemeDefinition>;
-      const palette = candidate.palette as Partial<DemoThemePalette> | undefined;
+      const palette = candidate.palette as
+        | Partial<DemoThemePalette>
+        | undefined;
 
       if (
         typeof candidate.id !== 'string' ||
@@ -517,16 +522,15 @@ export function App() {
   const [recentLimit, setRecentLimit] = useState(12);
   const [recentShowWhenEmpty, setRecentShowWhenEmpty] = useState(true);
   const [recentDefaultActive, setRecentDefaultActive] = useState(true);
-  const [recentSort, setRecentSort] =
-    useState<'recent' | 'frequent'>('recent');
+  const [recentSort, setRecentSort] = useState<'recent' | 'frequent'>('recent');
   const [brandVisible, setBrandVisible] = useState(true);
   const [brandLabel, setBrandLabel] = useState(DEFAULT_BRAND_LABEL);
-  const [brandIcon, setBrandIcon] =
-    useState<EmojiCategoryIconGlyph>('rocket');
-  const [peopleIconStyle, setPeopleIconStyle] =
-    useState<'inherit' | EmojiCategoryIconPreset>('inherit');
-  const [customThemes, setCustomThemes] = useState<DemoThemeDefinition[]>(
-    () => readStoredCustomThemes(),
+  const [brandIcon, setBrandIcon] = useState<EmojiCategoryIconGlyph>('rocket');
+  const [peopleIconStyle, setPeopleIconStyle] = useState<
+    'inherit' | EmojiCategoryIconPreset
+  >('inherit');
+  const [customThemes, setCustomThemes] = useState<DemoThemeDefinition[]>(() =>
+    readStoredCustomThemes(),
   );
   const [selectedThemeId, setSelectedThemeId] = useState(
     BUILTIN_DEMO_THEMES[0]!.id,
@@ -843,849 +847,944 @@ export function App() {
       </header>
 
       <div className="page">
-      <header className="hero">
-        <div className="hero__inner">
-          <span className="badge">MojiX</span>
-          <h1 className="hero__title">
-            Emoji picker
-            <br />
-            for React.
-          </h1>
-          <p className="hero__sub">
-            Drop-in ready out of the box. Fully composable when you need
-            control.
-          </p>
-          <code className="install-cmd">npm install mojix-picker</code>
-        </div>
-      </header>
+        <header className="hero">
+          <div className="hero__inner">
+            <span className="badge">MojiX</span>
+            <h1 className="hero__title">
+              Emoji picker
+              <br />
+              for React.
+            </h1>
+            <p className="hero__sub">
+              Drop-in ready out of the box. Fully composable when you need
+              control.
+            </p>
+            <code className="install-cmd">npm install mojix-picker</code>
+          </div>
+        </header>
 
-      <section className="showcase-section">
-        <div className="showcase-intro">
-          <span className="badge badge--soft">Theme presets</span>
-          <h2>Four pickers. One component.</h2>
-          <p>
-            Same <code>EmojiPicker</code>, four production-ready theme token
-            sets. Drop any of these straight into your app.
-          </p>
-        </div>
-        <div className="showcase-grid">
-          {SHOWCASE_PRESETS.map((preset) => (
-            <article key={preset.id} className="showcase-item">
-              <div className="showcase-item__frame">
-                <EmojiPicker
-                  className="showcase-picker"
-                  showPreview={false}
-                  locale="en"
-                  emojiSize={preset.emojiSize}
-                  columns={preset.columns}
-                  showSkinTones={preset.showSkinTones}
-                  categoryIconStyle={preset.categoryIconStyle}
-                  style={createPickerThemeStyle(preset.palette)}
-                  spriteSheet={SHOWCASE_SPRITE_SHEETS[preset.vendor]}
-                  assetSource={
-                    showcaseWarmed[preset.vendor]
-                      ? undefined
-                      : NATIVE_FALLBACK_SOURCE
-                  }
-                  virtualization={false}
-                />
-              </div>
-              <div className="showcase-item__label">
-                <strong>{preset.name}</strong>
-                <span>{preset.tagline}</span>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="demo-section">
-        <div className="demo-intro">
-          <span className="badge badge--soft">Build your own</span>
-          <h2>Configure it your way.</h2>
-          <p>
-            Tune every token below and watch the React snippet update in real
-            time.
-          </p>
-        </div>
-        <div className="demo-shell">
-          <div className="demo-row demo-row--main">
-          <section className="playground-card playground-card--picker">
-            <div className="playground-card__head">
-              <div>
-                <span className="playground-card__eyebrow">Live Picker</span>
-                <strong>Default UI playground</strong>
-              </div>
-              <span className="playground-status">
-                {selectedThemeDefinition.name} / {vendor} /{' '}
-                {spriteWarmed ? 'ready' : 'warming'}
-              </span>
-            </div>
-            <div className="playground-card__body playground-card__body--picker">
-              <EmojiPicker
-                className="demo-picker"
-                showPreview={false}
-                locale={locale}
-                emojiSize={emojiSize}
-                columns={columns}
-                showSkinTones={showSkinTones}
-                categoryIconStyle={categoryIconStyle}
-                customEmojis={CUSTOM_EMOJIS}
-                style={pickerThemeStyle}
-                spriteSheet={spriteSheet}
-                assetSource={
-                  spriteWarmed ? undefined : NATIVE_FALLBACK_SOURCE
-                }
-                recent={demoRecent}
-                categories={demoCategories}
-                categoryIcons={demoCategoryIcons}
-                onEmojiSelect={handleEmojiSelect}
-              />
-            </div>
-          </section>
-
-          <section className="playground-card playground-card--preview">
-            <div className="playground-card__head">
-              <div>
-                <span className="playground-card__eyebrow">Selection</span>
-                <strong>Large emoji render</strong>
-              </div>
-              <span className="playground-status playground-status--soft">
-                {lastEmoji ? lastEmoji.categoryLabel : 'idle'}
-              </span>
-            </div>
-            <div className="playground-card__body">
-              <div className="playground-preview" aria-live="polite">
-                <div className="playground-preview__stage">
-                  {lastEmoji?.imageUrl ? (
-                    <img
-                      className="playground-preview__image"
-                      src={lastEmoji.imageUrl}
-                      alt={lastEmoji.name}
-                    />
-                  ) : (
-                    <span className="playground-preview__emoji">
-                      {lastEmoji?.native ?? DEFAULT_PREVIEW_EMOJI}
-                    </span>
-                  )}
+        <section className="showcase-section">
+          <div className="showcase-intro">
+            <span className="badge badge--soft">Theme presets</span>
+            <h2>Four pickers. One component.</h2>
+            <p>
+              Same <code>EmojiPicker</code>, four production-ready theme token
+              sets. Drop any of these straight into your app.
+            </p>
+          </div>
+          <div className="showcase-grid">
+            {SHOWCASE_PRESETS.map((preset) => (
+              <article key={preset.id} className="showcase-item">
+                <div className="showcase-item__frame">
+                  <EmojiPicker
+                    className="showcase-picker"
+                    showPreview={false}
+                    locale="en"
+                    emojiSize={preset.emojiSize}
+                    columns={preset.columns}
+                    showSkinTones={preset.showSkinTones}
+                    categoryIconStyle={preset.categoryIconStyle}
+                    style={createPickerThemeStyle(preset.palette)}
+                    spriteSheet={SHOWCASE_SPRITE_SHEETS[preset.vendor]}
+                    assetSource={
+                      showcaseWarmed[preset.vendor]
+                        ? undefined
+                        : NATIVE_FALLBACK_SOURCE
+                    }
+                    virtualization={false}
+                  />
                 </div>
+                <div className="showcase-item__label">
+                  <strong>{preset.name}</strong>
+                  <span>{preset.tagline}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
 
-                <div className="playground-preview__copy">
-                  <strong>
-                    {lastEmoji?.name ?? 'Pick any emoji from the left panel'}
-                  </strong>
-                  <span>
-                    {lastEmoji
-                      ? `${selectionToken} / ${
-                          lastEmoji.shortcodes[0]
-                            ? `:${lastEmoji.shortcodes[0]}:`
-                            : 'custom asset'
-                        }`
-                      : 'The selected emoji and its label will stay here.'}
+        <section className="demo-section">
+          <div className="demo-intro">
+            <span className="badge badge--soft">Build your own</span>
+            <h2>Configure it your way.</h2>
+            <p>
+              Tune every token below and watch the React snippet update in real
+              time.
+            </p>
+          </div>
+          <div className="demo-shell">
+            <div className="demo-row demo-row--main">
+              <section className="playground-card playground-card--picker">
+                <div className="playground-card__head">
+                  <div>
+                    <span className="playground-card__eyebrow">
+                      Live Picker
+                    </span>
+                    <strong>Default UI playground</strong>
+                  </div>
+                  <span className="playground-status">
+                    {selectedThemeDefinition.name} / {vendor} /{' '}
+                    {spriteWarmed ? 'ready' : 'warming'}
                   </span>
                 </div>
-              </div>
-            </div>
-          </section>
-          </div>
-
-          <div className="demo-row demo-row--config">
-          <aside
-            className={`playground-card playground-card--collapsible playground-card--dev${
-              paramsExpanded ? '' : ' is-collapsed'
-            }`}
-          >
-            <div className="playground-card__head playground-card__head--collapsible">
-              <div className="playground-card__heading">
-                <span className="playground-card__eyebrow">Dev Params</span>
-                <strong>Runtime configuration</strong>
-              </div>
-              <div className="playground-card__actions">
-                <button
-                  type="button"
-                  className="dev-reset"
-                  onClick={resetDemoControls}
-                >
-                  Reset
-                </button>
-                {panelCollapseEnabled ? (
-                  <button
-                    type="button"
-                    className="playground-card__icon-toggle"
-                    onClick={() => setParamsOpen((open) => !open)}
-                    aria-expanded={paramsOpen}
-                    aria-controls="dev-params-body"
-                    aria-label={
-                      paramsOpen
-                        ? 'Collapse runtime configuration'
-                        : 'Expand runtime configuration'
+                <div className="playground-card__body playground-card__body--picker">
+                  <EmojiPicker
+                    className="demo-picker"
+                    showPreview={false}
+                    locale={locale}
+                    emojiSize={emojiSize}
+                    columns={columns}
+                    showSkinTones={showSkinTones}
+                    categoryIconStyle={categoryIconStyle}
+                    customEmojis={CUSTOM_EMOJIS}
+                    style={pickerThemeStyle}
+                    spriteSheet={spriteSheet}
+                    assetSource={
+                      spriteWarmed ? undefined : NATIVE_FALLBACK_SOURCE
                     }
-                  >
-                    <span
-                      className="playground-card__chevron"
-                      data-open={paramsOpen ? 'true' : undefined}
-                      aria-hidden="true"
-                    />
-                  </button>
-                ) : null}
-              </div>
+                    recent={demoRecent}
+                    categories={demoCategories}
+                    categoryIcons={demoCategoryIcons}
+                    onEmojiSelect={handleEmojiSelect}
+                  />
+                </div>
+              </section>
+
+              <section className="playground-card playground-card--preview">
+                <div className="playground-card__head">
+                  <div>
+                    <span className="playground-card__eyebrow">Selection</span>
+                    <strong>Large emoji render</strong>
+                  </div>
+                  <span className="playground-status playground-status--soft">
+                    {lastEmoji ? lastEmoji.categoryLabel : 'idle'}
+                  </span>
+                </div>
+                <div className="playground-card__body">
+                  <div className="playground-preview" aria-live="polite">
+                    <div className="playground-preview__stage">
+                      {lastEmoji?.imageUrl ? (
+                        <img
+                          className="playground-preview__image"
+                          src={lastEmoji.imageUrl}
+                          alt={lastEmoji.name}
+                        />
+                      ) : (
+                        <span className="playground-preview__emoji">
+                          {lastEmoji?.native ?? DEFAULT_PREVIEW_EMOJI}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="playground-preview__copy">
+                      <strong>
+                        {lastEmoji?.name ??
+                          'Pick any emoji from the left panel'}
+                      </strong>
+                      <span>
+                        {lastEmoji
+                          ? `${selectionToken} / ${
+                              lastEmoji.shortcodes[0]
+                                ? `:${lastEmoji.shortcodes[0]}:`
+                                : 'custom asset'
+                            }`
+                          : 'The selected emoji and its label will stay here.'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </section>
             </div>
-            <div
-              className="playground-card__collapsible"
-              aria-hidden={!paramsExpanded}
-              inert={!paramsExpanded}
-            >
-              <div className="playground-card__collapsible-inner">
-                <div
-                  id="dev-params-body"
-                  className="playground-card__body playground-card__body--scroll"
-                >
-                  <form
-                    className="dev-panel"
-                    onSubmit={(event) => event.preventDefault()}
+
+            <div className="demo-row demo-row--config">
+              <aside
+                className={`playground-card playground-card--collapsible playground-card--dev${
+                  paramsExpanded ? '' : ' is-collapsed'
+                }`}
               >
-                <section className="dev-group">
-                  <div className="dev-group__head">
-                    <h3>Theme</h3>
-                    <span>Presets + custom</span>
+                <div className="playground-card__head playground-card__head--collapsible">
+                  <div className="playground-card__heading">
+                    <span className="playground-card__eyebrow">Dev Params</span>
+                    <strong>Runtime configuration</strong>
                   </div>
-                  <div className="dev-controls">
-                    <label className="dev-field">
-                      <span className="dev-field__label">Theme preset</span>
-                      <select
-                        className="dev-select"
-                        value={selectedThemeId}
-                        onChange={(event) =>
-                          setSelectedThemeId(event.target.value)
-                        }
-                      >
-                        {allThemes.map((theme) => (
-                          <option key={theme.id} value={theme.id}>
-                            {theme.name}
-                            {theme.builtin ? ' (built-in)' : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">Theme mode</span>
-                      <select
-                        className="dev-select"
-                        value={themeDraft.mode}
-                        onChange={(event) =>
-                          updateThemeDraft(
-                            'mode',
-                            event.target.value as DemoThemePalette['mode'],
-                          )
-                        }
-                      >
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                      </select>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">Background</span>
-                      <div className="dev-color-row">
-                        <input
-                          className="dev-color__picker"
-                          type="color"
-                          value={themeDraft.bg}
-                          onChange={(event) =>
-                            updateThemeDraft('bg', event.target.value)
-                          }
-                        />
-                        <input
-                          className="dev-color__hex"
-                          type="text"
-                          value={themeDraft.bg}
-                          onChange={(event) =>
-                            updateThemeDraft('bg', event.target.value)
-                          }
-                        />
-                      </div>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">
-                        Category background
-                      </span>
-                      <div className="dev-color-row">
-                        <input
-                          className="dev-color__picker"
-                          type="color"
-                          value={themeDraft.panel}
-                          onChange={(event) =>
-                            updateThemeDraft('panel', event.target.value)
-                          }
-                        />
-                        <input
-                          className="dev-color__hex"
-                          type="text"
-                          value={themeDraft.panel}
-                          onChange={(event) =>
-                            updateThemeDraft('panel', event.target.value)
-                          }
-                        />
-                      </div>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">Text color</span>
-                      <div className="dev-color-row">
-                        <input
-                          className="dev-color__picker"
-                          type="color"
-                          value={themeDraft.text}
-                          onChange={(event) =>
-                            updateThemeDraft('text', event.target.value)
-                          }
-                        />
-                        <input
-                          className="dev-color__hex"
-                          type="text"
-                          value={themeDraft.text}
-                          onChange={(event) =>
-                            updateThemeDraft('text', event.target.value)
-                          }
-                        />
-                      </div>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">Secondary text</span>
-                      <div className="dev-color-row">
-                        <input
-                          className="dev-color__picker"
-                          type="color"
-                          value={themeDraft.muted}
-                          onChange={(event) =>
-                            updateThemeDraft('muted', event.target.value)
-                          }
-                        />
-                        <input
-                          className="dev-color__hex"
-                          type="text"
-                          value={themeDraft.muted}
-                          onChange={(event) =>
-                            updateThemeDraft('muted', event.target.value)
-                          }
-                        />
-                      </div>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">Accent color</span>
-                      <div className="dev-color-row">
-                        <input
-                          className="dev-color__picker"
-                          type="color"
-                          value={themeDraft.accent}
-                          onChange={(event) =>
-                            updateThemeDraft('accent', event.target.value)
-                          }
-                        />
-                        <input
-                          className="dev-color__hex"
-                          type="text"
-                          value={themeDraft.accent}
-                          onChange={(event) =>
-                            updateThemeDraft('accent', event.target.value)
-                          }
-                        />
-                      </div>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">Accent mix</span>
-                      <div className="dev-range">
-                        <input
-                          className="dev-range__input"
-                          type="range"
-                          min="4"
-                          max="40"
-                          step="1"
-                          value={themeDraft.accentMix}
-                          onChange={(event) =>
-                            updateThemeDraft(
-                              'accentMix',
-                              Number.parseInt(event.target.value, 10),
-                            )
-                          }
-                        />
-                        <strong>{themeDraft.accentMix}%</strong>
-                      </div>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">Scrollbar color</span>
-                      <div className="dev-color-row">
-                        <input
-                          className="dev-color__picker"
-                          type="color"
-                          value={themeDraft.scrollbar}
-                          onChange={(event) =>
-                            updateThemeDraft('scrollbar', event.target.value)
-                          }
-                        />
-                        <input
-                          className="dev-color__hex"
-                          type="text"
-                          value={themeDraft.scrollbar}
-                          onChange={(event) =>
-                            updateThemeDraft('scrollbar', event.target.value)
-                          }
-                        />
-                      </div>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">Picker corner radius</span>
-                      <div className="dev-range">
-                        <input
-                          className="dev-range__input"
-                          type="range"
-                          min="12"
-                          max="32"
-                          step="1"
-                          value={themeDraft.radius}
-                          onChange={(event) =>
-                            updateThemeDraft(
-                              'radius',
-                              Number.parseInt(event.target.value, 10),
-                            )
-                          }
-                        />
-                        <strong>{themeDraft.radius}px</strong>
-                      </div>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">Custom theme name</span>
-                      <input
-                        className="dev-input"
-                        type="text"
-                        value={themeName}
-                        onChange={(event) => setThemeName(event.target.value)}
-                        placeholder={DEFAULT_CUSTOM_THEME_NAME}
-                      />
-                    </label>
-
-                    <div className="dev-actions">
+                  <div className="playground-card__actions">
+                    <button
+                      type="button"
+                      className="dev-reset"
+                      onClick={resetDemoControls}
+                    >
+                      Reset
+                    </button>
+                    {panelCollapseEnabled ? (
                       <button
                         type="button"
-                        className="dev-button"
-                        onClick={handleThemeSave}
+                        className="playground-card__icon-toggle"
+                        onClick={() => setParamsOpen((open) => !open)}
+                        aria-expanded={paramsOpen}
+                        aria-controls="dev-params-body"
+                        aria-label={
+                          paramsOpen
+                            ? 'Collapse runtime configuration'
+                            : 'Expand runtime configuration'
+                        }
                       >
-                        {isSelectedCustomTheme
-                          ? 'Update theme'
-                          : 'Save as custom'}
+                        <span
+                          className="playground-card__chevron"
+                          data-open={paramsOpen ? 'true' : undefined}
+                          aria-hidden="true"
+                        />
                       </button>
-                      <button
-                        type="button"
-                        className="dev-button dev-button--danger"
-                        onClick={handleThemeDelete}
-                        disabled={!isSelectedCustomTheme}
-                      >
-                        Delete custom
-                      </button>
-                    </div>
+                    ) : null}
                   </div>
-                </section>
-
-                <section className="dev-group">
-                  <div className="dev-group__head">
-                    <h3>Visual</h3>
-                    <span>Live controls</span>
-                  </div>
-                  <div className="dev-controls">
-                    <label className="dev-field">
-                      <span className="dev-field__label">Sprite vendor</span>
-                      <select
-                        className="dev-select"
-                        value={vendor}
-                        onChange={(event) =>
-                          setVendor(event.target.value as EmojiVendor)
-                        }
-                      >
-                        {VENDOR_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">Locale</span>
-                      <select
-                        className="dev-select"
-                        value={locale}
-                        onChange={(event) =>
-                          setLocale(event.target.value as EmojiLocaleCode)
-                        }
-                      >
-                        {LOCALE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">
-                        Category icon style
-                      </span>
-                      <select
-                        className="dev-select"
-                        value={categoryIconStyle}
-                        onChange={(event) =>
-                          setCategoryIconStyle(
-                            event.target.value as EmojiCategoryIconPreset,
-                          )
-                        }
-                      >
-                        {CATEGORY_ICON_STYLE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">Emoji size</span>
-                      <div className="dev-range">
-                        <input
-                          className="dev-range__input"
-                          type="range"
-                          min="18"
-                          max="32"
-                          step="1"
-                          value={emojiSize}
-                          onChange={(event) =>
-                            setEmojiSize(Number.parseInt(event.target.value, 10))
-                          }
-                        />
-                        <strong>{emojiSize}px</strong>
-                      </div>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">Grid columns</span>
-                      <div className="dev-range">
-                        <input
-                          className="dev-range__input"
-                          type="range"
-                          min="7"
-                          max="11"
-                          step="1"
-                          value={columns}
-                          onChange={(event) =>
-                            setColumns(Number.parseInt(event.target.value, 10))
-                          }
-                        />
-                        <strong>{columns}</strong>
-                      </div>
-                    </label>
-
-                    <label className="dev-toggle">
-                      <input
-                        type="checkbox"
-                        checked={showSkinTones}
-                        onChange={(event) =>
-                          setShowSkinTones(event.target.checked)
-                        }
-                      />
-                      <span className="dev-toggle__copy">
-                        <strong>Skin tone switcher</strong>
-                        <small>Expose the tone picker in the toolbar.</small>
-                      </span>
-                    </label>
-                  </div>
-                </section>
-
-                <section className="dev-group">
-                  <div className="dev-group__head">
-                    <h3>Recent</h3>
-                    <span>Category API</span>
-                  </div>
-                  <div className="dev-controls">
-                    <label className="dev-toggle">
-                      <input
-                        type="checkbox"
-                        checked={recentEnabled}
-                        onChange={(event) =>
-                          setRecentEnabled(event.target.checked)
-                        }
-                      />
-                      <span className="dev-toggle__copy">
-                        <strong>Enable Recent</strong>
-                        <small>Show or remove the Recent category.</small>
-                      </span>
-                    </label>
-
-                    <label className="dev-toggle">
-                      <input
-                        type="checkbox"
-                        checked={recentShowWhenEmpty}
-                        onChange={(event) =>
-                          setRecentShowWhenEmpty(event.target.checked)
-                        }
-                      />
-                      <span className="dev-toggle__copy">
-                        <strong>Show when empty</strong>
-                        <small>Seed the tab with starter emoji.</small>
-                      </span>
-                    </label>
-
-                    <label className="dev-toggle">
-                      <input
-                        type="checkbox"
-                        checked={recentDefaultActive}
-                        onChange={(event) =>
-                          setRecentDefaultActive(event.target.checked)
-                        }
-                      />
-                      <span className="dev-toggle__copy">
-                        <strong>Default active</strong>
-                        <small>Open the picker on Recent first.</small>
-                      </span>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">Recent sorting</span>
-                      <select
-                        className="dev-select"
-                        value={recentSort}
-                        onChange={(event) =>
-                          setRecentSort(
-                            event.target.value as 'recent' | 'frequent',
-                          )
-                        }
-                      >
-                        <option value="recent">Recent usage</option>
-                        <option value="frequent">Frequency</option>
-                      </select>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">Recent limit</span>
-                      <div className="dev-range">
-                        <input
-                          className="dev-range__input"
-                          type="range"
-                          min="4"
-                          max="24"
-                          step="1"
-                          value={recentLimit}
-                          onChange={(event) =>
-                            setRecentLimit(
-                              Number.parseInt(event.target.value, 10),
-                            )
-                          }
-                        />
-                        <strong>{recentLimit}</strong>
-                      </div>
-                    </label>
-                  </div>
-                </section>
-
-                <section className="dev-group">
-                  <div className="dev-group__head">
-                    <h3>Custom categories</h3>
-                    <span>Editable metadata</span>
-                  </div>
-                  <div className="dev-controls">
-                    <label className="dev-toggle">
-                      <input
-                        type="checkbox"
-                        checked={brandVisible}
-                        onChange={(event) =>
-                          setBrandVisible(event.target.checked)
-                        }
-                      />
-                      <span className="dev-toggle__copy">
-                        <strong>Show Brand Kit category</strong>
-                        <small>Hide or reveal the custom brand section.</small>
-                      </span>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">Brand label</span>
-                      <input
-                        className="dev-input"
-                        type="text"
-                        value={brandLabel}
-                        onChange={(event) =>
-                          setBrandLabel(event.target.value)
-                        }
-                        placeholder={DEFAULT_BRAND_LABEL}
-                      />
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">Brand icon</span>
-                      <select
-                        className="dev-select"
-                        value={brandIcon}
-                        onChange={(event) =>
-                          setBrandIcon(
-                            event.target.value as EmojiCategoryIconGlyph,
-                          )
-                        }
-                      >
-                        {BRAND_ICON_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="dev-field">
-                      <span className="dev-field__label">
-                        People icon override
-                      </span>
-                      <select
-                        className="dev-select"
-                        value={peopleIconStyle}
-                        onChange={(event) =>
-                          setPeopleIconStyle(
-                            event.target.value as
-                              | 'inherit'
-                              | EmojiCategoryIconPreset,
-                          )
-                        }
-                      >
-                        {PEOPLE_ICON_STYLE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                </section>
-                  </form>
                 </div>
-              </div>
-            </div>
-          </aside>
-
-          <aside
-            className={`playground-card playground-card--collapsible playground-card--code${
-              snippetExpanded ? '' : ' is-collapsed'
-            }`}
-          >
-            <div className="playground-card__head playground-card__head--collapsible">
-              <div className="playground-card__heading">
-                <span className="playground-card__eyebrow">Live Output</span>
-                <strong>Generated snippet</strong>
-              </div>
-              <div className="playground-card__actions">
-                <span className="playground-status playground-status--soft">
-                  auto-updating
-                </span>
-                {panelCollapseEnabled ? (
-                  <button
-                    type="button"
-                    className="playground-card__icon-toggle"
-                    onClick={() => setSnippetOpen((open) => !open)}
-                    aria-expanded={snippetOpen}
-                    aria-controls="snippet-body"
-                    aria-label={
-                      snippetOpen
-                        ? 'Collapse generated snippet'
-                        : 'Expand generated snippet'
-                    }
-                  >
-                    <span
-                      className="playground-card__chevron"
-                      data-open={snippetOpen ? 'true' : undefined}
-                      aria-hidden="true"
-                    />
-                  </button>
-                ) : null}
-              </div>
-            </div>
-            <div
-              className="playground-card__collapsible"
-              aria-hidden={!snippetExpanded}
-              inert={!snippetExpanded}
-            >
-              <div className="playground-card__collapsible-inner">
                 <div
-                  id="snippet-body"
-                  className="playground-card__body playground-card__body--code"
+                  className="playground-card__collapsible"
+                  aria-hidden={!paramsExpanded}
+                  inert={!paramsExpanded}
                 >
-                  <section className="code-stack">
-                    <div className="code-stack__group">
-                      <header className="code-stack__head">
-                        <h3>JSX</h3>
-                        <span>Reflects current props</span>
-                      </header>
-                      <pre className="code-block code-block--compact">
-                        {playgroundSnippet}
-                      </pre>
+                  <div className="playground-card__collapsible-inner">
+                    <div
+                      id="dev-params-body"
+                      className="playground-card__body playground-card__body--scroll"
+                    >
+                      <form
+                        className="dev-panel"
+                        onSubmit={(event) => event.preventDefault()}
+                      >
+                        <section className="dev-group">
+                          <div className="dev-group__head">
+                            <h3>Theme</h3>
+                            <span>Presets + custom</span>
+                          </div>
+                          <div className="dev-controls">
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Theme preset
+                              </span>
+                              <select
+                                className="dev-select"
+                                value={selectedThemeId}
+                                onChange={(event) =>
+                                  setSelectedThemeId(event.target.value)
+                                }
+                              >
+                                {allThemes.map((theme) => (
+                                  <option key={theme.id} value={theme.id}>
+                                    {theme.name}
+                                    {theme.builtin ? ' (built-in)' : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Theme mode
+                              </span>
+                              <select
+                                className="dev-select"
+                                value={themeDraft.mode}
+                                onChange={(event) =>
+                                  updateThemeDraft(
+                                    'mode',
+                                    event.target
+                                      .value as DemoThemePalette['mode'],
+                                  )
+                                }
+                              >
+                                <option value="light">Light</option>
+                                <option value="dark">Dark</option>
+                              </select>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Background
+                              </span>
+                              <div className="dev-color-row">
+                                <input
+                                  className="dev-color__picker"
+                                  type="color"
+                                  value={themeDraft.bg}
+                                  onChange={(event) =>
+                                    updateThemeDraft('bg', event.target.value)
+                                  }
+                                />
+                                <input
+                                  className="dev-color__hex"
+                                  type="text"
+                                  value={themeDraft.bg}
+                                  onChange={(event) =>
+                                    updateThemeDraft('bg', event.target.value)
+                                  }
+                                />
+                              </div>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Category background
+                              </span>
+                              <div className="dev-color-row">
+                                <input
+                                  className="dev-color__picker"
+                                  type="color"
+                                  value={themeDraft.panel}
+                                  onChange={(event) =>
+                                    updateThemeDraft(
+                                      'panel',
+                                      event.target.value,
+                                    )
+                                  }
+                                />
+                                <input
+                                  className="dev-color__hex"
+                                  type="text"
+                                  value={themeDraft.panel}
+                                  onChange={(event) =>
+                                    updateThemeDraft(
+                                      'panel',
+                                      event.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Text color
+                              </span>
+                              <div className="dev-color-row">
+                                <input
+                                  className="dev-color__picker"
+                                  type="color"
+                                  value={themeDraft.text}
+                                  onChange={(event) =>
+                                    updateThemeDraft('text', event.target.value)
+                                  }
+                                />
+                                <input
+                                  className="dev-color__hex"
+                                  type="text"
+                                  value={themeDraft.text}
+                                  onChange={(event) =>
+                                    updateThemeDraft('text', event.target.value)
+                                  }
+                                />
+                              </div>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Secondary text
+                              </span>
+                              <div className="dev-color-row">
+                                <input
+                                  className="dev-color__picker"
+                                  type="color"
+                                  value={themeDraft.muted}
+                                  onChange={(event) =>
+                                    updateThemeDraft(
+                                      'muted',
+                                      event.target.value,
+                                    )
+                                  }
+                                />
+                                <input
+                                  className="dev-color__hex"
+                                  type="text"
+                                  value={themeDraft.muted}
+                                  onChange={(event) =>
+                                    updateThemeDraft(
+                                      'muted',
+                                      event.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Accent color
+                              </span>
+                              <div className="dev-color-row">
+                                <input
+                                  className="dev-color__picker"
+                                  type="color"
+                                  value={themeDraft.accent}
+                                  onChange={(event) =>
+                                    updateThemeDraft(
+                                      'accent',
+                                      event.target.value,
+                                    )
+                                  }
+                                />
+                                <input
+                                  className="dev-color__hex"
+                                  type="text"
+                                  value={themeDraft.accent}
+                                  onChange={(event) =>
+                                    updateThemeDraft(
+                                      'accent',
+                                      event.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Accent mix
+                              </span>
+                              <div className="dev-range">
+                                <input
+                                  className="dev-range__input"
+                                  type="range"
+                                  min="4"
+                                  max="40"
+                                  step="1"
+                                  value={themeDraft.accentMix}
+                                  onChange={(event) =>
+                                    updateThemeDraft(
+                                      'accentMix',
+                                      Number.parseInt(event.target.value, 10),
+                                    )
+                                  }
+                                />
+                                <strong>{themeDraft.accentMix}%</strong>
+                              </div>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Scrollbar color
+                              </span>
+                              <div className="dev-color-row">
+                                <input
+                                  className="dev-color__picker"
+                                  type="color"
+                                  value={themeDraft.scrollbar}
+                                  onChange={(event) =>
+                                    updateThemeDraft(
+                                      'scrollbar',
+                                      event.target.value,
+                                    )
+                                  }
+                                />
+                                <input
+                                  className="dev-color__hex"
+                                  type="text"
+                                  value={themeDraft.scrollbar}
+                                  onChange={(event) =>
+                                    updateThemeDraft(
+                                      'scrollbar',
+                                      event.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Picker corner radius
+                              </span>
+                              <div className="dev-range">
+                                <input
+                                  className="dev-range__input"
+                                  type="range"
+                                  min="12"
+                                  max="32"
+                                  step="1"
+                                  value={themeDraft.radius}
+                                  onChange={(event) =>
+                                    updateThemeDraft(
+                                      'radius',
+                                      Number.parseInt(event.target.value, 10),
+                                    )
+                                  }
+                                />
+                                <strong>{themeDraft.radius}px</strong>
+                              </div>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Custom theme name
+                              </span>
+                              <input
+                                className="dev-input"
+                                type="text"
+                                value={themeName}
+                                onChange={(event) =>
+                                  setThemeName(event.target.value)
+                                }
+                                placeholder={DEFAULT_CUSTOM_THEME_NAME}
+                              />
+                            </label>
+
+                            <div className="dev-actions">
+                              <button
+                                type="button"
+                                className="dev-button"
+                                onClick={handleThemeSave}
+                              >
+                                {isSelectedCustomTheme
+                                  ? 'Update theme'
+                                  : 'Save as custom'}
+                              </button>
+                              <button
+                                type="button"
+                                className="dev-button dev-button--danger"
+                                onClick={handleThemeDelete}
+                                disabled={!isSelectedCustomTheme}
+                              >
+                                Delete custom
+                              </button>
+                            </div>
+                          </div>
+                        </section>
+
+                        <section className="dev-group">
+                          <div className="dev-group__head">
+                            <h3>Visual</h3>
+                            <span>Live controls</span>
+                          </div>
+                          <div className="dev-controls">
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Sprite vendor
+                              </span>
+                              <select
+                                className="dev-select"
+                                value={vendor}
+                                onChange={(event) =>
+                                  setVendor(event.target.value as EmojiVendor)
+                                }
+                              >
+                                {VENDOR_OPTIONS.map((option) => (
+                                  <option
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">Locale</span>
+                              <select
+                                className="dev-select"
+                                value={locale}
+                                onChange={(event) =>
+                                  setLocale(
+                                    event.target.value as EmojiLocaleCode,
+                                  )
+                                }
+                              >
+                                {LOCALE_OPTIONS.map((option) => (
+                                  <option
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Category icon style
+                              </span>
+                              <select
+                                className="dev-select"
+                                value={categoryIconStyle}
+                                onChange={(event) =>
+                                  setCategoryIconStyle(
+                                    event.target
+                                      .value as EmojiCategoryIconPreset,
+                                  )
+                                }
+                              >
+                                {CATEGORY_ICON_STYLE_OPTIONS.map((option) => (
+                                  <option
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Emoji size
+                              </span>
+                              <div className="dev-range">
+                                <input
+                                  className="dev-range__input"
+                                  type="range"
+                                  min="18"
+                                  max="32"
+                                  step="1"
+                                  value={emojiSize}
+                                  onChange={(event) =>
+                                    setEmojiSize(
+                                      Number.parseInt(event.target.value, 10),
+                                    )
+                                  }
+                                />
+                                <strong>{emojiSize}px</strong>
+                              </div>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Grid columns
+                              </span>
+                              <div className="dev-range">
+                                <input
+                                  className="dev-range__input"
+                                  type="range"
+                                  min="7"
+                                  max="11"
+                                  step="1"
+                                  value={columns}
+                                  onChange={(event) =>
+                                    setColumns(
+                                      Number.parseInt(event.target.value, 10),
+                                    )
+                                  }
+                                />
+                                <strong>{columns}</strong>
+                              </div>
+                            </label>
+
+                            <label className="dev-toggle">
+                              <input
+                                type="checkbox"
+                                checked={showSkinTones}
+                                onChange={(event) =>
+                                  setShowSkinTones(event.target.checked)
+                                }
+                              />
+                              <span className="dev-toggle__copy">
+                                <strong>Skin tone switcher</strong>
+                                <small>
+                                  Expose the tone picker in the toolbar.
+                                </small>
+                              </span>
+                            </label>
+                          </div>
+                        </section>
+
+                        <section className="dev-group">
+                          <div className="dev-group__head">
+                            <h3>Recent</h3>
+                            <span>Category API</span>
+                          </div>
+                          <div className="dev-controls">
+                            <label className="dev-toggle">
+                              <input
+                                type="checkbox"
+                                checked={recentEnabled}
+                                onChange={(event) =>
+                                  setRecentEnabled(event.target.checked)
+                                }
+                              />
+                              <span className="dev-toggle__copy">
+                                <strong>Enable Recent</strong>
+                                <small>
+                                  Show or remove the Recent category.
+                                </small>
+                              </span>
+                            </label>
+
+                            <label className="dev-toggle">
+                              <input
+                                type="checkbox"
+                                checked={recentShowWhenEmpty}
+                                onChange={(event) =>
+                                  setRecentShowWhenEmpty(event.target.checked)
+                                }
+                              />
+                              <span className="dev-toggle__copy">
+                                <strong>Show when empty</strong>
+                                <small>Seed the tab with starter emoji.</small>
+                              </span>
+                            </label>
+
+                            <label className="dev-toggle">
+                              <input
+                                type="checkbox"
+                                checked={recentDefaultActive}
+                                onChange={(event) =>
+                                  setRecentDefaultActive(event.target.checked)
+                                }
+                              />
+                              <span className="dev-toggle__copy">
+                                <strong>Default active</strong>
+                                <small>Open the picker on Recent first.</small>
+                              </span>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Recent sorting
+                              </span>
+                              <select
+                                className="dev-select"
+                                value={recentSort}
+                                onChange={(event) =>
+                                  setRecentSort(
+                                    event.target.value as 'recent' | 'frequent',
+                                  )
+                                }
+                              >
+                                <option value="recent">Recent usage</option>
+                                <option value="frequent">Frequency</option>
+                              </select>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Recent limit
+                              </span>
+                              <div className="dev-range">
+                                <input
+                                  className="dev-range__input"
+                                  type="range"
+                                  min="4"
+                                  max="24"
+                                  step="1"
+                                  value={recentLimit}
+                                  onChange={(event) =>
+                                    setRecentLimit(
+                                      Number.parseInt(event.target.value, 10),
+                                    )
+                                  }
+                                />
+                                <strong>{recentLimit}</strong>
+                              </div>
+                            </label>
+                          </div>
+                        </section>
+
+                        <section className="dev-group">
+                          <div className="dev-group__head">
+                            <h3>Custom categories</h3>
+                            <span>Editable metadata</span>
+                          </div>
+                          <div className="dev-controls">
+                            <label className="dev-toggle">
+                              <input
+                                type="checkbox"
+                                checked={brandVisible}
+                                onChange={(event) =>
+                                  setBrandVisible(event.target.checked)
+                                }
+                              />
+                              <span className="dev-toggle__copy">
+                                <strong>Show Brand Kit category</strong>
+                                <small>
+                                  Hide or reveal the custom brand section.
+                                </small>
+                              </span>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Brand label
+                              </span>
+                              <input
+                                className="dev-input"
+                                type="text"
+                                value={brandLabel}
+                                onChange={(event) =>
+                                  setBrandLabel(event.target.value)
+                                }
+                                placeholder={DEFAULT_BRAND_LABEL}
+                              />
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                Brand icon
+                              </span>
+                              <select
+                                className="dev-select"
+                                value={brandIcon}
+                                onChange={(event) =>
+                                  setBrandIcon(
+                                    event.target
+                                      .value as EmojiCategoryIconGlyph,
+                                  )
+                                }
+                              >
+                                {BRAND_ICON_OPTIONS.map((option) => (
+                                  <option
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+
+                            <label className="dev-field">
+                              <span className="dev-field__label">
+                                People icon override
+                              </span>
+                              <select
+                                className="dev-select"
+                                value={peopleIconStyle}
+                                onChange={(event) =>
+                                  setPeopleIconStyle(
+                                    event.target.value as
+                                      | 'inherit'
+                                      | EmojiCategoryIconPreset,
+                                  )
+                                }
+                              >
+                                {PEOPLE_ICON_STYLE_OPTIONS.map((option) => (
+                                  <option
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+                        </section>
+                      </form>
                     </div>
-                    <div className="code-stack__group">
-                      <header className="code-stack__head">
-                        <h3>Selection payload</h3>
-                        <span>Latest onEmojiSelect</span>
-                      </header>
-                      <pre className="code-block code-block--compact">
-                        {selectionPayload}
-                      </pre>
-                    </div>
-                  </section>
+                  </div>
                 </div>
-              </div>
+              </aside>
+
+              <aside
+                className={`playground-card playground-card--collapsible playground-card--code${
+                  snippetExpanded ? '' : ' is-collapsed'
+                }`}
+              >
+                <div className="playground-card__head playground-card__head--collapsible">
+                  <div className="playground-card__heading">
+                    <span className="playground-card__eyebrow">
+                      Live Output
+                    </span>
+                    <strong>Generated snippet</strong>
+                  </div>
+                  <div className="playground-card__actions">
+                    <span className="playground-status playground-status--soft">
+                      auto-updating
+                    </span>
+                    {panelCollapseEnabled ? (
+                      <button
+                        type="button"
+                        className="playground-card__icon-toggle"
+                        onClick={() => setSnippetOpen((open) => !open)}
+                        aria-expanded={snippetOpen}
+                        aria-controls="snippet-body"
+                        aria-label={
+                          snippetOpen
+                            ? 'Collapse generated snippet'
+                            : 'Expand generated snippet'
+                        }
+                      >
+                        <span
+                          className="playground-card__chevron"
+                          data-open={snippetOpen ? 'true' : undefined}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+                <div
+                  className="playground-card__collapsible"
+                  aria-hidden={!snippetExpanded}
+                  inert={!snippetExpanded}
+                >
+                  <div className="playground-card__collapsible-inner">
+                    <div
+                      id="snippet-body"
+                      className="playground-card__body playground-card__body--code"
+                    >
+                      <section className="code-stack">
+                        <div className="code-stack__group">
+                          <header className="code-stack__head">
+                            <h3>JSX</h3>
+                            <span>Reflects current props</span>
+                          </header>
+                          <pre className="code-block code-block--compact">
+                            {playgroundSnippet}
+                          </pre>
+                        </div>
+                        <div className="code-stack__group">
+                          <header className="code-stack__head">
+                            <h3>Selection payload</h3>
+                            <span>Latest onEmojiSelect</span>
+                          </header>
+                          <pre className="code-block code-block--compact">
+                            {selectionPayload}
+                          </pre>
+                        </div>
+                      </section>
+                    </div>
+                  </div>
+                </div>
+              </aside>
             </div>
-          </aside>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="api-section">
-        <div className="api-intro">
-          <h2>One library, three strategies</h2>
-          <p>Start simple and opt into complexity only when you need it.</p>
-        </div>
-
-        <div className="api-grid">
-          <div className="api-card">
-            <span className="api-label api-label--green">Drop-in</span>
-            <h3>Zero config</h3>
-            <p>
-              One import, one component. Works immediately with native OS
-              emoji.
-            </p>
-            <pre className="code-block">{SNIPPET_DROPIN}</pre>
+        <section className="api-section">
+          <div className="api-intro">
+            <h2>One library, three strategies</h2>
+            <p>Start simple and opt into complexity only when you need it.</p>
           </div>
 
-          <div className="api-card">
-            <span className="api-label api-label--violet">Themed</span>
-            <h3>CSS variables</h3>
-            <p>
-              Every visual token is a CSS variable. Dark mode in five lines.
-            </p>
-            <pre className="code-block">{SNIPPET_THEMED}</pre>
-          </div>
+          <div className="api-grid">
+            <div className="api-card">
+              <span className="api-label api-label--green">Drop-in</span>
+              <h3>Zero config</h3>
+              <p>
+                One import, one component. Works immediately with native OS
+                emoji.
+              </p>
+              <pre className="code-block">{SNIPPET_DROPIN}</pre>
+            </div>
 
-          <div className="api-card">
-            <span className="api-label api-label--orange">Headless</span>
-            <h3>Full control</h3>
-            <p>
-              Compose from primitives. Bring your own styles, layout, and
-              markup.
-            </p>
-            <pre className="code-block">{SNIPPET_HEADLESS}</pre>
+            <div className="api-card">
+              <span className="api-label api-label--violet">Themed</span>
+              <h3>CSS variables</h3>
+              <p>
+                Every visual token is a CSS variable. Dark mode in five lines.
+              </p>
+              <pre className="code-block">{SNIPPET_THEMED}</pre>
+            </div>
+
+            <div className="api-card">
+              <span className="api-label api-label--orange">Headless</span>
+              <h3>Full control</h3>
+              <p>
+                Compose from primitives. Bring your own styles, layout, and
+                markup.
+              </p>
+              <pre className="code-block">{SNIPPET_HEADLESS}</pre>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
       </div>
 
       <footer className="page-footer">

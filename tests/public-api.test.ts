@@ -173,19 +173,7 @@ describe('public API surface', () => {
       categories: ['smileys'],
       subcategories: ['face-smiling'],
       skinTones: ['light'],
-      rows: [
-        [
-          '1f600',
-          '\u{1F600}',
-          ['grinning'],
-          [':D'],
-          0,
-          0,
-          32,
-          47,
-          null,
-        ],
-      ],
+      rows: [['1f600', '\u{1F600}', ['grinning'], [':D'], 0, 0, 32, 47, null]],
     });
 
     expect(emoji?.name).toBe('Grinning face');

@@ -1,9 +1,6 @@
 import { useState } from 'react';
-import {
-  EmojiPicker,
-  createNativeAssetSource,
-} from '../index';
 import type { EmojiSelection } from '../index';
+import { createNativeAssetSource, EmojiPicker } from '../index';
 
 const NATIVE_SOURCE = createNativeAssetSource();
 const CUSTOM_EMOJI = [

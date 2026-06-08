@@ -1,3 +1,4 @@
+import type { EmojiPickerProps } from '../../core/types';
 import {
   MojiXEmpty,
   MojiXList,
@@ -8,7 +9,6 @@ import {
   MojiXViewport,
 } from '../MojiX';
 import { getSlotClassName, getSlotStyle } from '../utils';
-import type { EmojiPickerProps } from '../../core/types';
 
 export interface CompactPickerProps extends EmojiPickerProps {}
 
