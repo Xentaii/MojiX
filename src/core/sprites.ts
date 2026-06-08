@@ -176,7 +176,21 @@ export function createEmojiLocalSpriteSheet(
 
 export const defaultSpriteSheet = createEmojiCdnSpriteSheet();
 
-export function resolveSpriteSheetConfig(
+// Resolving a sprite-sheet config allocates a fully-defaulted object and is
+// called several times per visible cell (here, in `getSpriteStyle`, and in
+// `resolveSpriteSheetUrl`). Cache by the input config identity so stable
+// configs — the common case, since the picker resolves once and passes the
+// same object down — resolve once. Inputs are treated as immutable; mutating a
+// previously-passed config object in place will return the stale result.
+const resolvedSpriteSheetConfigCache = new WeakMap<
+  EmojiSpriteSheetConfig,
+  ResolvedEmojiSpriteSheetConfig
+>();
+let resolvedDefaultSpriteSheetConfig:
+  | ResolvedEmojiSpriteSheetConfig
+  | undefined;
+
+function buildResolvedSpriteSheetConfig(
   config?: EmojiSpriteSheetConfig,
 ): ResolvedEmojiSpriteSheetConfig {
   const base = createEmojiSpriteSheet(config);
@@ -210,6 +224,29 @@ export function resolveSpriteSheetConfig(
     url: base.url ?? defaultSpriteSheet.url ?? createEmojiCdnUrl(),
     cache,
   };
+}
+
+export function resolveSpriteSheetConfig(
+  config?: EmojiSpriteSheetConfig,
+): ResolvedEmojiSpriteSheetConfig {
+  if (config === undefined) {
+    if (!resolvedDefaultSpriteSheetConfig) {
+      resolvedDefaultSpriteSheetConfig = buildResolvedSpriteSheetConfig();
+    }
+
+    return resolvedDefaultSpriteSheetConfig;
+  }
+
+  const cached = resolvedSpriteSheetConfigCache.get(config);
+
+  if (cached) {
+    return cached;
+  }
+
+  const resolved = buildResolvedSpriteSheetConfig(config);
+  resolvedSpriteSheetConfigCache.set(config, resolved);
+
+  return resolved;
 }
 
 export function resolveSpriteSheetUrl(

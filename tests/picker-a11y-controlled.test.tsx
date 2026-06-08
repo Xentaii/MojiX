@@ -54,7 +54,7 @@ describe('picker accessibility and controlled integration', () => {
     fireEvent.keyDown(emojis[4]!, { key: 'PageUp' });
     expect(emojis[0]).toHaveFocus();
 
-    fireEvent.mouseEnter(emojis[0]!);
+    fireEvent.mouseOver(emojis[0]!);
 
     await waitFor(() => {
       expect(emojis[0]).toHaveAttribute('data-active', 'true');
