@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- Dropped Node 18 from the support policy and the CI compatibility matrix
+  (now Node 20/22). Node 18 reached end-of-life in April 2025 and the Vite 8
+  build toolchain requires Node 20.19+. `engines.node` is now `>=20.19`.
+
 ## [1.0.0-beta.3] - 2026-06-08
 
 > Beta release. No breaking changes relative to `1.0.0-beta.2`; the public API

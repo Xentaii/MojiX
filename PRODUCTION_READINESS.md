@@ -2,7 +2,7 @@
 
 This document tracks the engineering work still outstanding before a stable
 `1.0.0` release. The items completed so far (Biome lint/format, v8 coverage with
-thresholds, the Node 18/20/22 × React 18/19 CI matrix, and `publint` / `attw`
+thresholds, the Node 20/22 × React 18/19 CI matrix, and `publint` / `attw`
 package checks) are already in place; what follows is what is left.
 
 ## 1. Known packaging debt (surfaced by `attw`)
@@ -51,7 +51,7 @@ change. Before tagging stable `1.0.0`, document explicitly:
 
 - what is covered by semver (public API surface),
 - what counts as a breaking change in the emoji **data contract**,
-- the support policy for React (18 / 19) and Node (`>=18.17`) versions.
+- the support policy for React (18 / 19) and Node (`>=20.19`) versions.
 
 This is the actual blocker for "stable" — a commitment, not code.
 
