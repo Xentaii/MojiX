@@ -151,7 +151,7 @@
     "dist/lib/icons/extra.js"
   ],
   "engines": {
-    "node": ">=18.17"
+    "node": ">=20.19"
   },
   "scripts": {
     "dev": "npm run emoji:data && vite",

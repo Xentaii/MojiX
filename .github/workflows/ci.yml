@@ -45,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: ['18', '20', '22']
+        node-version: ['20', '22']
         react: ['18', '19']
     name: compat (node ${{ matrix.node-version }}, react ${{ matrix.react }})
     steps:
