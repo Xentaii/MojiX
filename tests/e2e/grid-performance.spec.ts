@@ -79,6 +79,16 @@ test.describe('emoji grid performance', () => {
     expect(autoCells).toBeLessThan(balancedCells);
   });
 
+  test('deferGridMount still mounts the grid after the shell paints', async ({
+    page,
+  }) => {
+    // gotoPerformanceFixture waits for >50 mounted cells, so reaching it proves
+    // the deferred grid mounts on the following frame rather than never.
+    await gotoPerformanceFixture(page, '&defer=1');
+    const cells = await page.locator(EMOJI_SELECTOR).count();
+    expect(cells).toBeGreaterThan(50);
+  });
+
   test('stays responsive while scrolling under CPU throttling', async ({
     page,
   }) => {

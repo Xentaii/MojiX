@@ -137,6 +137,7 @@ options and closes itself on `Escape`.
 | --- | --- | --- |
 | `virtualization` | `boolean \| EmojiPickerVirtualization` | Enables or disables row virtualization. Pass an object to fine-tune. |
 | `performanceMode` | `'auto' \| 'high' \| 'balanced'` | Tunes the render window for performance. Defaults to `'auto'`. Fields set explicitly via `virtualization` always win. |
+| `deferGridMount` | `boolean` | Mounts the grid one frame after the picker shell paints. Defaults to `false`. |
 
 `EmojiPickerVirtualization` fields:
 
@@ -145,6 +146,7 @@ options and closes itself on `Escape`.
 | `enabled` | `boolean` | `true` | Master switch. |
 | `overscanRows` | `number` | `8` | Base number of rows to render outside the viewport. Used as a floor — adaptive overscan only grows above this when scrolling. |
 | `adaptiveOverscan` | `boolean` | `true` | When enabled, overscan grows with scroll velocity (up to ~48 rows during fast wheel/trackpad bursts) and shrinks below `overscanRows` while idle. Set to `false` to keep `overscanRows` constant. |
+| `initialViewportEstimate` | `number` | `480` | Viewport height (px) assumed for the first paint before the scroll container is measured. The grid mounts only a screenful of cells initially, then refines from the real layout. Tune to your picker height or for SSR. |
 
 ### Performance mode
 
@@ -160,6 +162,19 @@ pickers are mounted at once or when you target low-end hardware.
 
 Any field you set on `virtualization` takes precedence over the mode, so you can,
 for example, force `performanceMode="high"` but still raise `overscanRows`.
+
+### First-paint and appearance
+
+The grid mounts only a screenful of cells on first paint (sized from
+`initialViewportEstimate`) instead of every category, then refines the window
+from the real layout before the browser paints. This keeps opening the picker —
+and clearing search, or loading shards — cheap regardless of dataset size.
+
+For the snappiest open, set `deferGridMount` so the toolbar/sidebar/preview
+shell paints first and the grid mounts on the next frame. To warm everything
+ahead of time (data, locale, search index, sprite-sheet decode, and the lazy
+grid chunk), call `preloadEmojiPicker(...)` / `usePreloadMojiX(...)` at app
+startup — see [Performance Recipes](../guides/performance-recipes.md).
 
 ## Rendering and Events
 

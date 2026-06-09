@@ -38,7 +38,9 @@ import {
   computeAdaptiveOverscanRows,
   computeEmojiGridPlaceholderHeight,
   computeEmojiGridVirtualWindow,
+  createEmptyEmojiGridVirtualWindow,
   createFullEmojiGridVirtualWindow,
+  createInitialEmojiGridVirtualWindows,
   type EmojiGridVirtualWindow,
   estimateEmojiGridRowHeight,
   expandEmojiGridVirtualWindow,
@@ -501,6 +503,42 @@ export function VirtualizedEmojiGrid({
   );
   const onActiveCategoryChangeRef = useRef(onActiveCategoryChange);
   const lastMeasuredRowHeightRef = useRef(Math.max(emojiSize, 1));
+  // Bounded windows for the first paint and for each new section set: only a
+  // screenful of cells is mounted instead of every category. The layout effect
+  // refines these from real measurements before the browser paints.
+  const computeInitialVirtualWindows = useCallback(
+    (previousWindows: Record<string, EmojiGridVirtualWindow> = {}) => {
+      if (!virtualizationConfig.enabled) {
+        return getFullVirtualWindows(
+          preparedSections,
+          previousWindows,
+          lastMeasuredRowHeightRef.current,
+        );
+      }
+
+      const container = scrollRef.current;
+
+      return createInitialEmojiGridVirtualWindows({
+        sections: preparedSections.map(({ section, rowCount }) => ({
+          id: section.id,
+          rowCount,
+        })),
+        rowHeight: lastMeasuredRowHeightRef.current,
+        rowGap: 4,
+        overscanRows: virtualizationConfig.overscanRows,
+        viewportHeight:
+          container?.clientHeight ||
+          virtualizationConfig.initialViewportEstimate,
+        scrollTop: container?.scrollTop ?? 0,
+      });
+    },
+    [
+      preparedSections,
+      virtualizationConfig.enabled,
+      virtualizationConfig.overscanRows,
+      virtualizationConfig.initialViewportEstimate,
+    ],
+  );
   const [tabStop, setTabStop] = useState<TabStop | null>(() =>
     getInitialTabStop(sections),
   );
@@ -508,13 +546,7 @@ export function VirtualizedEmojiGrid({
   const activeCellRef = useRef<TabStop | null>(null);
   const [virtualWindows, setVirtualWindows] = useState<
     Record<string, EmojiGridVirtualWindow>
-  >(() =>
-    getFullVirtualWindows(
-      preparedSections,
-      {},
-      lastMeasuredRowHeightRef.current,
-    ),
-  );
+  >(() => computeInitialVirtualWindows());
   const virtualWindowsRef = useRef(virtualWindows);
 
   virtualWindowsRef.current = virtualWindows;
@@ -554,17 +586,13 @@ export function VirtualizedEmojiGrid({
   }, [activeCell, preparedSections, setActiveCellTarget]);
 
   useEffect(() => {
-    const nextWindows = getFullVirtualWindows(
-      preparedSections,
-      virtualWindowsRef.current,
-      lastMeasuredRowHeightRef.current,
-    );
+    const nextWindows = computeInitialVirtualWindows(virtualWindowsRef.current);
 
     if (!areVirtualWindowsEqual(virtualWindowsRef.current, nextWindows)) {
       virtualWindowsRef.current = nextWindows;
       setVirtualWindows(nextWindows);
     }
-  }, [preparedSections]);
+  }, [computeInitialVirtualWindows]);
 
   const measureLayoutMetrics = useCallback(() => {
     const container = scrollRef.current;
@@ -1374,13 +1402,18 @@ export function VirtualizedEmojiGrid({
       )}
 
       {preparedSections.map(({ section, sectionIndex, rowCount }) => {
+        const fallbackWindowOptions = {
+          rowCount,
+          rowHeight: lastMeasuredRowHeightRef.current,
+          rowGap: 4,
+        };
+        // A section with no computed window yet renders empty when virtualized
+        // (the layout effect fills it in before paint) and full otherwise.
         const virtualWindow =
           virtualWindows[section.id] ??
-          createFullEmojiGridVirtualWindow({
-            rowCount,
-            rowHeight: lastMeasuredRowHeightRef.current,
-            rowGap: 4,
-          });
+          (virtualizationConfig.enabled
+            ? createEmptyEmojiGridVirtualWindow(fallbackWindowOptions)
+            : createFullEmojiGridVirtualWindow(fallbackWindowOptions));
         const visibleEmojiStart =
           virtualWindow.endRow >= virtualWindow.startRow
             ? virtualWindow.startRow * columns

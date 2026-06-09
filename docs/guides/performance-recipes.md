@@ -28,6 +28,32 @@ function ComposerShell() {
 }
 ```
 
+## Warming A Hidden Picker At Startup
+
+The picker body always renders while the component is mounted (visibility is the
+host's concern), so you can fully warm a picker that is not on screen yet:
+
+- Call `preloadEmojiPicker({ locale, spriteSheet, warmSpriteSheet: true })` (or
+  `usePreloadMojiX(...)`) at app startup to warm data, locale, search index,
+  sprite-sheet decode, and the lazy grid chunk before the picker is opened.
+- Mount the picker in a hidden, inert container (e.g. a closed popover kept in
+  the DOM, or `hidden`/`visibility:hidden` rather than conditional rendering) so
+  its tree stays built — reopening then costs nothing.
+- The grid only mounts a screenful of cells on first paint, so even a freshly
+  shown picker does not create every category's cells at once.
+- Add `deferGridMount` so the shell paints first and the grid arrives one frame
+  later when the picker becomes visible.
+
+```tsx
+// App startup
+usePreloadMojiX({ locale: 'en', spriteSheet, warmSpriteSheet: true });
+
+// Hidden until opened; the tree (and its warmed caches) persist.
+<div hidden={!open}>
+  <EmojiPicker locale="en" spriteSheet={spriteSheet} deferGridMount />
+</div>
+```
+
 ## Huge Custom Emoji List
 
 - Leave virtualization enabled.

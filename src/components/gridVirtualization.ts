@@ -4,6 +4,7 @@ export interface ResolvedEmojiGridVirtualization {
   enabled: boolean;
   overscanRows: number;
   adaptiveOverscan: boolean;
+  initialViewportEstimate: number;
 }
 
 export interface EmojiGridVirtualWindow {
@@ -16,6 +17,8 @@ export interface EmojiGridVirtualWindow {
 }
 
 export const DEFAULT_OVERSCAN_ROWS = 16;
+/** Default viewport height assumed before the scroll container is measured. */
+export const DEFAULT_INITIAL_VIEWPORT_ESTIMATE = 480;
 const ADAPTIVE_OVERSCAN_LOOKAHEAD_MS = 160;
 const ADAPTIVE_OVERSCAN_MAX_ROWS = 72;
 
@@ -27,6 +30,7 @@ export function resolveEmojiGridVirtualization(
       enabled: false,
       overscanRows: 0,
       adaptiveOverscan: false,
+      initialViewportEstimate: DEFAULT_INITIAL_VIEWPORT_ESTIMATE,
     };
   }
 
@@ -35,6 +39,7 @@ export function resolveEmojiGridVirtualization(
       enabled: true,
       overscanRows: DEFAULT_OVERSCAN_ROWS,
       adaptiveOverscan: true,
+      initialViewportEstimate: DEFAULT_INITIAL_VIEWPORT_ESTIMATE,
     };
   }
 
@@ -45,6 +50,13 @@ export function resolveEmojiGridVirtualization(
       Math.floor(virtualization.overscanRows ?? DEFAULT_OVERSCAN_ROWS),
     ),
     adaptiveOverscan: virtualization.adaptiveOverscan ?? true,
+    initialViewportEstimate: Math.max(
+      1,
+      Math.floor(
+        virtualization.initialViewportEstimate ??
+          DEFAULT_INITIAL_VIEWPORT_ESTIMATE,
+      ),
+    ),
   };
 }
 
@@ -171,6 +183,82 @@ export function createFullEmojiGridVirtualWindow(options: {
     rowHeight,
     rowGap,
   } satisfies EmojiGridVirtualWindow;
+}
+
+/** Render nothing for this section (all rows live behind the before placeholder). */
+export function createEmptyEmojiGridVirtualWindow(options: {
+  rowCount: number;
+  rowHeight: number;
+  rowGap: number;
+}) {
+  const { rowCount, rowHeight, rowGap } = options;
+
+  return {
+    startRow: 0,
+    endRow: -1,
+    beforeRows: rowCount,
+    afterRows: 0,
+    rowHeight,
+    rowGap,
+  } satisfies EmojiGridVirtualWindow;
+}
+
+const ESTIMATED_SECTION_HEADER_HEIGHT = 34;
+const ESTIMATED_SECTION_GAP = 8;
+
+/**
+ * Builds a bounded set of virtual windows for the first paint (and for the
+ * moment a new section set arrives) without measuring the DOM. Sections within
+ * the estimated viewport render only their visible rows plus overscan; sections
+ * below it render nothing. This avoids mounting every category's cells in the
+ * first commit — the layout effect then refines the windows from real
+ * measurements before the browser paints.
+ */
+export function createInitialEmojiGridVirtualWindows(options: {
+  sections: ReadonlyArray<{ id: string; rowCount: number }>;
+  rowHeight: number;
+  rowGap: number;
+  overscanRows: number;
+  viewportHeight: number;
+  scrollTop?: number;
+  paddingTop?: number;
+  headerHeight?: number;
+  sectionGap?: number;
+}): Record<string, EmojiGridVirtualWindow> {
+  const {
+    sections,
+    rowHeight,
+    rowGap,
+    overscanRows,
+    viewportHeight,
+    scrollTop = 0,
+    paddingTop = 0,
+    headerHeight = ESTIMATED_SECTION_HEADER_HEIGHT,
+    sectionGap = ESTIMATED_SECTION_GAP,
+  } = options;
+  const result: Record<string, EmojiGridVirtualWindow> = {};
+  let cursorTop = paddingTop;
+
+  for (const section of sections) {
+    const gridTop = cursorTop + headerHeight;
+
+    result[section.id] = computeEmojiGridVirtualWindow({
+      rowCount: section.rowCount,
+      scrollTop,
+      viewportHeight,
+      gridTop,
+      rowHeight,
+      rowGap,
+      overscanRows,
+    });
+
+    cursorTop =
+      gridTop +
+      computeEmojiGridPlaceholderHeight(section.rowCount, rowHeight, rowGap) +
+      sectionGap;
+  }
+
+  return result;
 }
 
 export function computeEmojiGridVirtualWindow(options: {
