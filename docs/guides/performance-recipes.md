@@ -56,6 +56,8 @@ function ComposerShell() {
 
 ## Low-End Devices
 
+- Set `performanceMode` (defaults to `'auto'`, which detects constrained
+  devices and shrinks the render window). Force `'high'` to opt in everywhere.
 - Preload only likely first categories with
   `preloadEmojiPicker({ shards: ['smileys', 'people'] })`.
 - Render with `loadCategoryShards` so the rest loads on navigation.
@@ -63,6 +65,20 @@ function ComposerShell() {
   supports Web Workers.
 - Keep custom renderers lightweight; expensive previews belong behind
   `MojiX.ActiveEmoji`, not inside every emoji cell.
+
+## Measuring It Yourself
+
+There is a dedicated demo route for profiling and a Playwright benchmark:
+
+- Open `/?fixture=performance` in the demo (`npm run dev`). Append
+  `&mode=high` or `&mode=balanced` to force a mode.
+- In Chrome DevTools use **Performance monitor** (watch "JS event listeners"
+  and style/layout recalcs while scrolling) and the **Performance** panel with
+  **CPU: 6× slowdown** to emulate a weak machine.
+- Run the structural checks (high mounts a lighter window than balanced;
+  `auto` detects a low-core device) with `npm run test:e2e`.
+- Run the timing benchmark (worst long task while scrolling under 6× CPU
+  throttling) with `PERF=1 npx playwright test grid-performance`.
 
 ## Related Pages
 

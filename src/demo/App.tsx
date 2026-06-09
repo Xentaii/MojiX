@@ -19,6 +19,7 @@ import sparkEmoji from './assets/mojix-spark.svg';
 import waveEmoji from './assets/mojix-wave.svg';
 import { CdnDefaultFixture } from './CdnDefaultFixture';
 import { OfflinePresetFixture } from './OfflinePresetFixture';
+import { PerformanceFixture } from './PerformanceFixture';
 import {
   BUILTIN_DEMO_THEMES,
   cloneDemoThemePalette,
@@ -504,6 +505,10 @@ export function App() {
 
   if (activeFixture === 'offline-preset') {
     return <OfflinePresetFixture />;
+  }
+
+  if (activeFixture === 'performance') {
+    return <PerformanceFixture />;
   }
 
   const [lastEmoji, setLastEmoji] = useState<EmojiSelection | null>(null);
