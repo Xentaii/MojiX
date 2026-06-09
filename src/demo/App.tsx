@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import {
+  type ComponentProps,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type {
   CustomEmoji,
   EmojiCategoryIconGlyph,
@@ -489,6 +495,102 @@ function buildPlaygroundSnippet(options: {
   return lines.join('\n');
 }
 
+type HeroPopoverPickerProps = Pick<
+  ComponentProps<typeof EmojiPicker>,
+  'spriteSheet' | 'assetSource' | 'locale' | 'style'
+> & {
+  triggerEmoji: string;
+  onSelect: (selection: EmojiSelection) => void;
+};
+
+function HeroPopoverPicker({
+  spriteSheet,
+  assetSource,
+  locale,
+  style,
+  triggerEmoji,
+  onSelect,
+}: HeroPopoverPickerProps) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div
+      className={`popover-picker${open ? ' is-open' : ''}`}
+      ref={containerRef}
+    >
+      <button
+        type="button"
+        className="popover-picker__trigger"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span className="popover-picker__trigger-emoji" aria-hidden="true">
+          {triggerEmoji}
+        </span>
+        {open ? 'Close picker' : 'Open picker'}
+      </button>
+
+      {open && (
+        <div
+          className="popover-picker__panel"
+          role="dialog"
+          aria-label="Emoji picker"
+        >
+          <EmojiPicker
+            open
+            closeOnEscape
+            trapFocus
+            onOpenChange={(next) => {
+              if (!next) {
+                setOpen(false);
+              }
+            }}
+            locale={locale}
+            spriteSheet={spriteSheet}
+            assetSource={assetSource}
+            style={style}
+            onEmojiSelect={(selection) => {
+              onSelect(selection);
+              setOpen(false);
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function App() {
   const activeFixture =
     typeof window === 'undefined'
@@ -864,7 +966,21 @@ export function App() {
               Drop-in ready out of the box. Fully composable when you need
               control.
             </p>
-            <code className="install-cmd">npm install mojix-picker</code>
+            <div className="hero__cta">
+              <HeroPopoverPicker
+                spriteSheet={spriteSheet}
+                assetSource={spriteWarmed ? undefined : NATIVE_FALLBACK_SOURCE}
+                locale={locale}
+                style={pickerThemeStyle}
+                triggerEmoji={lastEmoji?.native ?? DEFAULT_PREVIEW_EMOJI}
+                onSelect={handleEmojiSelect}
+              />
+              <code className="install-cmd">npm install mojix-picker</code>
+            </div>
+            <p className="hero__cta-hint">
+              Click <strong>Open picker</strong> for the popover pattern — your
+              pick lands in the playground below.
+            </p>
           </div>
         </header>
 

@@ -205,6 +205,126 @@ pre {
   user-select: all;
 }
 
+.hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.hero__cta-hint {
+  margin: 0;
+  color: #8c8074;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.hero__cta-hint strong {
+  color: #d8cfc2;
+  font-weight: 600;
+}
+
+.popover-picker {
+  position: relative;
+  display: inline-flex;
+}
+
+.popover-picker__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 20px 11px 14px;
+  border: 1px solid rgba(255, 156, 102, 0.35);
+  border-radius: 14px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 156, 102, 0.22),
+    rgba(255, 156, 102, 0.12)
+  );
+  color: #ffd9bf;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+
+.popover-picker__trigger:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 156, 102, 0.6);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 156, 102, 0.3),
+    rgba(255, 156, 102, 0.16)
+  );
+}
+
+.popover-picker__trigger:focus-visible {
+  outline: 2px solid rgba(255, 183, 138, 0.8);
+  outline-offset: 2px;
+}
+
+.popover-picker__trigger-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.popover-picker__panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 0;
+  z-index: 50;
+  width: clamp(300px, 86vw, 340px);
+  height: clamp(360px, 56vh, 440px);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 28px 70px rgba(0, 0, 0, 0.55);
+  transform-origin: top left;
+  animation: popover-picker-in 0.14s ease;
+}
+
+.popover-picker__panel .mx-picker {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  min-height: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+@keyframes popover-picker-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popover-picker__panel {
+    animation: none;
+  }
+
+  .popover-picker__trigger:hover {
+    transform: none;
+  }
+}
+
 .showcase-section {
   margin: 8px 0 56px;
 }
