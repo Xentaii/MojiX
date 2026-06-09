@@ -15,7 +15,7 @@ export interface EmojiGridVirtualWindow {
   rowGap: number;
 }
 
-const DEFAULT_OVERSCAN_ROWS = 16;
+export const DEFAULT_OVERSCAN_ROWS = 16;
 const ADAPTIVE_OVERSCAN_LOOKAHEAD_MS = 160;
 const ADAPTIVE_OVERSCAN_MAX_ROWS = 72;
 

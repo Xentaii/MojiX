@@ -490,10 +490,33 @@ export interface EmojiPickerVirtualization {
   adaptiveOverscan?: boolean;
 }
 
+/**
+ * Controls how aggressively the grid trades render-window size for scroll
+ * smoothness.
+ *
+ * - `'balanced'` keeps a large, velocity-adaptive render window (the behavior
+ *   shipped before this option existed).
+ * - `'high'` shrinks the render window and disables velocity-based overscan
+ *   expansion, lowering mounted-DOM and memory cost — useful on low-end
+ *   devices or when several pickers are mounted at once.
+ * - `'auto'` resolves to `'high'` when the device reports few CPU cores, little
+ *   memory, or Save-Data, and to `'balanced'` otherwise.
+ */
+export type EmojiPerformanceMode = 'auto' | 'high' | 'balanced';
+
 export interface EmojiPickerProps
   extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> {
   colors?: EmojiPickerColors;
   virtualization?: boolean | EmojiPickerVirtualization;
+  /**
+   * Tunes the grid render window for performance. Defaults to `'auto'`, which
+   * keeps the previous balanced behavior on capable devices and switches to a
+   * lighter window on constrained ones. Fields set explicitly via
+   * {@link EmojiPickerProps.virtualization} always take precedence.
+   *
+   * @see {@link EmojiPerformanceMode}
+   */
+  performanceMode?: EmojiPerformanceMode;
   /**
    * When `true`, the picker fetches missing per-category data shards on
    * demand as the user navigates between categories. Use together with

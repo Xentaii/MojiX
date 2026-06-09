@@ -136,6 +136,7 @@ options and closes itself on `Escape`.
 | Prop | Type | Purpose |
 | --- | --- | --- |
 | `virtualization` | `boolean \| EmojiPickerVirtualization` | Enables or disables row virtualization. Pass an object to fine-tune. |
+| `performanceMode` | `'auto' \| 'high' \| 'balanced'` | Tunes the render window for performance. Defaults to `'auto'`. Fields set explicitly via `virtualization` always win. |
 
 `EmojiPickerVirtualization` fields:
 
@@ -144,6 +145,21 @@ options and closes itself on `Escape`.
 | `enabled` | `boolean` | `true` | Master switch. |
 | `overscanRows` | `number` | `8` | Base number of rows to render outside the viewport. Used as a floor — adaptive overscan only grows above this when scrolling. |
 | `adaptiveOverscan` | `boolean` | `true` | When enabled, overscan grows with scroll velocity (up to ~48 rows during fast wheel/trackpad bursts) and shrinks below `overscanRows` while idle. Set to `false` to keep `overscanRows` constant. |
+
+### Performance mode
+
+`performanceMode` picks sensible virtualization defaults without forcing you to
+hand-tune `overscanRows`/`adaptiveOverscan`. It is most useful when several
+pickers are mounted at once or when you target low-end hardware.
+
+| Mode | Behavior |
+| --- | --- |
+| `'balanced'` | Large, velocity-adaptive render window (the behavior shipped before this option existed). |
+| `'high'` | Smaller render window with adaptive overscan disabled, lowering mounted-DOM and memory cost. |
+| `'auto'` (default) | Resolves to `'high'` when the device reports few CPU cores, little memory, or Save-Data (via `navigator.hardwareConcurrency` / `deviceMemory` / `connection.saveData`); otherwise `'balanced'`. Falls back to `'balanced'` during SSR. |
+
+Any field you set on `virtualization` takes precedence over the mode, so you can,
+for example, force `performanceMode="high"` but still raise `overscanRows`.
 
 ## Rendering and Events
 

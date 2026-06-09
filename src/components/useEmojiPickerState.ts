@@ -62,6 +62,7 @@ import {
   readStoredSkinTone,
   writeStoredSkinTone,
 } from '../core/storage';
+import { applyPerformanceModeToVirtualization } from './performanceProfile';
 
 // Used as the default asset source when the caller provides no sprite sheet
 // and no explicit asset source, so "just works" uses native OS emoji.
@@ -350,6 +351,7 @@ export function useEmojiPickerState({
   labels,
   colors,
   virtualization,
+  performanceMode = 'auto',
   loadCategoryShards = false,
   autoScrollCategoriesOnHover = true,
   categoryScrollBehavior = 'smooth',
@@ -395,6 +397,10 @@ export function useEmojiPickerState({
   const resolvedSpriteSheet = useMemo(
     () => resolveSpriteSheetConfig(spriteSheetProp ?? defaultSpriteSheet),
     [spriteSheetProp],
+  );
+  const effectiveVirtualization = useMemo(
+    () => applyPerformanceModeToVirtualization(virtualization, performanceMode),
+    [virtualization, performanceMode],
   );
   const spriteSheetCacheKey = useMemo(
     () => createSpriteSheetCacheKey(resolvedSpriteSheet),
@@ -1295,7 +1301,7 @@ export function useEmojiPickerState({
     classNames,
     styles,
     colors,
-    virtualization,
+    virtualization: effectiveVirtualization,
     assetSource,
     gridAssetSource: resolvedGridAssetSource,
     previewAssetSource: resolvedPreviewAssetSource,

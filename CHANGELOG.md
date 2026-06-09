@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- `performanceMode` prop (`'auto' | 'high' | 'balanced'`, default `'auto'`) on
+  `EmojiPicker` / `MojiX.Root`. It picks the virtualization render window for
+  the device — `'auto'` switches to a lighter window when the device reports
+  few CPU cores, little memory, or Save-Data, and stays balanced otherwise.
+  Capable devices and SSR keep the previous behavior; anything set explicitly
+  via `virtualization` still takes precedence.
+
 ### Changed
 
 - Dropped Node 18 from the support policy and the CI compatibility matrix
