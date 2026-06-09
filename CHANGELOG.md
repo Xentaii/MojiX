@@ -14,6 +14,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   few CPU cores, little memory, or Save-Data, and stays balanced otherwise.
   Capable devices and SSR keep the previous behavior; anything set explicitly
   via `virtualization` still takes precedence.
+- `deferGridMount` prop on `EmojiPicker` / `MojiX.Root` (default `false`).
+  When enabled, the grid mounts one frame after the picker shell paints, so
+  the picker appears instantly and fills the grid on the next frame.
+- `virtualization.initialViewportEstimate` to tune the assumed viewport height
+  used for the first paint (and for SSR), before the scroll container is
+  measured.
 
 ### Changed
 
@@ -31,6 +37,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   instead of attaching click/hover/focus/blur listeners to every emoji
   button. Cells are now purely presentational, lowering per-cell mount cost
   and memory for large categories and multiple pickers.
+- The virtualized grid now mounts only a screenful of cells on first paint
+  (and whenever the section set changes) instead of every category, using an
+  estimated viewport that the layout pass refines before paint. This removes
+  the create-then-prune burst of ~all cells on open, search-clear, and shard
+  load.
 
 ## [1.0.0-beta.3] - 2026-06-08
 

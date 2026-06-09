@@ -3,6 +3,8 @@ import {
   computeAdaptiveOverscanRows,
   computeEmojiGridPlaceholderHeight,
   computeEmojiGridVirtualWindow,
+  createInitialEmojiGridVirtualWindows,
+  DEFAULT_INITIAL_VIEWPORT_ESTIMATE,
   expandEmojiGridVirtualWindow,
   findEmojiGridActiveSectionId,
   getEmojiGridRowCount,
@@ -15,11 +17,13 @@ describe('grid virtualization helpers', () => {
       enabled: true,
       overscanRows: 16,
       adaptiveOverscan: true,
+      initialViewportEstimate: DEFAULT_INITIAL_VIEWPORT_ESTIMATE,
     });
     expect(resolveEmojiGridVirtualization(false)).toEqual({
       enabled: false,
       overscanRows: 0,
       adaptiveOverscan: false,
+      initialViewportEstimate: DEFAULT_INITIAL_VIEWPORT_ESTIMATE,
     });
     expect(
       resolveEmojiGridVirtualization({ enabled: true, overscanRows: 6 }),
@@ -27,17 +31,20 @@ describe('grid virtualization helpers', () => {
       enabled: true,
       overscanRows: 6,
       adaptiveOverscan: true,
+      initialViewportEstimate: DEFAULT_INITIAL_VIEWPORT_ESTIMATE,
     });
     expect(
       resolveEmojiGridVirtualization({
         enabled: true,
         overscanRows: 6,
         adaptiveOverscan: false,
+        initialViewportEstimate: 320,
       }),
     ).toEqual({
       enabled: true,
       overscanRows: 6,
       adaptiveOverscan: false,
+      initialViewportEstimate: 320,
     });
   });
 
@@ -156,6 +163,38 @@ describe('grid virtualization helpers', () => {
         rowHeight: 0,
       }),
     ).toBe(8);
+  });
+
+  it('bounds the initial windows to the estimated viewport', () => {
+    const sections = [
+      { id: 'a', rowCount: 60 },
+      { id: 'b', rowCount: 60 },
+      { id: 'c', rowCount: 60 },
+    ];
+    const windows = createInitialEmojiGridVirtualWindows({
+      sections,
+      rowHeight: 40,
+      rowGap: 4,
+      overscanRows: 4,
+      viewportHeight: 360,
+    });
+
+    // The first section renders only the visible rows plus overscan...
+    expect(windows.a.endRow).toBeGreaterThanOrEqual(0);
+    expect(windows.a.endRow).toBeLessThan(20);
+    // ...and sections pushed below the estimated viewport render nothing.
+    expect(windows.c).toMatchObject({
+      startRow: 0,
+      endRow: -1,
+      beforeRows: 60,
+    });
+
+    const totalRenderedRows = sections.reduce((sum, section) => {
+      const window = windows[section.id]!;
+      return sum + Math.max(0, window.endRow - window.startRow + 1);
+    }, 0);
+    // Far fewer than the 180 rows a full-window initial render would mount.
+    expect(totalRenderedRows).toBeLessThan(30);
   });
 
   it('finds the active category from cached section offsets', () => {

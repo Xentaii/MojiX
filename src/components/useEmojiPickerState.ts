@@ -262,6 +262,7 @@ export interface EmojiPickerState {
   styles: EmojiPickerProps['styles'];
   colors: EmojiPickerColors | undefined;
   virtualization: EmojiPickerProps['virtualization'];
+  deferGridMount: boolean;
   assetSource: EmojiPickerProps['assetSource'];
   gridAssetSource: EmojiPickerProps['gridAssetSource'];
   previewAssetSource: EmojiPickerProps['previewAssetSource'];
@@ -352,6 +353,7 @@ export function useEmojiPickerState({
   colors,
   virtualization,
   performanceMode = 'auto',
+  deferGridMount = false,
   loadCategoryShards = false,
   autoScrollCategoriesOnHover = true,
   categoryScrollBehavior = 'smooth',
@@ -1302,6 +1304,7 @@ export function useEmojiPickerState({
     styles,
     colors,
     virtualization: effectiveVirtualization,
+    deferGridMount,
     assetSource,
     gridAssetSource: resolvedGridAssetSource,
     previewAssetSource: resolvedPreviewAssetSource,

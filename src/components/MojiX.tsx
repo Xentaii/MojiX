@@ -1,4 +1,4 @@
-import { type HTMLAttributes, useEffect } from 'react';
+import { type HTMLAttributes, useEffect, useState } from 'react';
 import type { SKIN_TONE_OPTIONS } from '../core/constants';
 import type {
   EmojiCategoryId,
@@ -111,6 +111,7 @@ export function MojiXList({
   showEmptyState = false,
 }: MojiXListProps) {
   const context = useMojiXContext();
+  const [gridMounted, setGridMounted] = useState(!context.deferGridMount);
 
   useEffect(() => {
     if (shouldPreloadVirtualizedGrid(context.virtualization)) {
@@ -119,6 +120,27 @@ export function MojiXList({
 
     return undefined;
   }, [context.virtualization]);
+
+  // Phased reveal: let the picker shell paint first, then mount the grid on the
+  // next frame. Off unless `deferGridMount` is set.
+  useEffect(() => {
+    if (gridMounted) {
+      return undefined;
+    }
+
+    if (typeof requestAnimationFrame !== 'function') {
+      setGridMounted(true);
+      return undefined;
+    }
+
+    const handle = requestAnimationFrame(() => setGridMounted(true));
+
+    return () => cancelAnimationFrame(handle);
+  }, [gridMounted]);
+
+  if (!gridMounted) {
+    return null;
+  }
 
   return (
     <EmojiGrid

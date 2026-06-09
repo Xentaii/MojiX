@@ -3,12 +3,16 @@ import { EmojiPicker } from '../index';
 
 const PERFORMANCE_MODES: EmojiPerformanceMode[] = ['auto', 'high', 'balanced'];
 
-function readPerformanceMode(): EmojiPerformanceMode | undefined {
+function readQueryParam(name: string): string | null {
   if (typeof window === 'undefined') {
-    return undefined;
+    return null;
   }
 
-  const value = new URLSearchParams(window.location.search).get('mode');
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+function readPerformanceMode(): EmojiPerformanceMode | undefined {
+  const value = readQueryParam('mode');
 
   return PERFORMANCE_MODES.includes(value as EmojiPerformanceMode)
     ? (value as EmojiPerformanceMode)
@@ -17,6 +21,7 @@ function readPerformanceMode(): EmojiPerformanceMode | undefined {
 
 export function PerformanceFixture() {
   const performanceMode = readPerformanceMode();
+  const deferGridMount = readQueryParam('defer') === '1';
 
   return (
     <main className="fixture-page" data-testid="performance-fixture">
@@ -40,6 +45,7 @@ export function PerformanceFixture() {
         <EmojiPicker
           className="fixture-picker"
           performanceMode={performanceMode}
+          deferGridMount={deferGridMount}
         />
       </section>
     </main>

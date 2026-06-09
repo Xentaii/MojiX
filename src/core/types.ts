@@ -488,6 +488,14 @@ export interface EmojiPickerVirtualization {
    * constant regardless of scroll velocity.
    */
   adaptiveOverscan?: boolean;
+  /**
+   * Viewport height (in px) assumed for the very first render, before the
+   * scroll container has been measured. The grid uses it to mount only a
+   * screenful of cells on first paint instead of every category, then refines
+   * from the real layout. Tune it to your picker height, or for SSR. Defaults
+   * to `480`.
+   */
+  initialViewportEstimate?: number;
 }
 
 /**
@@ -517,6 +525,13 @@ export interface EmojiPickerProps
    * @see {@link EmojiPerformanceMode}
    */
   performanceMode?: EmojiPerformanceMode;
+  /**
+   * When `true`, the emoji grid mounts one frame after the rest of the picker
+   * shell (toolbar, sidebar, preview) has painted. This makes the picker
+   * "appear" instantly on open and fills in the grid on the next frame, at the
+   * cost of a one-frame empty viewport. Off by default.
+   */
+  deferGridMount?: boolean;
   /**
    * When `true`, the picker fetches missing per-category data shards on
    * demand as the user navigates between categories. Use together with
