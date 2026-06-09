@@ -1,10 +1,4 @@
-import {
-  type ComponentProps,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   CustomEmoji,
   EmojiCategoryIconGlyph,
@@ -495,24 +489,42 @@ function buildPlaygroundSnippet(options: {
   return lines.join('\n');
 }
 
-type HeroPopoverPickerProps = Pick<
-  ComponentProps<typeof EmojiPicker>,
-  'spriteSheet' | 'assetSource' | 'locale' | 'style'
-> & {
-  triggerEmoji: string;
-  onSelect: (selection: EmojiSelection) => void;
-};
+// The composer mock opens the picker styled exactly like one of the four
+// showcase presets, so the hero demo and the theme grid below read as one
+// composition.
+const COMPOSER_PRESET: ShowcasePreset =
+  SHOWCASE_PRESETS.find((preset) => preset.id === 'pulse') ??
+  SHOWCASE_PRESETS[0]!;
 
-function HeroPopoverPicker({
-  spriteSheet,
-  assetSource,
-  locale,
-  style,
-  triggerEmoji,
-  onSelect,
-}: HeroPopoverPickerProps) {
+function ComposerDemo() {
+  const preset = COMPOSER_PRESET;
+  const spriteSheet = SHOWCASE_SPRITE_SHEETS[preset.vendor];
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [warmed, setWarmed] = useState(false);
+  const [message, setMessage] = useState('');
+  const toolsRef = useRef<HTMLDivElement>(null);
+
+  // Warm the preset's sprite sheet the first time the picker opens; until then
+  // it renders with native emoji so there is no blank flash.
+  useEffect(() => {
+    if (!open || warmed) {
+      return;
+    }
+
+    let cancelled = false;
+
+    warmEmojiSpriteSheet(spriteSheet)
+      .then(() => {
+        if (!cancelled) {
+          setWarmed(true);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, warmed, spriteSheet]);
 
   useEffect(() => {
     if (!open) {
@@ -521,8 +533,8 @@ function HeroPopoverPicker({
 
     function handlePointerDown(event: PointerEvent) {
       if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
+        toolsRef.current &&
+        !toolsRef.current.contains(event.target as Node)
       ) {
         setOpen(false);
       }
@@ -545,48 +557,87 @@ function HeroPopoverPicker({
 
   return (
     <div
-      className={`popover-picker${open ? ' is-open' : ''}`}
-      ref={containerRef}
+      className="composer"
+      style={{ ['--composer-accent' as string]: preset.palette.accent }}
     >
-      <button
-        type="button"
-        className="popover-picker__trigger"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <span className="popover-picker__trigger-emoji" aria-hidden="true">
-          {triggerEmoji}
+      <div className="composer__chrome">
+        <span className="composer__dots" aria-hidden="true">
+          <i />
+          <i />
+          <i />
         </span>
-        {open ? 'Close picker' : 'Open picker'}
-      </button>
+        <span className="composer__chrome-label">
+          {preset.name} theme · popover
+        </span>
+      </div>
 
-      {open && (
-        <div
-          className="popover-picker__panel"
-          role="dialog"
-          aria-label="Emoji picker"
-        >
-          <EmojiPicker
-            open
-            closeOnEscape
-            trapFocus
-            onOpenChange={(next) => {
-              if (!next) {
-                setOpen(false);
-              }
-            }}
-            locale={locale}
-            spriteSheet={spriteSheet}
-            assetSource={assetSource}
-            style={style}
-            onEmojiSelect={(selection) => {
-              onSelect(selection);
-              setOpen(false);
-            }}
-          />
+      <div className="composer__field">
+        <span className="composer__avatar" aria-hidden="true">
+          🙂
+        </span>
+        <div className="composer__message">
+          {message ? (
+            <span className="composer__message-text">{message}</span>
+          ) : (
+            <span className="composer__placeholder">Write a message…</span>
+          )}
         </div>
-      )}
+
+        <div className="composer__tools" ref={toolsRef}>
+          <button
+            type="button"
+            className="composer__emoji"
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            aria-label="Add emoji"
+            onClick={() => setOpen((value) => !value)}
+          >
+            😀
+          </button>
+
+          {open && (
+            <div
+              className="composer__popover"
+              role="dialog"
+              aria-label="Emoji picker"
+            >
+              <EmojiPicker
+                open
+                closeOnEscape
+                trapFocus
+                onOpenChange={(next) => {
+                  if (!next) {
+                    setOpen(false);
+                  }
+                }}
+                showPreview={false}
+                locale="en"
+                emojiSize={preset.emojiSize}
+                columns={preset.columns}
+                showSkinTones={preset.showSkinTones}
+                categoryIconStyle={preset.categoryIconStyle}
+                style={createPickerThemeStyle(preset.palette)}
+                spriteSheet={spriteSheet}
+                assetSource={warmed ? undefined : NATIVE_FALLBACK_SOURCE}
+                onEmojiSelect={(selection) => {
+                  if (selection.native) {
+                    setMessage((current) => current + selection.native);
+                  }
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        <button
+          type="button"
+          className="composer__send"
+          onClick={() => setMessage('')}
+          disabled={message.length === 0}
+        >
+          Send
+        </button>
+      </div>
     </div>
   );
 }
@@ -966,20 +1017,15 @@ export function App() {
               Drop-in ready out of the box. Fully composable when you need
               control.
             </p>
-            <div className="hero__cta">
-              <HeroPopoverPicker
-                spriteSheet={spriteSheet}
-                assetSource={spriteWarmed ? undefined : NATIVE_FALLBACK_SOURCE}
-                locale={locale}
-                style={pickerThemeStyle}
-                triggerEmoji={lastEmoji?.native ?? DEFAULT_PREVIEW_EMOJI}
-                onSelect={handleEmojiSelect}
-              />
-              <code className="install-cmd">npm install mojix-picker</code>
-            </div>
-            <p className="hero__cta-hint">
-              Click <strong>Open picker</strong> for the popover pattern — your
-              pick lands in the playground below.
+            <code className="install-cmd">npm install mojix-picker</code>
+          </div>
+
+          <div className="hero__demo">
+            <ComposerDemo />
+            <p className="hero__demo-hint">
+              A real composer with an emoji button — the popover uses the{' '}
+              <strong>{COMPOSER_PRESET.name}</strong> preset from the grid
+              below.
             </p>
           </div>
         </header>
