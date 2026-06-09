@@ -27,11 +27,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   resolve/style/url path no longer reallocates a defaulted config on every
   render. This cuts allocation churn while scrolling and with several pickers
   mounted.
-- The emoji grid now sets `content-visibility: auto` with a remembered
-  `contain-intrinsic-size` on each category grid, letting the browser skip
-  layout/paint for grids scrolled out of view (complements the JS row
-  virtualization; the sticky section header stays outside the contained
-  subtree).
 - Reworked grid interaction to event delegation on the scroll container
   instead of attaching click/hover/focus/blur listeners to every emoji
   button. Cells are now purely presentational, lowering per-cell mount cost
