@@ -157,6 +157,7 @@ export type {
   EmojiMixedAssetSource,
   EmojiNativeAsset,
   EmojiNativeAssetSource,
+  EmojiPerformanceMode,
   EmojiPickerClassNames,
   EmojiPickerColors,
   EmojiPickerLabels,
