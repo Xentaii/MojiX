@@ -419,13 +419,12 @@
   grid-template-columns: repeat(var(--mx-columns), minmax(0, 1fr));
   gap: 4px;
   contain: layout style;
-  /* Let the browser skip layout/paint for grids scrolled fully out of view,
-     complementing the JS row virtualization. `auto` remembers each grid's last
-     rendered height so the scroll position stays stable when it is re-skipped;
-     applied to the grid (not the section) so the sticky header is never
-     inside a content-visibility subtree. */
-  content-visibility: auto;
-  contain-intrinsic-size: auto 240px;
+  /* NB: do not add `content-visibility: auto` here. The grid carries its full
+     category height via the before/after placeholder rows, so letting the
+     browser skip an off-screen grid and substitute `contain-intrinsic-size`
+     collapses the scroll height and fights the JS row virtualization — that
+     caused the scrollbar-drag "teleport" regression. Offscreen skipping is
+     already handled by the virtual window. */
 }
 
 .mx-picker__emoji {
