@@ -572,16 +572,14 @@ function ComposerDemo() {
       </div>
 
       <div className="composer__field">
-        <span className="composer__avatar" aria-hidden="true">
-          🙂
-        </span>
-        <div className="composer__message">
-          {message ? (
-            <span className="composer__message-text">{message}</span>
-          ) : (
-            <span className="composer__placeholder">Write a message…</span>
-          )}
-        </div>
+        <input
+          type="text"
+          className="composer__input"
+          value={message}
+          onChange={(event) => setMessage(event.target.value)}
+          placeholder="Write a message…"
+          aria-label="Message"
+        />
 
         <div className="composer__tools" ref={toolsRef}>
           <button
@@ -1019,16 +1017,15 @@ export function App() {
             </p>
             <code className="install-cmd">npm install mojix-picker</code>
           </div>
-
-          <div className="hero__demo">
-            <ComposerDemo />
-            <p className="hero__demo-hint">
-              A real composer with an emoji button — the popover uses the{' '}
-              <strong>{COMPOSER_PRESET.name}</strong> preset from the grid
-              below.
-            </p>
-          </div>
         </header>
+
+        <div className="composer-stage">
+          <ComposerDemo />
+          <p className="composer-stage__hint">
+            A real composer with an emoji button — the popover uses the{' '}
+            <strong>{COMPOSER_PRESET.name}</strong> preset from the grid below.
+          </p>
+        </div>
 
         <section className="showcase-section">
           <div className="showcase-intro">

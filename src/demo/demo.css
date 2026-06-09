@@ -147,24 +147,13 @@ pre {
 }
 
 .hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  gap: 48px;
-  align-items: center;
-  padding: 56px 0 48px;
+  padding: 56px 0 40px;
 }
 
 .hero__inner {
   display: grid;
   gap: 18px;
-  max-width: 620px;
-}
-
-@media (max-width: 900px) {
-  .hero {
-    grid-template-columns: 1fr;
-    gap: 32px;
-  }
+  max-width: 680px;
 }
 
 .badge {
@@ -216,20 +205,29 @@ pre {
   user-select: all;
 }
 
-.hero__demo {
+.composer-stage {
   display: grid;
   gap: 14px;
-  justify-items: stretch;
+  justify-items: center;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto 56px;
 }
 
-.hero__demo-hint {
+.composer-stage .composer {
+  width: 100%;
+}
+
+.composer-stage__hint {
   margin: 0;
+  max-width: 460px;
   color: #8c8074;
   font-size: 0.9rem;
   line-height: 1.5;
+  text-align: center;
 }
 
-.hero__demo-hint strong {
+.composer-stage__hint strong {
   color: #d8cfc2;
   font-weight: 600;
 }
@@ -286,39 +284,26 @@ pre {
   background: rgba(0, 0, 0, 0.28);
 }
 
-.composer__avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  font-size: 18px;
-  line-height: 1;
-}
-
-.composer__message {
+.composer__input {
   flex: 1;
   min-width: 0;
-  min-height: 28px;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
+  height: 38px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: #f3eadd;
+  font-size: 20px;
+  letter-spacing: 1px;
 }
 
-.composer__placeholder {
+.composer__input::placeholder {
   color: #6f6358;
   font-size: 0.95rem;
+  letter-spacing: normal;
 }
 
-.composer__message-text {
-  font-size: 22px;
-  line-height: 1.2;
-  letter-spacing: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.composer__input:focus {
+  outline: none;
 }
 
 .composer__tools {
