@@ -8,6 +8,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- `EmojiPickerPopover` (new optional entry `mojix-picker/popover`): a triggered
+  popover wrapper around the standalone picker with a zero-dependency,
+  viewport-aware positioner (flip/shift so it never overflows), outside-click
+  and `Escape` dismissal (each toggleable), surface `opacity`, optional
+  `portal`, and focus return to the trigger. Forwards every `EmojiPicker` prop.
+  The pure `computeEmojiPopoverPosition(...)` helper is exported too.
 - `performanceMode` prop (`'auto' | 'high' | 'balanced'`, default `'auto'`) on
   `EmojiPicker` / `MojiX.Root`. It picks the virtualization render window for
   the device — `'auto'` switches to a lighter window when the device reports

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { EmojiPickerPopover } from '../entries/popover';
 import type {
   CustomEmoji,
   EmojiCategoryIconGlyph,
@@ -499,61 +500,19 @@ const COMPOSER_PRESET: ShowcasePreset =
 function ComposerDemo() {
   const preset = COMPOSER_PRESET;
   const spriteSheet = SHOWCASE_SPRITE_SHEETS[preset.vendor];
-  const [open, setOpen] = useState(false);
   const [warmed, setWarmed] = useState(false);
   const [message, setMessage] = useState('');
-  const toolsRef = useRef<HTMLDivElement>(null);
 
-  // Warm the preset's sprite sheet the first time the picker opens; until then
-  // it renders with native emoji so there is no blank flash.
-  useEffect(() => {
-    if (!open || warmed) {
-      return;
-    }
-
-    let cancelled = false;
-
-    warmEmojiSpriteSheet(spriteSheet)
-      .then(() => {
-        if (!cancelled) {
-          setWarmed(true);
-        }
-      })
-      .catch(() => undefined);
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, warmed, spriteSheet]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    function handlePointerDown(event: PointerEvent) {
-      if (
-        toolsRef.current &&
-        !toolsRef.current.contains(event.target as Node)
-      ) {
-        setOpen(false);
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (open && !warmed) {
+        warmEmojiSpriteSheet(spriteSheet)
+          .then(() => setWarmed(true))
+          .catch(() => undefined);
       }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [open]);
+    },
+    [warmed, spriteSheet],
+  );
 
   return (
     <div
@@ -581,51 +540,42 @@ function ComposerDemo() {
           aria-label="Message"
         />
 
-        <div className="composer__tools" ref={toolsRef}>
-          <button
-            type="button"
-            className="composer__emoji"
-            aria-haspopup="dialog"
-            aria-expanded={open}
-            aria-label="Add emoji"
-            onClick={() => setOpen((value) => !value)}
-          >
-            😀
-          </button>
-
-          {open && (
-            <div
-              className="composer__popover"
-              role="dialog"
-              aria-label="Emoji picker"
+        <EmojiPickerPopover
+          trigger={(triggerProps) => (
+            <button
+              ref={triggerProps.ref}
+              type="button"
+              className="composer__emoji"
+              aria-haspopup={triggerProps['aria-haspopup']}
+              aria-expanded={triggerProps['aria-expanded']}
+              aria-label="Add emoji"
+              onClick={triggerProps.onClick}
             >
-              <EmojiPicker
-                open
-                closeOnEscape
-                trapFocus
-                onOpenChange={(next) => {
-                  if (!next) {
-                    setOpen(false);
-                  }
-                }}
-                showPreview={false}
-                locale="en"
-                emojiSize={preset.emojiSize}
-                columns={preset.columns}
-                showSkinTones={preset.showSkinTones}
-                categoryIconStyle={preset.categoryIconStyle}
-                style={createPickerThemeStyle(preset.palette)}
-                spriteSheet={spriteSheet}
-                assetSource={warmed ? undefined : NATIVE_FALLBACK_SOURCE}
-                onEmojiSelect={(selection) => {
-                  if (selection.native) {
-                    setMessage((current) => current + selection.native);
-                  }
-                }}
-              />
-            </div>
+              😀
+            </button>
           )}
-        </div>
+          placement="top"
+          align="end"
+          popoverWidth={340}
+          popoverHeight={430}
+          popoverClassName="composer__popover"
+          closeOnSelect={false}
+          onOpenChange={handleOpenChange}
+          showPreview={false}
+          locale="en"
+          emojiSize={preset.emojiSize}
+          columns={preset.columns}
+          showSkinTones={preset.showSkinTones}
+          categoryIconStyle={preset.categoryIconStyle}
+          style={createPickerThemeStyle(preset.palette)}
+          spriteSheet={spriteSheet}
+          assetSource={warmed ? undefined : NATIVE_FALLBACK_SOURCE}
+          onEmojiSelect={(selection) => {
+            if (selection.native) {
+              setMessage((current) => current + selection.native);
+            }
+          }}
+        />
 
         <button
           type="button"

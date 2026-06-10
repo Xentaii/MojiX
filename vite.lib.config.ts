@@ -205,6 +205,7 @@ export default defineConfig({
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
         headless: resolve(__dirname, 'src/entries/headless.ts'),
+        popover: resolve(__dirname, 'src/entries/popover.ts'),
         style: resolve(__dirname, 'src/entries/style.ts'),
         'sprites/apple': resolve(__dirname, 'src/entries/sprites/apple.ts'),
         'sprites/facebook': resolve(

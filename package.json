@@ -14,6 +14,10 @@
       "types": "./dist/lib/entries/headless.d.ts",
       "import": "./dist/lib/headless.js"
     },
+    "./popover": {
+      "types": "./dist/lib/entries/popover.d.ts",
+      "import": "./dist/lib/popover.js"
+    },
     "./data": {
       "types": "./dist/lib/entries/data.d.ts",
       "node": "./dist/lib/node/data.js",

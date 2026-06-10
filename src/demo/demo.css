@@ -214,10 +214,6 @@ pre {
   margin: 0 auto 56px;
 }
 
-.composer-stage .composer {
-  width: 100%;
-}
-
 .composer-stage__hint {
   margin: 0;
   max-width: 460px;
@@ -234,6 +230,7 @@ pre {
 
 .composer {
   --composer-accent: #5865f2;
+  width: 100%;
   display: grid;
   gap: 14px;
   padding: 16px;
@@ -357,19 +354,14 @@ pre {
   cursor: default;
 }
 
+/* Position/size are set inline by EmojiPickerPopover; this only styles the
+   surface. */
 .composer__popover {
-  position: absolute;
-  bottom: calc(100% + 12px);
-  right: 0;
-  z-index: 50;
-  width: clamp(300px, 86vw, 340px);
-  height: clamp(360px, 52vh, 430px);
   border-radius: 22px;
   overflow: hidden;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.05) inset,
     0 28px 70px rgba(0, 0, 0, 0.55);
-  transform-origin: bottom right;
   animation: composer-popover-in 0.14s ease;
 }
 

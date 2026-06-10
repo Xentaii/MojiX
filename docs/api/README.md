@@ -142,6 +142,8 @@ falls back to the main thread on environments without `Worker`.
   Covers `EmojiPickerProps` and the shared prop surface used by `MojiX.Root`.
 - [Components](./components.md)
   Covers the ready-made picker and the lower-level UI components.
+- [Popover Mode](./popover.md)
+  Covers `EmojiPickerPopover` and the optional `mojix-picker/popover` entry.
 - [Headless Primitives](./headless-primitives.md)
   Covers `MojiX.*` exports and state hooks.
 - [Asset Resolution](./asset-resolution.md)
